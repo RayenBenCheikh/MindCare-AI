@@ -1,87 +1,140 @@
+import { images } from '@/src/theme';
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { images } from '../../theme/images';
-import { colors } from '@/src/theme';
+import { StyleSheet, View, Text, SafeAreaView, TouchableOpacity, Image } from 'react-native';
+import { Svg, Path } from 'react-native-svg';
 
-export default function WelcomeScreen2() {
+export default function OnboardingScreen() {
   return (
-    <View style={styles.container}>
-      <View style={styles.stepContainer}>
-        <Text style={styles.stepText}>Step One</Text>
+    <SafeAreaView style={styles.container}>
+      {/* Step Indicator */}
+      <View style={styles.stepButtonContainer}>
+        <TouchableOpacity style={styles.stepButton}>
+          <Text style={styles.stepText}>Step One</Text>
+        </TouchableOpacity>
       </View>
-      <Image source={images.stepOne} style={styles.illustration} />
-      <View style={styles.progressBar}>
-        <View style={[styles.progress, { width: '30%' }]} /> 
+
+      {/* Illustration */}
+      <View style={styles.illustrationContainer}>
+        <Image 
+          source={images.WelcomeScreen2} 
+          style={styles.illustration}
+          resizeMode="cover"
+        />
       </View>
-      <Text style={styles.title}>Personalize Your Mental</Text>
-      <Text style={styles.title}>Health State With AI</Text>
-      <TouchableOpacity style={styles.arrowButton}>
-        <Text style={styles.arrowText}>→</Text>
-      </TouchableOpacity>
-      <View style={styles.bottomBar} />
-    </View>
+
+      {/* Bottom Section */}
+      <View style={styles.bottomContainer}>
+        {/* Progress Bar */}
+        <View style={styles.progressBarContainer}>
+          <View style={styles.progressBarFilled} />
+          <View style={styles.progressBarEmpty} />
+        </View>
+
+        {/* Title Text */}
+        <View style={styles.titleContainer}>
+          <Text style={styles.titleText}>Personalize Your Mental</Text>
+          <Text style={[styles.titleText, styles.highlightedText]}>Health State</Text>
+          <Text style={styles.titleText}>With AI</Text>
+        </View>
+
+        {/* Navigation Button */}
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.navButton}>
+            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <Path d="M8 5l8 7-8 7" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
+          </TouchableOpacity>
+        </View>
+      </View> {/* <-- Closing View was missing here */}
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.personalizeBackground, // Couleur de fond
+    backgroundColor: '#e6eadb',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 40,
   },
-  stepContainer: {
-    backgroundColor: colors.stepBackground, // Couleur de fond du "Step One"
-    paddingHorizontal: 15,
-    paddingVertical: 5,
-    borderRadius: 20,
-    marginTop: 50, // Ajustez la marge supérieure
+  stepButtonContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  stepButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#433227',
+    borderRadius: 50,
+    paddingVertical: 10,
+    paddingHorizontal: 30,
   },
   stepText: {
-    fontSize: 16,
-    color: colors.stepText, // Couleur du texte "Step One"
+    color: '#433227',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  illustrationContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
   },
   illustration: {
-    width: '100%',
-    height: 300, // Ajustez la hauteur
-    resizeMode: 'contain',
-    marginTop: 30, // Ajustez la marge supérieure
+    width: 250,
+    height: 280,
   },
-  progressBar: {
-    width: '80%',
-    height: 10,
-    backgroundColor: colors.progressBarBackground, // Couleur de fond de la barre de progression
-    borderRadius: 5,
-    marginTop: 30, // Ajustez la marge supérieure
+
+  bottomContainer: {
+    flex: 2,
+    backgroundColor: "white",
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    padding: 20,
+    alignItems: "center",
+    width: "100%",
   },
-  progress: {
-    height: '100%',
-    backgroundColor: colors.progressBarFill, // Couleur de remplissage de la barre de progression
-    borderRadius: 5,
+  progressBarContainer: {
+    flexDirection: "row",
+    width: "60%",
+    height: 6,
+    borderRadius: 3,
+    marginBottom: 20,
+    overflow: "hidden",
   },
-  title: {
-    fontSize: 24,
+  progressBarFilled: {
+    flex: 3,
+    backgroundColor: "#6B4E32",
+  },
+  progressBarEmpty: {
+    flex: 2,
+    backgroundColor: "#E0D6C4",
+  },
+  titleContainer: {
+    alignItems: 'center',
+    marginTop: 40,
+  },
+  titleText: {
+    fontSize: 36,
     fontWeight: 'bold',
+    color: '#433227',
     textAlign: 'center',
-    marginTop: 20, // Ajustez la marge supérieure
+    lineHeight: 44,
   },
-  arrowButton: {
-    backgroundColor: colors.arrowButtonBackground, // Couleur de fond du bouton flèche
+  highlightedText: {
+    color: '#97AB6C',
+  },
+  buttonContainer: {
+    marginTop: 40,
+  },
+  navButton: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    justifyContent: 'center',
+    backgroundColor: '#433227',
     alignItems: 'center',
-    marginTop: 30, // Ajustez la marge supérieure
-  },
-  arrowText: {
-    fontSize: 30,
-    color: colors.arrowButtonText, // Couleur du texte de la flèche
-  },
-  bottomBar: {
-    width: '60%',
-    height: 5,
-    backgroundColor: colors.bottomBar, // Couleur de la barre inférieure
-    borderRadius: 3,
-    marginTop: 50, // Ajustez la marge supérieure
+    justifyContent: 'center',
   },
 });
+

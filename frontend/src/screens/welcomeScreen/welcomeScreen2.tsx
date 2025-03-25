@@ -1,9 +1,9 @@
-import { images } from '@/src/theme';
+import { colors, images } from '@/src/theme';
 import React from 'react';
 import { StyleSheet, View, Text, SafeAreaView, TouchableOpacity, Image } from 'react-native';
 import { Svg, Path } from 'react-native-svg';
 
-export default function OnboardingScreen() {
+export default function WelcomeScreen2() {
   return (
     <SafeAreaView style={styles.container}>
       {/* Step Indicator */}
@@ -16,7 +16,7 @@ export default function OnboardingScreen() {
       {/* Illustration */}
       <View style={styles.illustrationContainer}>
         <Image 
-          source={images.WelcomeScreen2} 
+          source={images.stepOne} 
           style={styles.illustration}
           resizeMode="cover"
         />
@@ -45,7 +45,7 @@ export default function OnboardingScreen() {
             </Svg>
           </TouchableOpacity>
         </View>
-      </View> {/* <-- Closing View was missing here */}
+      </View>
     </SafeAreaView>
   );
 }
@@ -66,13 +66,13 @@ const styles = StyleSheet.create({
   stepButton: {
     backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: '#433227',
+    borderColor: colors.marron,
     borderRadius: 50,
     paddingVertical: 10,
     paddingHorizontal: 30,
   },
   stepText: {
-    color: '#433227',
+    color: colors.marron,
     fontSize: 18,
     fontWeight: 'bold',
   },
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
 
   bottomContainer: {
     flex: 2,
-    backgroundColor: "white",
+    backgroundColor: colors.white,
     borderTopLeftRadius: 40,
     borderTopRightRadius: 40,
     padding: 20,
@@ -118,12 +118,12 @@ const styles = StyleSheet.create({
   titleText: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#433227',
+    color: colors.marron,
     textAlign: 'center',
     lineHeight: 44,
   },
   highlightedText: {
-    color: '#97AB6C',
+    color: colors.green,
   },
   buttonContainer: {
     marginTop: 40,
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#433227',
+    backgroundColor: colors.marron,
     alignItems: 'center',
     justifyContent: 'center',
   },

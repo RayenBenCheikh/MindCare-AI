@@ -9,4 +9,6 @@ WelcomeScreen3 : require("../assets/img/WelcomeScreen3.png"),
 sad: require("../assets/img/sad.png"),
 neutral: require("../assets/img/neutral.png"),
 dead: require("../assets/img/dead.png"),
+womenread:require("../assets/img/womenread.png"),
+WelcomeScreen5: require("../assets/img/WelcomeScreen5.png"),
 };

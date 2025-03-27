@@ -1,5 +1,5 @@
 import NextButton from '@/src/components/NextButton';
-import { images } from '@/src/theme';
+import { colors, images } from '@/src/theme';
 import React from 'react';
 import { View, Text, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -39,8 +39,11 @@ const WelcomeScreen5 = () => {
 
         {/* Title Text */}
         <View style={styles.titleContainer}>
-          <Text style={styles.titleText}>Mindful Resources That</Text>
-          <Text style={styles.titleText}>Make You Happy</Text>
+        <Text style={styles.titleText}>Mindful
+                   <Text style={styles.highlightedText}>Resources </Text>
+                   <Text >That Makes You Happy</Text>
+                   
+                 </Text>
         </View>
 
         {/* Navigation Button */}
@@ -65,13 +68,13 @@ const styles = StyleSheet.create({
   stepButton: {
     backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: '#6B4E32',
+    borderColor: colors.marron,
     borderRadius: 50,
     paddingVertical: 10,
     paddingHorizontal: 30,
   },
   stepText: {
-    color: '#6B4E32',
+    color: colors.marron,
     fontSize: 18,
     fontWeight: 'bold',
   },
@@ -99,11 +102,11 @@ const styles = StyleSheet.create({
   },
   progressBarFilled: {
     flex: 3,
-    backgroundColor: "#6B4E32",
+    backgroundColor: "#926247",
   },
   progressBarEmpty: {
     flex: 2,
-    backgroundColor: "#E0D6C4",
+    backgroundColor: "#E8DDD9",
   },
   titleContainer: {
     alignItems: 'center',
@@ -112,20 +115,15 @@ const styles = StyleSheet.create({
   titleText: {
     fontSize: 30,
     fontWeight: 'bold',
-    color: '#6B4E32',
+    color: colors.marron,
     textAlign: 'center',
     lineHeight: 36,
   },
   buttonContainer: {
     marginTop: 30,
   },
-  navButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#6B4E32',
-    alignItems: 'center',
-    justifyContent: 'center',
+  highlightedText: {
+    color: "#FFBD1A",
   },
 });
 

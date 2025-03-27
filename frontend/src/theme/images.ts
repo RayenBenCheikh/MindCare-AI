@@ -11,4 +11,5 @@ neutral: require("../assets/img/neutral.png"),
 dead: require("../assets/img/dead.png"),
 womenread:require("../assets/img/womenread.png"),
 WelcomeScreen5: require("../assets/img/WelcomeScreen5.png"),
+WelcomeScreen6: require("../assets/img/WelcomeScreen6.png"),
 };

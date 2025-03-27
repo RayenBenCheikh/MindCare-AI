@@ -6,7 +6,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import WelcomeStackNavigation from '@/src/navigation/WelcomeStackNavigation';
 import WelcomeScreen3 from '../src/screens/WelcomeScreen/WelcomeScreen3';
 import WelcomeScreen4 from '@/src/screens/WelcomeScreen/WelcomeScreen4';
-import WelcomeScreen5 from '@/src/screens/WelcomeScreen/WelcomeScreen5';
+import WelcomeScreen6 from '@/src/screens/WelcomeScreen/WelcomeScreen6';
 
 
 
@@ -15,6 +15,6 @@ export default function Index() {
    // <NavigationContainer>
    //   <WelcomeStackNavigation />
    // </NavigationContainer> 
-   <WelcomeScreen5/>
+   <WelcomeScreen6/>
   )
 }

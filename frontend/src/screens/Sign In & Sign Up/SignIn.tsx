@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { images } from '@/src/theme';
+import { colors, fonts, images } from '@/src/theme';
 
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
     <View style={styles.fullContainer}>
+      <StatusBar barStyle="light-content" />
       <LinearGradient
         colors={['#A8B5A2', '#F5E8C7']}
         style={styles.header}
@@ -17,8 +18,12 @@ const SignIn = () => {
         <View style={styles.logoContainer}>
           <Image source={images.logo} style={styles.logo} resizeMode="contain" />
         </View>
-        <Text style={styles.title}>Sign In To MINDCARE-AI</Text>
-      </LinearGradient>
+        </LinearGradient>
+        <View style={styles.titleContainer}>
+          <Text style={styles.titlePart1}>Sign In To MINDCARE-AI </Text>
+          
+        </View>
+      
       <View style={styles.content}>
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Email Address</Text>
@@ -68,7 +73,9 @@ const SignIn = () => {
         </View>
         <View style={styles.bottomText}>
           <Text style={styles.bottomTextNormal}>Don't have an account? </Text>
-          <Text style={styles.bottomTextLink}>Sign Up</Text>
+          <TouchableOpacity onPress={() => console.log('Sign Up Pressed')}>
+            <Text style={styles.bottomTextLink}>Sign Up</Text>
+          </TouchableOpacity>
         </View>
         <TouchableOpacity style={styles.forgotPassword}>
           <Text style={styles.forgotPasswordText}>Forgot Password</Text>
@@ -79,18 +86,46 @@ const SignIn = () => {
 };
 
 const styles = StyleSheet.create({
-  fullContainer: { flex: 1 },
-  header: { height: 100, justifyContent: 'center', alignItems: 'center', paddingTop: 20 },
-  content: { flex: 1, backgroundColor: '#fff', padding: 20, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
-  logoContainer: { alignItems: 'center', marginBottom: 10 },
-  logo: { width: 100, height: 100 },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#8B5A2B', textAlign: 'center', marginBottom: 10 },
+  fullContainer: { flex: 1,
+    backgroundColor:colors.white,
+   },
+  header: { 
+    height: 150, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    borderBottomLeftRadius: 100, 
+    borderBottomRightRadius: 100 
+  },
+  logoContainer: { 
+    position: 'static', 
+    top: 20, 
+    left: '10%', 
+    alignItems: 'center' 
+  },
+  logo: { width: 100, height: 100, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5 },
+  titleContainer: { 
+    backgroundColor:colors.white,
+    alignItems: 'center' ,
+    marginTop:20,
+  },
+  titlePart1: { 
+    fontSize: 30, 
+    color: colors.marron, 
+    fontWeight: fonts.extraBold, 
+  },
+  content: { 
+    flex: 1, 
+    backgroundColor: '#fff', 
+    padding: 20, 
+    borderTopLeftRadius: 20, 
+    borderTopRightRadius: 20 
+  },
   inputContainer: { width: '100%', marginBottom: 20 },
   label: { fontSize: 16, color: '#8B5A2B', marginBottom: 5 },
   inputField: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 25, paddingHorizontal: 15, height: 50 },
   icon: { marginRight: 10 },
   inputText: { flex: 1, color: '#333' },
-  signInButton: { flexDirection: 'row', backgroundColor: '#8B5A2B', borderRadius: 25, paddingVertical: 15, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 30 },
+  signInButton: { flexDirection: 'row', backgroundColor: colors.marron, borderRadius: 25, paddingVertical: 15, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 30 },
   signInText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   socialButtons: { flexDirection: 'row', justifyContent: 'center', marginBottom: 30 },
   socialButton: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#ccc', justifyContent: 'center', alignItems: 'center', marginHorizontal: 10 },

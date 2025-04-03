@@ -3,29 +3,58 @@ import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
 import userRoutes from "./routes/userRoutes.js";
+import { cleanEnv, str, port } from "envalid";
 
 dotenv.config();
 
+// 🔹 Validate environment variables
+const env = cleanEnv(process.env, {
+  PORT: port({ default: 5000 }),
+  MONGO_URI: str({ default: "mongodb://127.0.0.1:27017/mindcare" }),
+  JWT_SECRET: str(),
+  GOOGLE_CLIENT_ID: str(),
+  GOOGLE_CLIENT_SECRET: str(),
+  FACEBOOK_CLIENT_ID: str(),
+  FACEBOOK_CLIENT_SECRET: str(),
+});
+
 const app = express();
-app.use(cors());
-app.use(express.json()); // 🔹 Permet de traiter JSON
-app.use(express.urlencoded({ extended: true })); // 🔹 Permet de traiter URL-encoded
+
+// 🔹 CORS Configuration for React Native
+app.use(cors({
+  origin: ['http://localhost:19006', 'http://localhost:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true,
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Routes
 app.use("/api/auth", userRoutes);
-// ✅ Vérifie que les variables d'environnement existent
-const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/mindcare";  // 🔹 Utilisation de `127.0.0.1` au lieu de `localhost`
 
-// ✅ Connexion MongoDB améliorée
+// ✅ Connexion MongoDB améliorée avec options
 mongoose
-  .connect(MONGO_URI)
+  .connect(env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000,
+  })
   .then(() => {
     console.log("✅ MongoDB connecté avec succès");
-    app.listen(PORT, () => console.log(`✅ Backend running on port ${PORT}`));
+    app.listen(env.PORT, () => console.log(`✅ Backend running on port ${env.PORT}`));
   })
-  .catch((error) => console.error("❌ MongoDB Error :", error.message));
+  .catch((error) => console.error("❌ MongoDB Error:", error.message));
+
+// Handle MongoDB connection errors after initial connection
+mongoose.connection.on('error', (err) => {
+  console.error('❌ MongoDB connection error:', err);
+});
 
 // Route de test
-app.get("/", (req, res) => {
-  res.json({ message: "MindCare AI Backend is running 🚀" });
+app.get("/", async (req, res) => {
+  try {
+    res.json({ message: "MindCare AI Backend is running 🚀" });
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });

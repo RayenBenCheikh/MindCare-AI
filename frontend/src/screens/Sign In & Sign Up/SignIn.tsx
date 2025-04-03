@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { colors } from '@/src/theme';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -62,7 +62,7 @@ const SignIn = () => {
     <View style={styles.fullContainer}>
       <StatusBar barStyle="light-content" />
       <LinearGradient
-        colors={['#A8B5A2', '#F5E8C7']}
+        colors={['#9CB380', '#9CB380']}
         style={styles.headerContainer}
       >
         <View style={styles.logoContainer}>
@@ -86,11 +86,11 @@ const SignIn = () => {
         ) : null}
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Email Address</Text>
-          <View style={[styles.inputField, { borderColor: '#A8B5A2' }]}>
+          <View style={[styles.inputField, { borderColor: '#9CB380' }]}>
             <Icon name="email-outline" size={20} color="#8B5A2B" style={styles.icon} />
             <TextInput
               style={styles.inputText}
-              placeholder="exemple@gmail.com"
+              placeholder="example@gmail.com"
               placeholderTextColor="#777"
               value={email}
               onChangeText={setEmail}
@@ -127,13 +127,13 @@ const SignIn = () => {
         </TouchableOpacity>
         <View style={styles.socialButtons}>
           <TouchableOpacity style={styles.socialButton}>
-            <FontAwesome name="facebook" size={24} color="#fff" />
+            <FontAwesome name="facebook" size={24} color="#8B5A2B" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.socialButton}>
-            <FontAwesome name="google" size={24} color="#fff" />
+            <FontAwesome name="google" size={24} color="#8B5A2B" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.socialButton}>
-            <FontAwesome name="instagram" size={24} color="#fff" />
+            <FontAwesome name="instagram" size={24} color="#8B5A2B" />
           </TouchableOpacity>
         </View>
         <View style={styles.bottomText}>
@@ -141,6 +141,7 @@ const SignIn = () => {
           <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
             <Text style={styles.bottomTextLink}>Sign Up</Text>
           </TouchableOpacity>
+          <Text style={styles.bottomTextNormal}>.</Text>
         </View>
         <TouchableOpacity style={styles.forgotPassword}>
           <Text style={styles.forgotPasswordText}>Forgot Password</Text>
@@ -151,19 +152,20 @@ const SignIn = () => {
 };
 
 const styles = StyleSheet.create({
-  fullContainer: { flex: 1, backgroundColor: colors.white },
+  fullContainer: { 
+    flex: 1, 
+    backgroundColor: '#FFFFFF' 
+  },
   headerContainer: {
-    height: 150,
+    height: 200,
     justifyContent: 'center',
     alignItems: 'center',
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    borderBottomLeftRadius: 50,
+    borderBottomRightRadius: 50,
   },
   logoContainer: {
-    position: 'absolute',
-    top: 20,
-    left: '10%',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   logo: {
     width: 36,
@@ -178,36 +180,84 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   titleContainer: {
-    backgroundColor: colors.white,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 30,
+    marginBottom: 15,
   },
   titlePart1: {
     fontSize: 30,
-    color: colors.marron,
+    color: '#5D4037',
     fontWeight: 'bold',
   },
   content: {
     flex: 1,
-    backgroundColor: '#fff',
-    padding: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    marginTop: 30,
+    paddingHorizontal: 30,
   },
-  inputContainer: { width: '100%', marginBottom: 20 },
-  label: { fontSize: 14, color: colors.marron, marginBottom: 5, fontWeight: 'bold' },
-  inputField: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 25, paddingHorizontal: 15, height: 50 },
+  inputContainer: { 
+    width: '100%', 
+    marginBottom: 20 
+  },
+  label: { 
+    fontSize: 16, 
+    color: '#5D4037', 
+    marginBottom: 10, 
+    fontWeight: 'bold' 
+  },
+  inputField: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    borderWidth: 1, 
+    borderRadius: 30, 
+    paddingHorizontal: 15, 
+    height: 60,
+    backgroundColor: '#FFFFFF'
+  },
   icon: { marginRight: 10 },
-  inputText: { flex: 1, color: '#333' },
-  signInButton: { flexDirection: 'row', backgroundColor: colors.marron, borderRadius: 25, paddingVertical: 15, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 30 },
+  inputText: { flex: 1, color: '#333', fontSize: 16 },
+  signInButton: { 
+    flexDirection: 'row', 
+    backgroundColor: '#5D4037', 
+    borderRadius: 30, 
+    paddingVertical: 15, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    marginTop: 10,
+    marginBottom: 30 
+  },
   signInText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  socialButtons: { flexDirection: 'row', justifyContent: 'center', marginBottom: 30 },
-  socialButton: { width: 50, height: 50, borderRadius: 25, backgroundColor: colors.marron, justifyContent: 'center', alignItems: 'center', marginHorizontal: 10 },
-  bottomText: { flexDirection: 'row', justifyContent: 'center' },
-  bottomTextNormal: { fontSize: 16, color: '#777' },
-  bottomTextLink: { fontSize: 16, color: colors.orange, fontWeight: 'bold' },
-  forgotPassword: { marginTop: 10 },
-  forgotPasswordText: { fontSize: 16, color: colors.orange, textAlign: 'center', fontWeight: 'bold' },
+  socialButtons: { 
+    flexDirection: 'row', 
+    justifyContent: 'center', 
+    marginBottom: 30 
+  },
+  socialButton: { 
+    width: 60, 
+    height: 60, 
+    borderRadius: 30, 
+    backgroundColor: '#FFFFFF', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginHorizontal: 15,
+    borderWidth: 1,
+    borderColor: '#E0E0E0'
+  },
+  bottomText: { 
+    flexDirection: 'row', 
+    justifyContent: 'center',
+    marginBottom: 5
+  },
+  bottomTextNormal: { fontSize: 16, color: '#666' },
+  bottomTextLink: { fontSize: 16, color: '#ED7E1C', fontWeight: 'bold' },
+  forgotPassword: { 
+    alignItems: 'center'
+  },
+  forgotPasswordText: { 
+    fontSize: 16, 
+    color: '#ED7E1C', 
+    textAlign: 'center', 
+    fontWeight: 'bold' 
+  },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',

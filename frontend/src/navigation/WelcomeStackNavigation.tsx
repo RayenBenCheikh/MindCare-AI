@@ -24,7 +24,7 @@ const Stack = createNativeStackNavigator();
 const WelcomeStackNavigation = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator >
+      <Stack.Navigator initialRouteName="WelcomeScreen1">
         <Stack.Screen name="WelcomeScreen1" component={WelcomeScreen1} options={{ headerShown: false }} />
         <Stack.Screen name="WelcomeScreen2" component={WelcomeScreen2} options={{ headerShown: false }} />
         <Stack.Screen name="WelcomeScreen3" component={WelcomeScreen3} options={{ headerShown: false }} />

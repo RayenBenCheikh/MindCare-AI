@@ -2,19 +2,9 @@ import NextButton from '@/src/components/NextButton';
 import { colors, images } from '@/src/theme';
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { Svg, Path } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-
-// Define the navigation param list type
-type RootStackParamList = {
-  WelcomeScreen1: undefined;
-  WelcomeScreen2: undefined;
-  WelcomeScreen3: undefined;
-  WelcomeScreen4: undefined;
-  // Add other screens as needed
-};
-
+import { RootStackParamList } from '../../navigation/WelcomeStackNavigation';
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 const WelcomeScreen4 = () => {
@@ -56,7 +46,7 @@ const WelcomeScreen4 = () => {
 
         {/* Navigation Button */}
         <View style={styles.buttonContainer}>
-          <NextButton  onPress={() => navigation.navigate('WelcomeScreen2')} />
+          <NextButton  onPress={() => navigation.navigate('WelcomeScreen5')} />
         </View>
       </View>
     </View>

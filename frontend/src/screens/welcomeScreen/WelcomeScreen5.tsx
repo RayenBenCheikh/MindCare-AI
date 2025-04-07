@@ -2,16 +2,10 @@ import NextButton from '@/src/components/NextButton';
 import { colors, images } from '@/src/theme';
 import React from 'react';
 import { View, Text, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../navigation/WelcomeStackNavigation';
 // Define the navigation param list type
-type RootStackParamList = {
-
-  WelcomeScreen6: undefined; 
-  // Add other screens as needed
-};
-
 type NavigationProp = StackNavigationProp<RootStackParamList>;
   const navigation = useNavigation<NavigationProp>();
 const WelcomeScreen5 = () => {

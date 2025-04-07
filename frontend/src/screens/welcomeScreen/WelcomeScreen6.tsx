@@ -2,8 +2,12 @@ import { images } from '@/src/theme';
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../navigation/WelcomeStackNavigation';
+type NavigationProp = StackNavigationProp<RootStackParamList>;
 const WelcomeScreen6 = () => {
+  const navigation = useNavigation<NavigationProp>();
   return (
     <View style={styles.container}>
       {/* Step Five Indicator */}
@@ -39,7 +43,7 @@ const WelcomeScreen6 = () => {
 
         {/* Navigation Button */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.navButton}>
+          <TouchableOpacity style={styles.navButton} onPress={() => navigation.navigate('SignIn')}>
             <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <Path d="M9 6 L15 12 L9 18" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </Svg>

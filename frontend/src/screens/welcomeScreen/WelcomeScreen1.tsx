@@ -6,26 +6,12 @@ import { images } from '../../theme/images';
 import { fonts } from '../../theme/fonts';
 import { colors } from '@/src/theme';
 import ButtonPrimary from '@/src/components/ButtonPrimery';
-import WelcomeStackNavigation from '@/src/navigation/WelcomeStackNavigation';
-import ScreenName from '@/src/constants/ScreenName';
+import { RootStackParamList } from '../../navigation/WelcomeStackNavigation';
 
-type NavigationProp = NativeStackNavigationProp<WelcomeStackNavigation>;
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function WelcomeScreen1() {
   const navigation = useNavigation<NavigationProp>();
-  
-  const handleSignIn = () => {
-    navigation.navigate(ScreenName.SignIn, {
-      title: "Sign In",
-    });
-    console.log('Sign In pressed');
-  };
-
-  const WelcomeScreenPressed = () => {
-    navigation.navigate(ScreenName.WelcomeScreen2, {
-      title: "Welcome Screen 2",
-    });
-  };
   
   return (
     <View style={styles.container}>
@@ -35,12 +21,15 @@ export default function WelcomeScreen1() {
         <Text style={styles.subtitle}>MINDCARE-AI !</Text>
         <Text style={styles.description}>Your mindful mental health AI companion for everyone, anywhere 🍃</Text>
       </View>
+      
       <Image source={images.atmo} style={styles.illustration} />
+      
       <ButtonPrimary
         title="Get Started →"
-        onPress={WelcomeScreenPressed}
+        onPress={() => navigation.navigate('WelcomeScreen2')}
       />
-      <TouchableOpacity style={styles.signInLink} onPress={handleSignIn}>
+      
+      <TouchableOpacity style={styles.signInLink} onPress={() => navigation.navigate('SignIn')}>
         <Text style={styles.description}>
           Already have an account? <Text style={styles.signInText}>Sign In.</Text>
         </Text>

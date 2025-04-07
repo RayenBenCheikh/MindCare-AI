@@ -3,17 +3,12 @@ import { colors, fonts, images } from '@/src/theme';
 import React from 'react';
 import { StyleSheet, View, Text, SafeAreaView, TouchableOpacity, Image } from 'react-native';
 import { Svg, Circle, Path } from 'react-native-svg';
+import { RootStackParamList } from '../../navigation/WelcomeStackNavigation';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// Define the navigation param list type
-type RootStackParamList = {
 
-  WelcomeScreen4: undefined; 
-  // Add other screens as needed
-};
-
-type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 export default function WelcomeScreen3() {
     const navigation = useNavigation<NavigationProp>();

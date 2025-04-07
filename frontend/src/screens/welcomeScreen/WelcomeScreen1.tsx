@@ -1,24 +1,32 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { images } from '../../theme/images';
 import { fonts } from '../../theme/fonts';
 import { colors } from '@/src/theme';
 import ButtonPrimary from '@/src/components/ButtonPrimery';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { rootNavigation } from '@/src/navigation/RootNavigation';
+import WelcomeStackNavigation from '@/src/navigation/WelcomeStackNavigation';
 import ScreenName from '@/src/constants/ScreenName';
 
+type NavigationProp = NativeStackNavigationProp<WelcomeStackNavigation>;
 
-type Props = NativeStackScreenProps<rootNavigation , ScreenName>
-export default function WelcomeScreen1({route, navigation }:Props) {
+export default function WelcomeScreen1() {
+  const navigation = useNavigation<NavigationProp>();
+  
   const handleSignIn = () => {
+    navigation.navigate(ScreenName.SignIn, {
+      title: "Sign In",
+    });
     console.log('Sign In pressed');
   };
 
   const WelcomeScreenPressed = () => {
-    navigation.navigate(ScreenName.WelcomeScreen2,{
-      title:"Welcome Screen 2",
-    });}
+    navigation.navigate(ScreenName.WelcomeScreen2, {
+      title: "Welcome Screen 2",
+    });
+  };
+  
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -41,11 +49,10 @@ export default function WelcomeScreen1({route, navigation }:Props) {
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor:colors.white,
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'space-around',
     padding: 20,
@@ -73,7 +80,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     marginTop: 10,
-    color:colors.description,
+    color: colors.description,
   },
   illustration: {
     width: 250,

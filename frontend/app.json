@@ -5,6 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./src/assets/images/icon.png",
+    "newArchEnabled": true,
     "splash": {
       "image": "./src/assets/images/splash.png",
       "resizeMode": "contain",

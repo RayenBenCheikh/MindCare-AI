@@ -32,7 +32,7 @@ const SignIn = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
+      const response = await axios.post('http://10.6.68.72:5000/api/auth/login', {
         email,
         password,
       });
@@ -59,12 +59,12 @@ const SignIn = () => {
   };
 
   return (
-    <View style={styles.fullContainer}>
-      <StatusBar barStyle="light-content" />
-      <LinearGradient
-        colors={['#9CB380', '#9CB380']}
-        style={styles.headerContainer}
-      >
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      
+      {/* Header with wave and logo */}
+      <View style={styles.headerContainer}>
+        <View style={styles.waveBg} />
         <View style={styles.logoContainer}>
           <View style={styles.logo}>
             <View style={[styles.logoDot, { top: 0, left: 12 }]} />
@@ -73,7 +73,7 @@ const SignIn = () => {
             <View style={[styles.logoDot, { top: 24, left: 12 }]} />
           </View>
         </View>
-      </LinearGradient>
+      </View>
       <View style={styles.titleContainer}>
         <Text style={styles.titlePart1}>Sign In To MINDCARE-AI</Text>
       </View>
@@ -143,7 +143,7 @@ const SignIn = () => {
           </TouchableOpacity>
           <Text style={styles.bottomTextNormal}>.</Text>
         </View>
-        <TouchableOpacity style={styles.forgotPassword}>
+        <TouchableOpacity style={styles.forgotPassword} onPress={() => navigation.navigate('ForgotPassword')}>
           <Text style={styles.forgotPasswordText}>Forgot Password</Text>
         </TouchableOpacity>
       </View>
@@ -152,20 +152,27 @@ const SignIn = () => {
 };
 
 const styles = StyleSheet.create({
-  fullContainer: { 
-    flex: 1, 
-    backgroundColor: '#FFFFFF' 
+  container: {
+    flex: 1,
+    backgroundColor: colors.white,
   },
   headerContainer: {
+    position: 'relative',
     height: 200,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderBottomLeftRadius: 50,
-    borderBottomRightRadius: 50,
+  },
+  waveBg: {
+    backgroundColor: colors.green,
+    height: 200,
+    borderBottomLeftRadius: 300,
+    borderBottomRightRadius: 300,
+    width: '130%',
+    marginLeft: '-15%',
   },
   logoContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: 'absolute',
+    top: 60,
+    alignSelf: 'center',
+    backgroundColor: 'transparent',
   },
   logo: {
     width: 36,
@@ -186,7 +193,7 @@ const styles = StyleSheet.create({
   },
   titlePart1: {
     fontSize: 30,
-    color: '#5D4037',
+    color: colors.marron,
     fontWeight: 'bold',
   },
   content: {
@@ -199,8 +206,8 @@ const styles = StyleSheet.create({
     marginBottom: 20 
   },
   label: { 
-    fontSize: 16, 
-    color: '#5D4037', 
+    fontSize: 14, 
+    color: colors.marron, 
     marginBottom: 10, 
     fontWeight: 'bold' 
   },
@@ -248,27 +255,27 @@ const styles = StyleSheet.create({
     marginBottom: 5
   },
   bottomTextNormal: { fontSize: 16, color: '#666' },
-  bottomTextLink: { fontSize: 16, color: '#ED7E1C', fontWeight: 'bold' },
+  bottomTextLink: { fontSize: 16, color: colors.orange, fontWeight: 'bold' },
   forgotPassword: { 
     alignItems: 'center'
   },
   forgotPasswordText: { 
     fontSize: 16, 
-    color: '#ED7E1C', 
+    color: colors.orange, 
     textAlign: 'center', 
     fontWeight: 'bold' 
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ED7E1C',
+    backgroundColor: colors.orange,
     borderRadius: 30,
     marginBottom: 20,
     paddingVertical: 10,
     paddingHorizontal: 15,
   },
   warningIcon: { marginRight: 10 },
-  errorText: { color: 'white', fontSize: 16, fontWeight: '600' },
+  errorText: { color: colors.white, fontSize: 16, fontWeight: '600' },
 });
 
 export default SignIn;

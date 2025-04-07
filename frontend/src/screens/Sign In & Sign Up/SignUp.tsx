@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -47,7 +47,7 @@ const SignUpScreen = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/register', {
+      const response = await axios.post('http://10.6.68.72:5000/api/auth/register', {
         name: 'User', // You can add a name field to the form if needed
         email,
         password,
@@ -97,7 +97,7 @@ const SignUpScreen = () => {
         <View style={styles.formGroup}>
           <Text style={styles.label}>Email Address</Text>
           <View style={styles.inputContainer}>
-            <Ionicons name="mail-outline" size={24} color="#6B4226" style={styles.inputIcon} />
+            <Ionicons name="mail-outline" size={20} color="#6B4226" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               placeholder="Enter your email..."
@@ -183,19 +183,20 @@ const SignUpScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F6F3',
+    backgroundColor: colors.white,
   },
   headerContainer: {
     position: 'relative',
-    height: 180,
+    height: 200,
   },
   waveBg: {
-    backgroundColor: '#A0B55C',
-    height: 150,
+    backgroundColor: colors.green,
+    height: 200,
     borderBottomLeftRadius: 300,
     borderBottomRightRadius: 300,
     width: '130%',
     marginLeft: '-15%',
+    marginTop: -50,
   },
   logoContainer: {
     position: 'absolute',
@@ -221,9 +222,9 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   title: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: 'bold',
-    color: '#46321D',
+    color: colors.marron,
     marginBottom: 40,
     textAlign: 'center',
   },
@@ -231,16 +232,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: '#46321D',
+    color: colors.marron,
     marginBottom: 10,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E8E0D8',
+    borderColor: colors.green,
     borderRadius: 30,
     backgroundColor: 'white',
     paddingHorizontal: 15,
@@ -252,7 +253,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#46321D',
+    color: '#736B66',
     height: '100%',
   },
   eyeIcon: {
@@ -278,7 +279,7 @@ const styles = StyleSheet.create({
   },
   signUpButton: {
     flexDirection: 'row',
-    backgroundColor: '#46321D',
+    backgroundColor: colors.marron,
     borderRadius: 30,
     paddingVertical: 18,
     paddingHorizontal: 30,
@@ -298,7 +299,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   signInText: {
-    color: '#6A6A6A',
+    color: '#736B66',
     fontSize: 16,
   },
   signInLink: {
@@ -306,14 +307,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  bottomIndicator: {
-    width: 150,
-    height: 5,
-    backgroundColor: '#46321D',
-    alignSelf: 'center',
-    borderRadius: 3,
-    marginBottom: 10,
-  },
+
 });
 
 export default SignUpScreen;

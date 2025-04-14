@@ -7,13 +7,11 @@ import {
   ActivityIndicator,
   SafeAreaView
 } from 'react-native';
-import { Camera, CameraType } from 'expo-camera';
-import type { Camera as CameraComponent } from 'expo-camera'; // ✅ If you need it as a type
-
+import { CameraView, CameraType, useCameraPermissions, Camera, CameraCapturedPicture } from 'expo-camera';
 import axios from 'axios';
 
 // Your backend API URL - replace with your actual server address
-const API_URL = 'http://192.168.1.100:5000/api/analyze';
+const API_URL = '10.6.68.72:5000/api/analyze';
 // Replace with your actual auth token
 const AUTH_TOKEN = 'your-auth-token';
 
@@ -25,10 +23,10 @@ const VitalSignsScreen = () => {
   const [systolicBP, setSystolicBP] = useState('--');
   const [diastolicBP, setDiastolicBP] = useState('--');
   const [message, setMessage] = useState('Position your face in the frame');
-  const [faceDetected, setFaceDetected] = useState(false);
-  
-  const cameraRef = useRef<CameraComponen| null>(null);
+  const [facing, setFacing] = useState<CameraType>('back');
+  const [permission, requestPermission] = useCameraPermissions();
   const analysisInterval = useRef<NodeJS.Timeout | null>(null);
+  const cameraRef = useRef<any>(null);
 
   useEffect(() => {
     (async () => {
@@ -143,9 +141,9 @@ const VitalSignsScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Camera
+      <CameraView
         style={styles.camera}
-        type={CameraType.front}
+        facing={"front" as CameraType}
         ref={cameraRef}
       >
         {/* Top measurements display */}
@@ -196,7 +194,7 @@ const VitalSignsScreen = () => {
             </Text>
           </TouchableOpacity>
         </View>
-      </Camera>
+      </CameraView>
       
       <View style={styles.disclaimerBar}>
         <Text style={styles.disclaimerText}>
@@ -328,3 +326,7 @@ const styles = StyleSheet.create({
 });
 
 export default VitalSignsScreen;
+
+function setFaceDetected(arg0: boolean) {
+  throw new Error('Function not implemented.');
+}

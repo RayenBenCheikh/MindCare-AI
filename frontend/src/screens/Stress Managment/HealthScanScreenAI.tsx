@@ -5,29 +5,56 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  SafeAreaView
+  SafeAreaView,
+  Alert
 } from 'react-native';
 import { CameraView, CameraType, useCameraPermissions, Camera, CameraCapturedPicture } from 'expo-camera';
 import axios from 'axios';
 
-// Your backend API URL - replace with your actual server address
-const API_URL = '10.6.68.72:5000/api/analyze';
-// Replace with your actual auth token
-const AUTH_TOKEN = 'your-auth-token';
+// Backend API configuration - replace with your actual server address
+const API_URL ='http://10.6.68.72:5000/api/analyze';
+
+// For testing purposes - this would typically come from your login process
+const DEMO_USER_ID = "67f53c51ae44af41697c7c2c";
 
 const VitalSignsScreen = () => {
-  // Changed from null to undefined to match expected type
   const [hasPermission, setHasPermission] = useState<boolean | undefined>(undefined);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [heartRate, setHeartRate] = useState('--');
   const [systolicBP, setSystolicBP] = useState('--');
   const [diastolicBP, setDiastolicBP] = useState('--');
   const [message, setMessage] = useState('Position your face in the frame');
-  const [facing, setFacing] = useState<CameraType>('back');
-  const [permission, requestPermission] = useCameraPermissions();
+  const [faceDetected, setFaceDetected] = useState(false);
+  const cameraRef = useRef<CameraView>(null);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const analysisInterval = useRef<NodeJS.Timeout | null>(null);
-  const cameraRef = useRef<any>(null);
 
+
+  // Test server connection on component mount
+  useEffect(() => {
+    const checkServerConnection = async () => {
+      try {
+        const response = await axios.get('http://10.6.68.72:5000/health');
+
+        if (response.data.status === 'ok') {
+          setConnectionStatus('connected');
+        } else {
+          setConnectionStatus('error');
+        }
+      } catch (error) {
+        console.error('Server connection error:', error);
+        setConnectionStatus('error');
+        Alert.alert(
+          'Connection Error',
+          'Cannot connect to the vital signs server. Please check your network connection and try again.'
+        );
+      }
+    };
+    
+    checkServerConnection();
+  }, []);
+
+  // Request camera permission
   useEffect(() => {
     (async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
@@ -42,8 +69,19 @@ const VitalSignsScreen = () => {
   }, []);
 
   const startAnalysis = async () => {
+    if (connectionStatus !== 'connected') {
+      Alert.alert('Server Connection Error', 'Cannot connect to the vital signs server. Please check your network connection and try again.');
+      return;
+    }
+    
     setMessage('Calibrating... Stay still');
     setIsAnalyzing(true);
+    setFaceDetected(false);
+    
+    // Reset previous measurements
+    setHeartRate('--');
+    setSystolicBP('--');
+    setDiastolicBP('--');
     
     // Calibration period (3 seconds)
     setTimeout(() => {
@@ -79,17 +117,26 @@ const VitalSignsScreen = () => {
         skipProcessing: true,
       });
       
+      // Check if photo was captured successfully
+      if (!photo || !photo.base64) {
+        console.error('Failed to capture photo or missing base64 data');
+        return;
+      }
+      
+      console.log("Base64 image length:", photo.base64.length);
+      console.log("Base64 image starts with:", photo.base64.substring(0, 30));
+      
       // Send to API
       const response = await axios.post(
         API_URL,
-        { 
+        {
           image: `data:image/jpeg;base64,${photo.base64}`,
-          saveData: false
+          saveData: false,
+          userId: DEMO_USER_ID
         },
         {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${AUTH_TOKEN}`
           },
           timeout: 10000 // 10 second timeout
         }
@@ -103,6 +150,7 @@ const VitalSignsScreen = () => {
           setMessage('No face detected. Please center your face');
         } else {
           setFaceDetected(true);
+          setMessage('Face detected - analyzing vital signs');
           
           // Update measurements with smoothing
           const newHeartRate = response.data.heart_rate;
@@ -128,19 +176,56 @@ const VitalSignsScreen = () => {
     } catch (error) {
       console.error('Analysis error:', error);
       setMessage('Error connecting to server');
+      setConnectionStatus('error');
+    }
+  };
+
+  const renderConnectionStatus = () => {
+    switch (connectionStatus) {
+      case 'connecting':
+        return (
+          <View style={styles.connectionStatusBar}>
+            <ActivityIndicator size="small" color="#FFF" />
+            <Text style={styles.connectionStatusText}>Connecting to server...</Text>
+          </View>
+        );
+      case 'error':
+        return (
+          <View style={[styles.connectionStatusBar, {backgroundColor: '#F44336'}]}>
+            <Text style={styles.connectionStatusText}>Server connection error</Text>
+          </View>
+        );
+      default:
+        return null;
     }
   };
 
   if (hasPermission === undefined) {
-    return <View style={styles.container}><Text>Requesting camera permission...</Text></View>;
+    return (
+      <View style={styles.container}>
+        <Text style={styles.permissionText}>Requesting camera permission...</Text>
+      </View>
+    );
   }
   
   if (hasPermission === false) {
-    return <View style={styles.container}><Text>No access to camera</Text></View>;
+    return (
+      <View style={styles.container}>
+        <Text style={styles.permissionText}>No access to camera</Text>
+        <TouchableOpacity 
+          style={styles.permissionButton}
+          onPress={() => Camera.requestCameraPermissionsAsync()}
+        >
+          <Text style={styles.permissionButtonText}>Request Permission</Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
   return (
     <SafeAreaView style={styles.container}>
+      {renderConnectionStatus()}
+      
       <CameraView
         style={styles.camera}
         facing={"front" as CameraType}
@@ -162,14 +247,14 @@ const VitalSignsScreen = () => {
             <View style={[styles.iconCircle, {backgroundColor: '#A095DF'}]}>
               <Text style={styles.iconText}>⟳</Text>
             </View>
-            <Text style={styles.vitalValue}>{systolicBP}</Text>
-            <Text style={styles.vitalUnit}>sys</Text>
+            <Text style={styles.vitalValue}>{systolicBP}/{diastolicBP}</Text>
+            <Text style={styles.vitalUnit}>mmHg</Text>
           </View>
         </View>
         
         {/* Face guide overlay */}
         <View style={styles.faceGuideContainer}>
-          <View style={styles.faceGuide}>
+          <View style={[styles.faceGuide, faceDetected ? styles.faceGuideDetected : null]}>
             <View style={styles.crosshairH} />
             <View style={styles.crosshairV} />
           </View>
@@ -186,8 +271,13 @@ const VitalSignsScreen = () => {
         {/* Bottom controls */}
         <View style={styles.controlsContainer}>
           <TouchableOpacity 
-            style={[styles.actionButton, isAnalyzing ? styles.stopButton : styles.startButton]}
+            style={[
+              styles.actionButton, 
+              isAnalyzing ? styles.stopButton : styles.startButton,
+              connectionStatus === 'error' ? styles.disabledButton : null
+            ]}
             onPress={isAnalyzing ? stopAnalysis : startAnalysis}
+            disabled={connectionStatus === 'error'}
           >
             <Text style={styles.buttonText}>
               {isAnalyzing ? 'Stop' : 'Start Analysis'}
@@ -260,11 +350,15 @@ const styles = StyleSheet.create({
     width: 250,
     height: 330,
     borderWidth: 2,
-    borderColor: 'white',
+    borderColor: 'rgba(255,255,255,0.5)',
     borderRadius: 125,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
+  },
+  faceGuideDetected: {
+    borderColor: '#4CAF50',
+    borderWidth: 3,
   },
   crosshairH: {
     width: '100%',
@@ -309,6 +403,9 @@ const styles = StyleSheet.create({
   stopButton: {
     backgroundColor: '#F44336',
   },
+  disabledButton: {
+    backgroundColor: '#CCCCCC',
+  },
   buttonText: {
     color: 'white',
     fontSize: 16,
@@ -322,11 +419,40 @@ const styles = StyleSheet.create({
   disclaimerText: {
     color: 'rgba(255,255,255,0.6)',
     fontSize: 12,
+  },
+  connectionStatusBar: {
+    backgroundColor: '#FF9800',
+    padding: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  connectionStatusText: {
+    color: 'white',
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  permissionText: {
+    color: 'white',
+    fontSize: 18,
+    textAlign: 'center',
+    marginTop: 100,
+  },
+  permissionButton: {
+    backgroundColor: '#4285F4',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    alignSelf: 'center',
+  },
+  permissionButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   }
 });
 
 export default VitalSignsScreen;
-
-function setFaceDetected(arg0: boolean) {
-  throw new Error('Function not implemented.');
-}

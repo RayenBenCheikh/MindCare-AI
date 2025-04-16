@@ -2,37 +2,102 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
+import multer from "multer";
+import { v4 as uuidv4 } from "uuid";
+import User from "./models/User.js";  // Ensure correct path to User model
 import userRoutes from "./routes/userRoutes.js";
 import { cleanEnv, str, port } from "envalid";
 
 dotenv.config();
 
-// 🔹 Validate environment variables
+// Environment validation - FIXED to include MONGO_URI
 const env = cleanEnv(process.env, {
-  PORT: port({ default: 5000 }),
-  MONGO_URI: str({ default: "mongodb://127.0.0.1:27017/mindcare" }),
-  JWT_SECRET: str(),
-  GOOGLE_CLIENT_ID: str(),
-  GOOGLE_CLIENT_SECRET: str(),
-  FACEBOOK_CLIENT_ID: str(),
-  FACEBOOK_CLIENT_SECRET: str(),
+  MONGO_URI: str({ desc: 'MongoDB connection string' }),
+  PORT: port({ default: 5000, desc: 'Server port' })
+  // Include any other environment variables you're using
 });
 
 const app = express();
 
-// 🔹 CORS Configuration for React Native
+// CORS and middleware
 app.use(cors({
   origin: ['http://localhost:19006', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
+// Multer configuration for file upload
+const upload = multer({
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB file size limit
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only JPEG, PNG, and GIF are allowed.'));
+    }
+  }
+});
+
+// Health check endpoint for Express server
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+// Image upload route
+app.post('/api/upload-profile-image', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file provided.'
+      });
+    }
+
+    // Assuming you want to associate the image with a user
+    const userId = req.body.userId; // You'll need to send userId from the client
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found.'
+      });
+    }
+
+    // Update user with profile image
+    user.profileImage = {
+      name: `${uuidv4()}.${req.file.mimetype.split('/')[1]}`,
+      data: req.file.buffer,
+      contentType: req.file.mimetype
+    };
+
+    await user.save();
+
+    return res.status(201).json({
+      success: true,
+      message: 'Profile image uploaded successfully.',
+      imageName: user.profileImage.name
+    });
+  } catch (error) {
+    console.error('Image upload error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error uploading image',
+      error: error.message
+    });
+  }
+});
+
+// Existing routes
 app.use("/api/auth", userRoutes);
 
-// ✅ Connexion MongoDB améliorée avec options
+// MongoDB connection and server start
 mongoose
   .connect(env.MONGO_URI, {
     useNewUrlParser: true,
@@ -45,16 +110,4 @@ mongoose
   })
   .catch((error) => console.error("❌ MongoDB Error:", error.message));
 
-// Handle MongoDB connection errors after initial connection
-mongoose.connection.on('error', (err) => {
-  console.error('❌ MongoDB connection error:', err);
-});
-
-// Route de test
-app.get("/", async (req, res) => {
-  try {
-    res.json({ message: "MindCare AI Backend is running 🚀" });
-  } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
+export default app;

@@ -150,27 +150,42 @@ const VitalSignsScreen = () => {
           setMessage('No face detected. Please center your face');
         } else {
           setFaceDetected(true);
-          setMessage('Face detected - analyzing vital signs');
           
-          // Update measurements with smoothing
+          // Update status message based on the status field
+          if (response.data.status === 'calculating') {
+            setMessage('Face detected - calculating vital signs...');
+          } else if (response.data.status === 'collecting_data') {
+            setMessage('Face detected - collecting more data...');
+          } else if (response.data.status === 'success') {
+            setMessage('Face detected - analyzing vital signs');
+          }
+          
+          // Update measurements with smoothing - safely handle null values
           const newHeartRate = response.data.heart_rate;
           const newSystolic = response.data.systolic_bp;
           const newDiastolic = response.data.diastolic_bp;
           
-          setHeartRate(prev => {
-            if (prev === '--') return newHeartRate.toString();
-            return Math.round((parseInt(prev) * 0.7) + (newHeartRate * 0.3)).toString();
-          });
+          // Only update if values are not null
+          if (newHeartRate !== null && newHeartRate !== undefined) {
+            setHeartRate(prev => {
+              if (prev === '--') return newHeartRate.toString();
+              return Math.round((parseInt(prev) * 0.7) + (newHeartRate * 0.3)).toString();
+            });
+          }
           
-          setSystolicBP(prev => {
-            if (prev === '--') return newSystolic.toString();
-            return Math.round((parseInt(prev) * 0.7) + (newSystolic * 0.3)).toString();
-          });
+          if (newSystolic !== null && newSystolic !== undefined) {
+            setSystolicBP(prev => {
+              if (prev === '--') return newSystolic.toString();
+              return Math.round((parseInt(prev) * 0.7) + (newSystolic * 0.3)).toString();
+            });
+          }
           
-          setDiastolicBP(prev => {
-            if (prev === '--') return newDiastolic.toString();
-            return Math.round((parseInt(prev) * 0.7) + (newDiastolic * 0.3)).toString();
-          });
+          if (newDiastolic !== null && newDiastolic !== undefined) {
+            setDiastolicBP(prev => {
+              if (prev === '--') return newDiastolic.toString();
+              return Math.round((parseInt(prev) * 0.7) + (newDiastolic * 0.3)).toString();
+            });
+          }
         }
       }
     } catch (error) {

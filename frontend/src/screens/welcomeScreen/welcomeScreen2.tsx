@@ -2,13 +2,13 @@ import { colors, images } from '@/src/theme';
 import React from 'react';
 import { StyleSheet, View, Text, SafeAreaView, TouchableOpacity, Image } from 'react-native';
 import { Svg, Path } from 'react-native-svg';
-import { RootStackParamList } from '../../navigation/WelcomeStackNavigation';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+import { WelcomeStackParamList } from '@/src/navigation/WelcomeNavigation';
+type NavigationProp = NativeStackNavigationProp<WelcomeStackParamList>;
 
 export default function WelcomeScreen2() {
-    const navigation = useNavigation<NavigationProp>();
+  const navigation = useNavigation<NavigationProp>();
   return (
     <SafeAreaView style={styles.container}>
       {/* Step Indicator */}
@@ -20,8 +20,8 @@ export default function WelcomeScreen2() {
 
       {/* Illustration */}
       <View style={styles.illustrationContainer}>
-        <Image 
-          source={images.stepOne} 
+        <Image
+          source={images.stepOne}
           style={styles.illustration}
           resizeMode="cover"
         />
@@ -45,9 +45,9 @@ export default function WelcomeScreen2() {
         {/* Navigation Button */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.navButton} onPress={() => navigation.navigate('WelcomeScreen3')}>
-          <Svg width="81" height="80" viewBox="0 0 81 80" fill="none">
-              <Path d="M0.5 40C0.5 17.91 17.91 0.5 40 0.5C62.09 0.5 80 17.91 80 40C80 62.09 62.09 80 40 80C17.91 80 0.5 62.09 0.5 40Z" fill="#4F3422"/>
-              <Path d="M48.4335 33.9124C47.0934 32.166 45.2145 30.9105 43.0882 30.3408L42.5706 32.2726C44.2716 32.7284 45.7748 33.7328 46.8468 35.1299C47.7145 36.2607 48.2606 37.5977 48.4373 39L30.5 39V41L48.4373 41C48.2606 42.4024 47.7145 43.7393 46.8468 44.8701C45.7748 46.2673 44.2716 47.2716 42.5706 47.7274L43.0882 49.6593C45.2145 49.0895 47.0934 47.8341 48.4335 46.0876C49.7736 44.3412 50.5 42.2014 50.5 40C50.5 37.7987 49.7736 35.6588 48.4335 33.9124Z" fill="white"/>
+            <Svg width="81" height="80" viewBox="0 0 81 80" fill="none">
+              <Path d="M0.5 40C0.5 17.91 17.91 0.5 40 0.5C62.09 0.5 80 17.91 80 40C80 62.09 62.09 80 40 80C17.91 80 0.5 62.09 0.5 40Z" fill="#4F3422" />
+              <Path d="M48.4335 33.9124C47.0934 32.166 45.2145 30.9105 43.0882 30.3408L42.5706 32.2726C44.2716 32.7284 45.7748 33.7328 46.8468 35.1299C47.7145 36.2607 48.2606 37.5977 48.4373 39L30.5 39V41L48.4373 41C48.2606 42.4024 47.7145 43.7393 46.8468 44.8701C45.7748 46.2673 44.2716 47.2716 42.5706 47.7274L43.0882 49.6593C45.2145 49.0895 47.0934 47.8341 48.4335 46.0876C49.7736 44.3412 50.5 42.2014 50.5 40C50.5 37.7987 49.7736 35.6588 48.4335 33.9124Z" fill="white" />
             </Svg>
           </TouchableOpacity>
         </View>

@@ -3,77 +3,77 @@ import { colors, fonts, images } from '@/src/theme';
 import React from 'react';
 import { StyleSheet, View, Text, SafeAreaView, TouchableOpacity, Image } from 'react-native';
 import { Svg, Circle, Path } from 'react-native-svg';
-import { RootStackParamList } from '../../navigation/WelcomeStackNavigation';
+import { WelcomeStackParamList } from '../../navigation/WelcomeNavigation';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type NavigationProp = NativeStackNavigationProp<WelcomeStackParamList>;
 
 
 
 export default function WelcomeScreen3() {
-    const navigation = useNavigation<NavigationProp>();
-    const Emoji = ({ type, style }: { type: 'sad' | 'neutral' | 'dead', style?: any }) => {
-        switch (type) {
-          case 'sad':
-            return (
-              <View style={style}>
-                <Svg width="60" height="60" viewBox="0 0 50 50">
-                  <Circle
-                    cx="25"
-                    cy="25"
-                    r="20"
-                    fill="#ED7E1C"
-                    stroke="white" // Ajout du contour blanc
-                    strokeWidth="4" // Épaisseur du contour
-                  />
-                  <Circle cx="15" cy="20" r="3" fill="black" />
-                  <Circle cx="35" cy="20" r="3" fill="black" />
-                  <Path d="M15 35 Q25 25 35 35" stroke="black" strokeWidth="2" fill="none" />
-                </Svg>
-              </View>
-            );
-          case 'neutral':
-            return (
-              <View style={style}>
-                <Svg width="90" height="90" viewBox="0 0 50 50">
-                  <Circle
-                    cx="25"
-                    cy="25"
-                    r="20"
-                    fill="#C0A091"
-                    stroke="white" // Ajout du contour blanc
-                    strokeWidth="4" // Épaisseur du contour
-                  />
-                  <Circle cx="15" cy="20" r="3" fill="black" />
-                  <Circle cx="35" cy="20" r="3" fill="black" />
-                  <Path d="M15 35 L35 35" stroke="black" strokeWidth="2" />
-                </Svg>
-              </View>
-            );
-          case 'dead':
-            return (
-              <View style={style}>
-                <Svg width="60" height="60" viewBox="0 0 50 50">
-                  <Circle
-                    cx="25"
-                    cy="25"
-                    r="20"
-                    fill="#C2B1FF"
-                    stroke="white" // Ajout du contour blanc
-                    strokeWidth="4" // Épaisseur du contour
-                  />
-                  <Path d="M15 20 L20 25 L15 30" stroke="black" strokeWidth="2" />
-                  <Path d="M35 20 L30 25 L35 30" stroke="black" strokeWidth="2" />
-                  <Path d="M15 35 L35 35" stroke="black" strokeWidth="2" />
-                </Svg>
-              </View>
-            );
-          default:
-            return null;
-        }
-      };
-    
-    
+  const navigation = useNavigation<NavigationProp>();
+  const Emoji = ({ type, style }: { type: 'sad' | 'neutral' | 'dead', style?: any }) => {
+    switch (type) {
+      case 'sad':
+        return (
+          <View style={style}>
+            <Svg width="60" height="60" viewBox="0 0 50 50">
+              <Circle
+                cx="25"
+                cy="25"
+                r="20"
+                fill="#ED7E1C"
+                stroke="white" // Ajout du contour blanc
+                strokeWidth="4" // Épaisseur du contour
+              />
+              <Circle cx="15" cy="20" r="3" fill="black" />
+              <Circle cx="35" cy="20" r="3" fill="black" />
+              <Path d="M15 35 Q25 25 35 35" stroke="black" strokeWidth="2" fill="none" />
+            </Svg>
+          </View>
+        );
+      case 'neutral':
+        return (
+          <View style={style}>
+            <Svg width="90" height="90" viewBox="0 0 50 50">
+              <Circle
+                cx="25"
+                cy="25"
+                r="20"
+                fill="#C0A091"
+                stroke="white" // Ajout du contour blanc
+                strokeWidth="4" // Épaisseur du contour
+              />
+              <Circle cx="15" cy="20" r="3" fill="black" />
+              <Circle cx="35" cy="20" r="3" fill="black" />
+              <Path d="M15 35 L35 35" stroke="black" strokeWidth="2" />
+            </Svg>
+          </View>
+        );
+      case 'dead':
+        return (
+          <View style={style}>
+            <Svg width="60" height="60" viewBox="0 0 50 50">
+              <Circle
+                cx="25"
+                cy="25"
+                r="20"
+                fill="#C2B1FF"
+                stroke="white" // Ajout du contour blanc
+                strokeWidth="4" // Épaisseur du contour
+              />
+              <Path d="M15 20 L20 25 L15 30" stroke="black" strokeWidth="2" />
+              <Path d="M35 20 L30 25 L35 30" stroke="black" strokeWidth="2" />
+              <Path d="M15 35 L35 35" stroke="black" strokeWidth="2" />
+            </Svg>
+          </View>
+        );
+      default:
+        return null;
+    }
+  };
+
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Step Two Indicator */}
@@ -112,7 +112,7 @@ export default function WelcomeScreen3() {
         </View>
 
         {/* Next Button */}
-        <NextButton  onPress={() => navigation.navigate('WelcomeScreen4')} />
+        <NextButton onPress={() => navigation.navigate('WelcomeScreen4')} />
       </View>
     </SafeAreaView>
   );
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     padding: 50,
     alignItems: "center",
     width: "100%",
-  
+
   },
   progressBarContainer: {
     flexDirection: 'row',

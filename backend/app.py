@@ -168,7 +168,7 @@ def analyze_skin_color_variations(face_info):
             'metrics': {}
         }
 
-def estimate_bp(heart_rate, age=30, weight_kg=70, height_cm=170, is_male=True):
+def estimate_bp(heart_rate, age=24, weight_kg=80, height_cm=180, is_male=True):
     """Estimate blood pressure based on heart rate and demographic factors"""
     try:
         if heart_rate is None:

@@ -2,16 +2,39 @@ import { images } from '@/src/theme';
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../../navigation/WelcomeStackNavigation';
-type NavigationProp = StackNavigationProp<RootStackParamList>;
+import { WelcomeStackParamList } from '../../navigation/WelcomeNavigation';
+
+// Update the WelcomeStackParamList type in the navigation file or extend it here
+type WelcomeScreenParams = {
+  onComplete?: () => void;
+};
+
+type NavigationProp = StackNavigationProp<WelcomeStackParamList>;
+type RouteProps = RouteProp<WelcomeStackParamList & {
+  WelcomeScreen6: WelcomeScreenParams;
+}, 'WelcomeScreen6'>;
+
 const WelcomeScreen6 = () => {
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<RouteProps>();
+  const { onComplete } = (route.params || {}) as WelcomeScreenParams;
+
+  // Function to handle completing the welcome flow
+  const handleComplete = () => {
+    // Call the callback from navigation params
+    if (onComplete) {
+      onComplete();
+    }
+
+    // Navigate to SignIn screen
+    navigation.navigate('SignIn');
+  };
+
   return (
     <View style={styles.container}>
       {/* Step Five Indicator */}
-      
       <View style={styles.stepButtonContainer}>
         <TouchableOpacity style={styles.stepButton}>
           <Text style={styles.stepText}>Step Five</Text>
@@ -20,10 +43,10 @@ const WelcomeScreen6 = () => {
 
       {/* Illustration */}
       <View style={styles.illustrationContainer}>
-        <Image 
-          source={images.WelcomeScreen6} // Replace with your image path
+        <Image
+          source={images.WelcomeScreen6}
           style={styles.illustration}
-          resizeMode="cover" 
+          resizeMode="cover"
         />
       </View>
 
@@ -43,7 +66,10 @@ const WelcomeScreen6 = () => {
 
         {/* Navigation Button */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.navButton} onPress={() => navigation.navigate('SignIn')}>
+          <TouchableOpacity
+            style={styles.navButton}
+            onPress={handleComplete}
+          >
             <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <Path d="M9 6 L15 12 L9 18" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </Svg>
@@ -58,14 +84,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5FF', // Light background color
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 40,
+    justifyContent: 'flex-start',
   },
   stepButtonContainer: {
     width: '100%',
     alignItems: 'center',
-    marginTop: 0,
+    marginTop: 50,
   },
   stepButton: {
     backgroundColor: 'transparent',
@@ -85,11 +109,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 0,
     width: '100%',// Make the image container take full width
-    height:'80%'
+    height: '50%'
   },
   illustration: {
     width: '100%', // Make the image take full width
-    height:'100%', // Adjust height as needed
+    height: '100%', // Adjust height as needed
     resizeMode: 'cover',
   },
   bottomContainer: {

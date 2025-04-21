@@ -8,7 +8,14 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/AppNavigator';
+
+// Define RootStackParamList type locally if it's not exported from AuthNavigator
+type RootStackParamList = {
+  SignIn: undefined;
+  SignUp: undefined;
+  ForgotPassword: undefined;
+  // Add other screens as needed
+};
 
 // Define navigation prop type
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;

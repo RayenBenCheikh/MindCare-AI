@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/AppNavigator'; // Adjust path as needed
+import { RootStackParamList } from '@/src/navigation/AuthNavigator'; // Adjust the import path as necessary
 import { colors } from '@/src/theme';
 
 // Define navigation prop type
@@ -69,7 +69,7 @@ const SignUpScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
+
       {/* Header with wave and logo */}
       <View style={styles.headerContainer}>
         <View style={styles.waveBg} />
@@ -86,14 +86,14 @@ const SignUpScreen = () => {
       {/* Content */}
       <View style={styles.content}>
         <Text style={styles.title}>Sign Up To MINDCARE-AI</Text>
-        
+
         {error ? (
           <View style={styles.errorContainer}>
             <Ionicons name="warning" size={20} color="#FFF" style={styles.warningIcon} />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
-        
+
         <View style={styles.formGroup}>
           <Text style={styles.label}>Email Address</Text>
           <View style={styles.inputContainer}>
@@ -108,7 +108,7 @@ const SignUpScreen = () => {
               autoCapitalize="none"
             />
           </View>
-          
+
           {!isEmailValid && email.length > 0 && (
             <View style={styles.errorContainer}>
               <Ionicons name="warning" size={20} color="#FFF" style={styles.warningIcon} />
@@ -153,7 +153,7 @@ const SignUpScreen = () => {
           </View>
         </View>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.signUpButton}
           onPress={handleSignUp}
           disabled={loading}

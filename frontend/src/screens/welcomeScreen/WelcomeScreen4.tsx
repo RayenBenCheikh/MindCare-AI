@@ -4,12 +4,12 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../../navigation/WelcomeStackNavigation';
-type NavigationProp = StackNavigationProp<RootStackParamList>;
+import { WelcomeStackParamList } from '../../navigation/WelcomeNavigation';
+type NavigationProp = StackNavigationProp<WelcomeStackParamList>;
 
 const WelcomeScreen4 = () => {
   const navigation = useNavigation<NavigationProp>();
-  
+
   return (
     <View style={styles.container}>
       {/* Step Three Indicator */}
@@ -21,10 +21,10 @@ const WelcomeScreen4 = () => {
 
       {/* Illustration */}
       <View style={styles.illustrationContainer}>
-        <Image 
+        <Image
           source={images.womenread} // Replace with your image path
           style={styles.illustration}
-          resizeMode="cover" 
+          resizeMode="cover"
         />
       </View>
 
@@ -38,15 +38,15 @@ const WelcomeScreen4 = () => {
 
         {/* Title Text */}
         <View style={styles.titleContainer}>
-        <Text style={styles.titleText}>AI
-          <Text style={styles.highlighttext}> Mental </Text>
-          <Text style={styles.titleText}>Journaling & AI Therapy Chatbot</Text>
+          <Text style={styles.titleText}>AI
+            <Text style={styles.highlighttext}> Mental </Text>
+            <Text style={styles.titleText}>Journaling & AI Therapy Chatbot</Text>
           </Text>
         </View>
 
         {/* Navigation Button */}
         <View style={styles.buttonContainer}>
-          <NextButton  onPress={() => navigation.navigate('WelcomeScreen5')} />
+          <NextButton onPress={() => navigation.navigate('WelcomeScreen5')} />
         </View>
       </View>
     </View>

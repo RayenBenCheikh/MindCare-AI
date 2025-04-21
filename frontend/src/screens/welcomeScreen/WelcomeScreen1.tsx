@@ -6,13 +6,19 @@ import { images } from '../../theme/images';
 import { fonts } from '../../theme/fonts';
 import { colors } from '@/src/theme';
 import ButtonPrimary from '@/src/components/ButtonPrimery';
-import { RootStackParamList } from '../../navigation/WelcomeStackNavigation';
+
+// Define the RootStackParamList type locally if not available in WelcomeNavigation
+type RootStackParamList = {
+  WelcomeScreen1: undefined;
+  WelcomeScreen2: undefined;
+  SignIn: undefined;
+};
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function WelcomeScreen1() {
   const navigation = useNavigation<NavigationProp>();
-  
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -21,14 +27,14 @@ export default function WelcomeScreen1() {
         <Text style={styles.subtitle}>MINDCARE-AI !</Text>
         <Text style={styles.description}>Your mindful mental health AI companion for everyone, anywhere 🍃</Text>
       </View>
-      
+
       <Image source={images.atmo} style={styles.illustration} />
-      
+
       <ButtonPrimary
         title="Get Started →"
         onPress={() => navigation.navigate('WelcomeScreen2')}
       />
-      
+
       <TouchableOpacity style={styles.signInLink} onPress={() => navigation.navigate('SignIn')}>
         <Text style={styles.description}>
           Already have an account? <Text style={styles.signInText}>Sign In.</Text>

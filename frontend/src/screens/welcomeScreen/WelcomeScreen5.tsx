@@ -4,14 +4,14 @@ import React from 'react';
 import { View, Text, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../../navigation/WelcomeStackNavigation';
+import { WelcomeStackParamList } from '../../navigation/WelcomeNavigation';
 // Define the navigation param list type
-type NavigationProp = StackNavigationProp<RootStackParamList>;
-  const navigation = useNavigation<NavigationProp>();
-const WelcomeScreen5 = () => {
+type NavigationProp = StackNavigationProp<WelcomeStackParamList>;
 
+const WelcomeScreen5 = () => {
+  const navigation = useNavigation<NavigationProp>();
   return (
-    <ImageBackground 
+    <ImageBackground
       source={images.WelcomeScreen5} // Background image
       style={styles.background}
       resizeMode="cover"
@@ -33,16 +33,24 @@ const WelcomeScreen5 = () => {
 
         {/* Title Text */}
         <View style={styles.titleContainer}>
-        <Text style={styles.titleText}>Mindful
-                   <Text style={styles.highlightedText}>Resources </Text>
-                   <Text >That Makes You Happy</Text>
-                   
-                 </Text>
+          <Text style={styles.titleText}>Mindful
+            <Text style={styles.highlightedText}>Resources </Text>
+            <Text >That Makes You Happy</Text>
+
+          </Text>
         </View>
 
         {/* Navigation Button */}
         <View style={styles.buttonContainer}>
-          <NextButton onPress={() => navigation.navigate('WelcomeScreen6')} />
+          <NextButton onPress={() => navigation.navigate({
+            name: 'WelcomeScreen6',
+            params: {
+              onComplete: () => {
+                // This function will be passed to WelcomeScreen6
+                console.log('Welcome flow completed');
+              }
+            }
+          })} />
         </View>
       </View>
     </ImageBackground>

@@ -8,15 +8,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
-// Define RootStackParamList type locally if it's not exported from AuthNavigator
-type RootStackParamList = {
-  SignIn: undefined;
-  SignUp: undefined;
-  ForgotPassword: undefined;
-  // Add other screens as needed
-};
-
+import { RootStackParamList } from '@/src/navigation/AuthNavigator'; // Adjust the import path as necessary
 // Define navigation prop type
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -68,7 +60,7 @@ const SignIn = () => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
+
       {/* Header with wave and logo */}
       <View style={styles.headerContainer}>
         <View style={styles.waveBg} />
@@ -208,69 +200,69 @@ const styles = StyleSheet.create({
     marginTop: 30,
     paddingHorizontal: 30,
   },
-  inputContainer: { 
-    width: '100%', 
-    marginBottom: 20 
+  inputContainer: {
+    width: '100%',
+    marginBottom: 20
   },
-  label: { 
-    fontSize: 14, 
-    color: colors.marron, 
-    marginBottom: 10, 
-    fontWeight: 'bold' 
+  label: {
+    fontSize: 14,
+    color: colors.marron,
+    marginBottom: 10,
+    fontWeight: 'bold'
   },
-  inputField: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    borderWidth: 1, 
-    borderRadius: 30, 
-    paddingHorizontal: 15, 
+  inputField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 30,
+    paddingHorizontal: 15,
     height: 60,
     backgroundColor: '#FFFFFF'
   },
   icon: { marginRight: 10 },
   inputText: { flex: 1, color: '#333', fontSize: 16 },
-  signInButton: { 
-    flexDirection: 'row', 
-    backgroundColor: '#5D4037', 
-    borderRadius: 30, 
-    paddingVertical: 15, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
+  signInButton: {
+    flexDirection: 'row',
+    backgroundColor: '#5D4037',
+    borderRadius: 30,
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 10,
-    marginBottom: 30 
+    marginBottom: 30
   },
   signInText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  socialButtons: { 
-    flexDirection: 'row', 
-    justifyContent: 'center', 
-    marginBottom: 30 
+  socialButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 30
   },
-  socialButton: { 
-    width: 60, 
-    height: 60, 
-    borderRadius: 30, 
-    backgroundColor: '#FFFFFF', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
+  socialButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginHorizontal: 15,
     borderWidth: 1,
     borderColor: '#E0E0E0'
   },
-  bottomText: { 
-    flexDirection: 'row', 
+  bottomText: {
+    flexDirection: 'row',
     justifyContent: 'center',
     marginBottom: 5
   },
   bottomTextNormal: { fontSize: 16, color: '#666' },
   bottomTextLink: { fontSize: 16, color: colors.orange, fontWeight: 'bold' },
-  forgotPassword: { 
+  forgotPassword: {
     alignItems: 'center'
   },
-  forgotPasswordText: { 
-    fontSize: 16, 
-    color: colors.orange, 
-    textAlign: 'center', 
-    fontWeight: 'bold' 
+  forgotPasswordText: {
+    fontSize: 16,
+    color: colors.orange,
+    textAlign: 'center',
+    fontWeight: 'bold'
   },
   errorContainer: {
     flexDirection: 'row',

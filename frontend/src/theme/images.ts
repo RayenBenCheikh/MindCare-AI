@@ -12,4 +12,6 @@ dead: require("../assets/img/dead.png"),
 womenread:require("../assets/img/womenread.png"),
 WelcomeScreen5: require("../assets/img/WelcomeScreen5.png"),
 WelcomeScreen6: require("../assets/img/WelcomeScreen6.png"),
+maleScreen: require("../assets/img/maleScreen.png"),
+FemaleScreen: require("../assets/img/FemaleScreen.png"),
 };

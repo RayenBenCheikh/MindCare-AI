@@ -18,6 +18,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    gender: {
+        type: String,
+        enum: ['male', 'female', 'prefer_not_to_say'],
+        default: 'prefer_not_to_say'
+    },
     profileImage: {
         name: { type: String },
         data: { type: Buffer },

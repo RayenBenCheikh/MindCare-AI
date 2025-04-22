@@ -214,5 +214,36 @@ router.post("/facebook-login", async (req, res) => {
         res.status(500).json({ message: "Server error", error: error.message });
     }
 });
+router.post(
+    "/update-gender",
+    auth,  // This ensures the user is authenticated
+    async (req, res) => {
+        try {
+            const { gender } = req.body;
+
+            if (!['male', 'female', 'prefer_not_to_say'].includes(gender)) {
+                return res.status(400).json({ message: "Invalid gender value" });
+            }
+
+            const user = await User.findByIdAndUpdate(
+                req.user.id,
+                { gender },
+                { new: true }
+            ).select("-password");
+
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
+
+            res.json({
+                success: true,
+                message: "Gender updated successfully",
+                gender: user.gender
+            });
+        } catch (error) {
+            res.status(500).json({ message: "Server error", error: error.message });
+        }
+    }
+);
 
 export default router;

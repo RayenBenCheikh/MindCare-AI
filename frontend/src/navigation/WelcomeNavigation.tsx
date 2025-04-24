@@ -1,12 +1,13 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import WelcomeScreen1 from '../screens/WelcomeScreen/WelcomeScreen1';
-import WelcomeScreen2 from '../screens/WelcomeScreen/WelcomeScreen2';
-import WelcomeScreen3 from '../screens/WelcomeScreen/WelcomeScreen3';
-import WelcomeScreen4 from '../screens/WelcomeScreen/WelcomeScreen4';
-import WelcomeScreen5 from '../screens/WelcomeScreen/WelcomeScreen5';
-import WelcomeScreen6 from '../screens/WelcomeScreen/WelcomeScreen6';
+
 import SignIn from '../screens/Sign In & Sign Up/SignIn';
+import WelcomeScreen1 from '../screens/welcomeScreen/WelcomeScreen1';
+import WelcomeScreen2 from '../screens/welcomeScreen/welcomeScreen2';
+import WelcomeScreen3 from '../screens/welcomeScreen/WelcomeScreen3';
+import WelcomeScreen4 from '../screens/welcomeScreen/WelcomeScreen4';
+import WelcomeScreen5 from '../screens/welcomeScreen/WelcomeScreen5';
+import WelcomeScreen6 from '../screens/welcomeScreen/WelcomeScreen6';
 
 export type WelcomeStackParamList = {
   WelcomeScreen1: undefined;

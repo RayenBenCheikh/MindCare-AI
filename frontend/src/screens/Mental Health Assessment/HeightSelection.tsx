@@ -15,34 +15,59 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/MentalNavigator';
 import BackButton from '@/src/components/BackButton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const { width } = Dimensions.get('window');
 const RULER_WIDTH = width * 0.9;
 const MARKER_WIDTH = 2;
 const MARKER_SPACING = 15;
-const MIN_WEIGHT = 40;
-const MAX_WEIGHT = 200;
-const TOTAL_WEIGHTS = MAX_WEIGHT - MIN_WEIGHT + 1;
-const VISIBLE_WEIGHTS = 5; // Number of weights visible in the ruler
+const MIN_HEIGHT_CM = 100;
+const MAX_HEIGHT_CM = 220;
+const MIN_HEIGHT_FT = 3;  // 3'0"
+const MAX_HEIGHT_FT = 7;  // 7'3"
+const TOTAL_HEIGHTS_CM = MAX_HEIGHT_CM - MIN_HEIGHT_CM + 1;
 
-const WeightSelection: React.FC = () => {
-    const [weight, setWeight] = useState<number>(128);
-    const [unit, setUnit] = useState<'kg' | 'lbs'>('kg');
+const HeightSelection: React.FC = () => {
+    const [height, setHeight] = useState<number>(170); // Default height 170cm
+    const [unit, setUnit] = useState<'cm' | 'ft'>('cm');
     const navigation = useNavigation<NavigationProp>();
     const scrollX = useRef(new Animated.Value(0)).current;
     const startScrollX = useRef(0);
 
-    // Convert kg to lbs and vice versa
-    const convertWeight = (weight: number, fromUnit: 'kg' | 'lbs', toUnit: 'kg' | 'lbs') => {
-        if (fromUnit === toUnit) return weight;
-        return fromUnit === 'kg'
-            ? Math.round(weight * 2.20462)
-            : Math.round(weight / 2.20462);
+    // Convert height between cm and feet/inches
+    const convertHeight = (heightVal: number, fromUnit: 'cm' | 'ft', toUnit: 'cm' | 'ft') => {
+        if (fromUnit === toUnit) return heightVal;
+
+        if (fromUnit === 'cm' && toUnit === 'ft') {
+            // Convert cm to total inches, then convert to feet and inches
+            const totalInches = heightVal / 2.54;
+            const feet = Math.floor(totalInches / 12);
+            const inches = Math.round(totalInches % 12);
+            // Return in special format for display: feet * 100 + inches
+            return feet * 100 + inches;
+        } else {
+            // Convert from feet/inches format to cm
+            const feet = Math.floor(heightVal / 100);
+            const inches = heightVal % 100;
+            const totalInches = feet * 12 + inches;
+            return Math.round(totalInches * 2.54);
+        }
+    };
+
+    // Format height for display
+    const formatHeightForDisplay = (heightVal: number) => {
+        if (unit === 'cm') {
+            return heightVal;
+        } else {
+            const feet = Math.floor(heightVal / 100);
+            const inches = heightVal % 100;
+            return `${feet}'${inches}"`;
+        }
     };
 
     // Initialize the slider position
-    const initialOffset = (weight - MIN_WEIGHT) * MARKER_SPACING;
+    const initialOffset = (height - MIN_HEIGHT_CM) * MARKER_SPACING;
     scrollX.setValue(-initialOffset);
 
     // Set up pan responder for slider
@@ -57,16 +82,22 @@ const WeightSelection: React.FC = () => {
             },
             onPanResponderMove: (_, gestureState) => {
                 const newPosition = startScrollX.current + gestureState.dx;
-                const minPosition = -(TOTAL_WEIGHTS - 1) * MARKER_SPACING;
+                const minPosition = -(TOTAL_HEIGHTS_CM - 1) * MARKER_SPACING;
                 const maxPosition = 0;
 
                 const boundedPosition = Math.max(minPosition, Math.min(newPosition, maxPosition));
                 scrollX.setValue(boundedPosition);
 
-                // Update weight based on position
-                const calculatedWeight = MIN_WEIGHT - Math.round(boundedPosition / MARKER_SPACING);
-                if (calculatedWeight !== weight) {
-                    setWeight(calculatedWeight);
+                // Update height based on position
+                const calculatedHeight = MIN_HEIGHT_CM - Math.round(boundedPosition / MARKER_SPACING);
+                if (calculatedHeight !== height && unit === 'cm') {
+                    setHeight(calculatedHeight);
+                } else if (unit === 'ft') {
+                    // Converting the cm value to feet/inches
+                    const feetInchFormat = convertHeight(calculatedHeight, 'cm', 'ft');
+                    if (feetInchFormat !== height) {
+                        setHeight(feetInchFormat);
+                    }
                 }
             },
             onPanResponderRelease: () => { },
@@ -74,10 +105,10 @@ const WeightSelection: React.FC = () => {
     ).current;
 
     // Change unit handler
-    const handleUnitChange = (newUnit: 'kg' | 'lbs') => {
+    const handleUnitChange = (newUnit: 'cm' | 'ft') => {
         if (unit !== newUnit) {
-            const newWeight = convertWeight(weight, unit, newUnit);
-            setWeight(newWeight);
+            const newHeight = convertHeight(height, unit, newUnit);
+            setHeight(newHeight);
             setUnit(newUnit);
         }
     };
@@ -85,14 +116,22 @@ const WeightSelection: React.FC = () => {
     // Continue handler
     const handleContinue = async () => {
         try {
-            // Store weight in AsyncStorage
-            await AsyncStorage.setItem('userWeight', weight.toString());
-            await AsyncStorage.setItem('userWeightUnit', unit);
+            // Store height in AsyncStorage
+            if (unit === 'cm') {
+                await AsyncStorage.setItem('userHeight', height.toString());
+                await AsyncStorage.setItem('userHeightUnit', 'cm');
+            } else {
+                // Store both the feet-inch format and the cm equivalent
+                await AsyncStorage.setItem('userHeight', height.toString());
+                await AsyncStorage.setItem('userHeightUnit', 'ft');
+                const cmHeight = convertHeight(height, 'ft', 'cm');
+                await AsyncStorage.setItem('userHeightCm', cmHeight.toString());
+            }
 
             // Navigate to next screen
-            navigation.navigate('HeigherSelection'); // Replace with your next screen name
+            navigation.navigate('MoodSelection');
         } catch (error) {
-            console.error('Error saving weight:', error);
+            console.error('Error saving height:', error);
         }
     };
 
@@ -100,8 +139,8 @@ const WeightSelection: React.FC = () => {
     const renderRulerMarkers = () => {
         const markers = [];
 
-        for (let i = 0; i <= TOTAL_WEIGHTS; i++) {
-            const markerWeight = MIN_WEIGHT + i;
+        for (let i = 0; i <= TOTAL_HEIGHTS_CM; i++) {
+            const markerHeight = MIN_HEIGHT_CM + i;
             const isMainMarker = i % 5 === 0;
 
             markers.push(
@@ -117,7 +156,11 @@ const WeightSelection: React.FC = () => {
                     ]}
                 >
                     {isMainMarker && (
-                        <Text style={styles.markerText}>{markerWeight}</Text>
+                        <Text style={styles.markerText}>
+                            {unit === 'cm'
+                                ? markerHeight
+                                : formatHeightForDisplay(convertHeight(markerHeight, 'cm', 'ft'))}
+                        </Text>
                     )}
                 </View>
             );
@@ -135,49 +178,56 @@ const WeightSelection: React.FC = () => {
                 <BackButton onPress={() => navigation.goBack()} />
                 <Text style={styles.headerText}>Assessment</Text>
                 <View style={styles.progressPill}>
-                    <Text style={styles.progressText}>4 of 14</Text>
+                    <Text style={styles.progressText}>5 of 14</Text>
                 </View>
             </View>
 
             {/* Title */}
-            <Text style={styles.titleText}>What's your weight?</Text>
+            <Text style={styles.titleText}>What's your height?</Text>
 
             {/* Unit Selector */}
             <View style={styles.unitSelectorContainer}>
                 <TouchableOpacity
                     style={[
                         styles.unitButton,
-                        unit === 'kg' && styles.activeUnitButton
+                        unit === 'cm' && styles.activeUnitButton
                     ]}
-                    onPress={() => handleUnitChange('kg')}
+                    onPress={() => handleUnitChange('cm')}
                 >
                     <Text style={[
                         styles.unitButtonText,
-                        unit === 'kg' && styles.activeUnitButtonText
-                    ]}>kg</Text>
+                        unit === 'cm' && styles.activeUnitButtonText
+                    ]}>cm</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[
                         styles.unitButton,
-                        unit === 'lbs' && styles.activeUnitButton
+                        unit === 'ft' && styles.activeUnitButton
                     ]}
-                    onPress={() => handleUnitChange('lbs')}
+                    onPress={() => handleUnitChange('ft')}
                 >
                     <Text style={[
                         styles.unitButtonText,
-                        unit === 'lbs' && styles.activeUnitButtonText
-                    ]}>lbs</Text>
+                        unit === 'ft' && styles.activeUnitButtonText
+                    ]}>ft</Text>
                 </TouchableOpacity>
             </View>
 
-            {/* Weight Display */}
-            <View style={styles.weightDisplayContainer}>
-                <Text style={styles.weightText}>{weight}</Text>
-                <Text style={styles.unitText}>{unit}</Text>
+            {/* Height Display */}
+            <View style={styles.heightDisplayContainer}>
+                <Text style={styles.heightText}>
+                    {unit === 'cm' ? height : Math.floor(height / 100)}
+                </Text>
+                {unit === 'ft' && (
+                    <Text style={styles.inchesText}>{height % 100}"</Text>
+                )}
+                {unit === 'cm' && (
+                    <Text style={styles.unitText}>{unit}</Text>
+                )}
             </View>
 
-            {/* Weight Ruler */}
+            {/* Height Ruler */}
             <View style={styles.rulerContainer}>
                 <Animated.View
                     style={[
@@ -267,17 +317,23 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         opacity: 1,
     },
-    weightDisplayContainer: {
+    heightDisplayContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'flex-end',
         marginBottom: 50,
     },
-    weightText: {
+    heightText: {
         fontSize: 120,
         fontWeight: 'bold',
         color: '#5D4037',
         lineHeight: 130,
+    },
+    inchesText: {
+        fontSize: 60,
+        fontWeight: 'bold',
+        color: '#5D4037',
+        marginBottom: 25,
     },
     unitText: {
         fontSize: 40,
@@ -343,4 +399,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default WeightSelection;
+export default HeightSelection;

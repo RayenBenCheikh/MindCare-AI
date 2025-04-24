@@ -1,6 +1,5 @@
-// navigation/AppNavigator.js
+// navigation/AuthNavigator.tsx
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import SignUpScreen from '../screens/Sign In & Sign Up/SignUp'; // Adjust path as needed
 import SignInScreen from '../screens/Sign In & Sign Up/SignIn'; // You'll create this later

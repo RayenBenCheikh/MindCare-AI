@@ -1,35 +1,16 @@
 import { images } from '@/src/theme';
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { WelcomeStackParamList } from '../../navigation/WelcomeNavigation';
+import { AuthContext } from '@/src/context/AuthContext';
 
-// Update the WelcomeStackParamList type in the navigation file or extend it here
-type WelcomeScreenParams = {
-  onComplete?: () => void;
-};
-
-type NavigationProp = StackNavigationProp<WelcomeStackParamList>;
-type RouteProps = RouteProp<WelcomeStackParamList & {
-  WelcomeScreen6: WelcomeScreenParams;
-}, 'WelcomeScreen6'>;
 
 const WelcomeScreen6 = () => {
-  const navigation = useNavigation<NavigationProp>();
-  const route = useRoute<RouteProps>();
-  const { onComplete } = (route.params || {}) as WelcomeScreenParams;
+  const { completeWelcome } = useContext(AuthContext);
 
   // Function to handle completing the welcome flow
   const handleComplete = () => {
-    // Call the callback from navigation params
-    if (onComplete) {
-      onComplete();
-    }
-
-    // Navigate to SignIn screen
-    navigation.navigate('SignIn');
+    completeWelcome()
   };
 
   return (

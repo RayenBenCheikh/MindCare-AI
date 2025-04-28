@@ -1,9 +1,9 @@
 import React from 'react';
 import { Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { colors,fonts } from '@/src/theme'; // Assurez-vous que le chemin est correct
+import { colors, fonts } from '@/src/theme'; // Assurez-vous que le chemin est correct
 
 
-  
+
 interface ButtonPrimaryProps {
   title: string;
   onPress: () => void;
@@ -16,17 +16,17 @@ export default function ButtonPrimary({ title, onPress }: ButtonPrimaryProps) {
     </TouchableOpacity>
   );
 }
-  
-  const styles = StyleSheet.create({
-    button: {
-      backgroundColor: colors.marron,
-      paddingVertical: 15,
-      paddingHorizontal: 30,
-      borderRadius: 30,
-    },
-    buttonText: {
-      color: colors.white,
-      fontSize: 18,
-      fontWeight: fonts.extraBold,
-    },
-  });
+
+const styles = StyleSheet.create({
+  button: {
+    backgroundColor: colors.marron,
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 30,
+  },
+  buttonText: {
+    color: colors.white,
+    fontSize: 18,
+    fontWeight: fonts.extraBold,
+  },
+});

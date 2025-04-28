@@ -6,15 +6,9 @@ import { images } from '../../theme/images';
 import { fonts } from '../../theme/fonts';
 import { colors } from '@/src/theme';
 import ButtonPrimary from '@/src/components/ButtonPrimery';
+import { WelcomeStackParamList } from '../../navigation/WelcomeNavigation';
 
-// Define the RootStackParamList type locally if not available in WelcomeNavigation
-type RootStackParamList = {
-  WelcomeScreen1: undefined;
-  WelcomeScreen2: undefined;
-  SignIn: undefined;
-};
-
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type NavigationProp = NativeStackNavigationProp<WelcomeStackParamList>;
 
 export default function WelcomeScreen1() {
   const navigation = useNavigation<NavigationProp>();

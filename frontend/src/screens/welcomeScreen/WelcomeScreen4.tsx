@@ -5,6 +5,8 @@ import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { WelcomeStackParamList } from '../../navigation/WelcomeNavigation';
+import { commonWelcomeStyles } from '@/src/theme/style';
+
 type NavigationProp = StackNavigationProp<WelcomeStackParamList>;
 
 const WelcomeScreen4 = () => {
@@ -22,9 +24,8 @@ const WelcomeScreen4 = () => {
       {/* Illustration */}
       <View style={styles.illustrationContainer}>
         <Image
-          source={images.womenread} // Replace with your image path
+          source={images.womenread}
           style={styles.illustration}
-          resizeMode="cover"
         />
       </View>
 
@@ -32,14 +33,14 @@ const WelcomeScreen4 = () => {
       <View style={styles.bottomContainer}>
         {/* Progress Bar */}
         <View style={styles.progressBarContainer}>
-          <View style={styles.progressBarFilled} />
-          <View style={styles.progressBarEmpty} />
+          <View style={[styles.progressBarFilled, { flex: 3 }]} />
+          <View style={[styles.progressBarEmpty, { flex: 2 }]} />
         </View>
 
         {/* Title Text */}
         <View style={styles.titleContainer}>
           <Text style={styles.titleText}>AI
-            <Text style={styles.highlighttext}> Mental </Text>
+            <Text style={styles.highlightText}> Mental </Text>
             <Text style={styles.titleText}>Journaling & AI Therapy Chatbot</Text>
           </Text>
         </View>
@@ -54,96 +55,21 @@ const WelcomeScreen4 = () => {
 };
 
 const styles = StyleSheet.create({
+  ...commonWelcomeStyles,
   container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5', // Adjust background color as needed
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 40,
+    ...commonWelcomeStyles.container,
+    backgroundColor: '#F5F5F5', // Keep unique background color
   },
-  stepButtonContainer: {
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  stepButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: colors.marron, // Adjust border color as needed
-    borderRadius: 50,
-    paddingVertical: 10,
-    paddingHorizontal: 30,
-  },
-  stepText: {
-    color: colors.marron, // Adjust text color as needed
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  illustrationContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-  },
-  illustration: {
-    width: 410, // Adjust width as needed
-    height: 300, // Adjust height as needed
-  },
-  bottomContainer: {
-    flex: 2,
-    backgroundColor: colors.white,
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    padding: 20,
-    alignItems: "center",
-    width: "100%",
-  },
-  progressBarContainer: {
-    flexDirection: "row",
-    width: "60%",
-    height: 6,
-    borderRadius: 3,
-    marginBottom: 20,
-    overflow: "hidden",
-  },
-  progressBarFilled: {
-    flex: 3,
-    backgroundColor: colors.marron, // Adjust progress bar filled color as needed
-  },
-  progressBarEmpty: {
-    flex: 2,
-    backgroundColor: "#E8DDD9", // Adjust progress bar empty color as needed
-  },
-  titleContainer: {
-    alignItems: 'center',
-    marginTop: 40,
+  highlightText: {
+    color: '#736B66',
   },
   titleText: {
-    fontSize: 30, // Adjust font size as needed
+    fontSize: 30,
+    color: colors.marron,
+  },
+  highlightedText: {
     fontWeight: 'bold',
-    color: colors.marron, // Adjust text color as needed
-    textAlign: 'center',
-    lineHeight: 36, // Adjust line height as needed
-  },
-  highlighttext: {
-
-    color: '#736B66', // You can use a different color for highlight
-  },
-  buttonContainer: {
-    marginTop: 100,
-  },
-  navButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.marron, // Adjust button color as needed
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  nextButtonText: {
-    color: colors.white,
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
+    color: "#736B66",
+  }
 });
-
 export default WelcomeScreen4;

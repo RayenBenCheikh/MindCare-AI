@@ -9,11 +9,9 @@ import MentalNavigator from './src/navigation/MentalNavigator';
 export default function App() {
   return (
     <NavigationContainer>
-      <MentalNavigator />
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
     </NavigationContainer>
-    //<GenderSelection />
   );
 }
-/*<AuthProvider>
-        <RootNavigator />
-      </AuthProvider>*/

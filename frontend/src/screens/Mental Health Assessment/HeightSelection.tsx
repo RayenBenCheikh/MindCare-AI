@@ -14,7 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/MentalNavigator';
 import BackButton from '@/src/components/BackButton';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAssessmentStore } from '@/src/store/Store';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -29,11 +29,14 @@ const MAX_HEIGHT_FT = 7;  // 7'3"
 const TOTAL_HEIGHTS_CM = MAX_HEIGHT_CM - MIN_HEIGHT_CM + 1;
 
 const HeightSelection: React.FC = () => {
-    const [height, setHeight] = useState<number>(170); // Default height 170cm
+    const [heightValue, setHeightValue] = useState<number>(170); // Default height 170cm
     const [unit, setUnit] = useState<'cm' | 'ft'>('cm');
     const navigation = useNavigation<NavigationProp>();
     const scrollX = useRef(new Animated.Value(0)).current;
     const startScrollX = useRef(0);
+
+    // Get the setHeight action from Zustand store
+    const updateHeightInStore = useAssessmentStore(state => state.setHeight);
 
     // Convert height between cm and feet/inches
     const convertHeight = (heightVal: number, fromUnit: 'cm' | 'ft', toUnit: 'cm' | 'ft') => {
@@ -67,7 +70,7 @@ const HeightSelection: React.FC = () => {
     };
 
     // Initialize the slider position
-    const initialOffset = (height - MIN_HEIGHT_CM) * MARKER_SPACING;
+    const initialOffset = (heightValue - MIN_HEIGHT_CM) * MARKER_SPACING;
     scrollX.setValue(-initialOffset);
 
     // Set up pan responder for slider
@@ -90,13 +93,13 @@ const HeightSelection: React.FC = () => {
 
                 // Update height based on position
                 const calculatedHeight = MIN_HEIGHT_CM - Math.round(boundedPosition / MARKER_SPACING);
-                if (calculatedHeight !== height && unit === 'cm') {
-                    setHeight(calculatedHeight);
+                if (calculatedHeight !== heightValue && unit === 'cm') {
+                    setHeightValue(calculatedHeight);
                 } else if (unit === 'ft') {
                     // Converting the cm value to feet/inches
                     const feetInchFormat = convertHeight(calculatedHeight, 'cm', 'ft');
-                    if (feetInchFormat !== height) {
-                        setHeight(feetInchFormat);
+                    if (feetInchFormat !== heightValue) {
+                        setHeightValue(feetInchFormat);
                     }
                 }
             },
@@ -107,8 +110,8 @@ const HeightSelection: React.FC = () => {
     // Change unit handler
     const handleUnitChange = (newUnit: 'cm' | 'ft') => {
         if (unit !== newUnit) {
-            const newHeight = convertHeight(height, unit, newUnit);
-            setHeight(newHeight);
+            const newHeight = convertHeight(heightValue, unit, newUnit);
+            setHeightValue(newHeight);
             setUnit(newUnit);
         }
     };
@@ -116,16 +119,13 @@ const HeightSelection: React.FC = () => {
     // Continue handler
     const handleContinue = async () => {
         try {
-            // Store height in AsyncStorage
+            // Store height in Zustand store instead of AsyncStorage
             if (unit === 'cm') {
-                await AsyncStorage.setItem('userHeight', height.toString());
-                await AsyncStorage.setItem('userHeightUnit', 'cm');
+                updateHeightInStore(heightValue, 'cm');
             } else {
-                // Store both the feet-inch format and the cm equivalent
-                await AsyncStorage.setItem('userHeight', height.toString());
-                await AsyncStorage.setItem('userHeightUnit', 'ft');
-                const cmHeight = convertHeight(height, 'ft', 'cm');
-                await AsyncStorage.setItem('userHeightCm', cmHeight.toString());
+                // For feet/inches, also store the CM equivalent
+                const cmHeight = convertHeight(heightValue, 'ft', 'cm');
+                updateHeightInStore(heightValue, 'ft');
             }
 
             // Navigate to next screen
@@ -217,10 +217,10 @@ const HeightSelection: React.FC = () => {
             {/* Height Display */}
             <View style={styles.heightDisplayContainer}>
                 <Text style={styles.heightText}>
-                    {unit === 'cm' ? height : Math.floor(height / 100)}
+                    {unit === 'cm' ? heightValue : Math.floor(heightValue / 100)}
                 </Text>
                 {unit === 'ft' && (
-                    <Text style={styles.inchesText}>{height % 100}"</Text>
+                    <Text style={styles.inchesText}>{heightValue % 100}"</Text>
                 )}
                 {unit === 'cm' && (
                     <Text style={styles.unitText}>{unit}</Text>

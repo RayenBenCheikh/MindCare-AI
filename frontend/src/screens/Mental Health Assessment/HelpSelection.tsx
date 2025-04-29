@@ -13,8 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/MentalNavigator';
 import BackButton from '@/src/components/BackButton';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SvgXml } from 'react-native-svg';
+import { useAssessmentStore } from '@/src/store/Store';
 import { images } from '@/src/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -22,26 +21,29 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const { width } = Dimensions.get('window');
 
 const HelpSelection: React.FC = () => {
-    const [selectedOption, setSelectedOption] = useState<string | null>(null);
+    const [selectedOption, setSelectedOption] = useState<'yes' | 'no' | null>(null);
     const navigation = useNavigation<NavigationProp>();
 
-    const handleOptionSelect = (option: string) => {
+    // Get the correct function from store - FIXED
+    const setProfessionalHelp = useAssessmentStore(state => state.setProfessionalHelp);
+
+    const handleOptionSelect = (option: 'yes' | 'no') => {
         setSelectedOption(option);
     };
 
     const handleContinue = async () => {
         if (selectedOption) {
             try {
-                // Store the selected option
-                await AsyncStorage.setItem('professionalHelp', selectedOption);
-                // Navigate to the next screen
-                navigation.navigate('MoodSelection'); // Replace with your next screen
+                // Call the store function with the selected option - FIXED
+                setProfessionalHelp(selectedOption);
+
+                // Complete the assessment after this final question
+                navigation.navigate('AgeSelection'); // Change to your final screen
             } catch (error) {
                 console.error('Error saving selection:', error);
             }
         }
     };
-
 
     return (
         <SafeAreaView style={styles.container}>

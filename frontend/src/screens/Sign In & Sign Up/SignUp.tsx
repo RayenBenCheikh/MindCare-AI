@@ -48,7 +48,6 @@ const SignUpScreen = () => {
 
     try {
       const response = await axios.post('http://10.0.2.2:5000/api/auth/register', {
-        name: 'User', // You can add a name field to the form if needed
         email,
         password,
       });

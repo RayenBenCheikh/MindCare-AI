@@ -10,7 +10,7 @@ import {
     Dimensions,
     ActivityIndicator
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAssessmentStore } from '@/src/store/Store';
 import BackButton from '@/src/components/BackButton';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -32,7 +32,7 @@ const AgeSelection = () => {
     const [isLoading, setIsLoading] = useState(false);
     const navigation = useNavigation<NavigationProp>();
     const flatListRef = useRef<FlatList>(null);
-
+    const setAge = useAssessmentStore(state => state.setAge);
     // Find the index of the initially selected age (18)
     const initialIndex = ages.findIndex(age => age === selectedAge);
 
@@ -65,17 +65,8 @@ const AgeSelection = () => {
         setIsLoading(true);
 
         try {
-            // Store age locally
-            await AsyncStorage.setItem('userAge', selectedAge.toString());
-
-            // Try to update on server if user is logged in
-            const token = await AsyncStorage.getItem('userToken');
-
-            if (token) {
-                // You can implement the API call to update age on server here
-                // Similar to what we did for gender selection
-            }
-
+            // Save gender to Zustand store
+            setAge(selectedAge);
             // Navigate to the next screen
             navigation.navigate('WeightSelection');
         } catch (error) {

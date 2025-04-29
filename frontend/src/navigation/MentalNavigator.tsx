@@ -16,7 +16,7 @@ export type RootStackParamList = {
     AgeSelection: undefined;
     GenderSelection: undefined;
     WeightSelection: undefined;
-    HeigherSelection: undefined;
+    HeightSelection: undefined;
     MoodSelection: undefined;
     SleepSelection: undefined;
     HelpSelection: undefined;
@@ -30,7 +30,7 @@ const MentalNavigator = () => {
             <Stack.Screen name="GenderSelection" component={GenderSelection} options={{ headerShown: false }} />
             <Stack.Screen name="AgeSelection" component={AgeSelection} options={{ headerShown: false }} />
             <Stack.Screen name="WeightSelection" component={WeightSelection} options={{ headerShown: false }} />
-            <Stack.Screen name="HeigherSelection" component={HeightSelection} options={{ headerShown: false }} />
+            <Stack.Screen name="HeightSelection" component={HeightSelection} options={{ headerShown: false }} />
             <Stack.Screen name="MoodSelection" component={MoodSelection} options={{ headerShown: false }} />
             <Stack.Screen name="SleepSelection" component={SleepSelection} options={{ headerShown: false }} />
             <Stack.Screen name="HelpSelection" component={HelpSelection} options={{ headerShown: false }} />

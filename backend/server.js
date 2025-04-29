@@ -4,13 +4,14 @@ import cors from "cors";
 import dotenv from "dotenv";
 import multer from "multer";
 import { v4 as uuidv4 } from "uuid";
-import User from "./models/User.js";  // Ensure correct path to User model
+import User from "./models/User.js";
 import userRoutes from "./routes/userRoutes.js";
+import assessmentRoutes from "./routes/AssessmentRoutes.js";
 import { cleanEnv, str, port } from "envalid";
 
 dotenv.config();
 
-// Environment validation - FIXED to include MONGO_URI
+// Environment validation
 const env = cleanEnv(process.env, {
   MONGO_URI: str({ desc: 'MongoDB connection string' }),
   PORT: port({ default: 5000, desc: 'Server port' })
@@ -51,51 +52,14 @@ app.get('/health', (req, res) => {
 
 // Image upload route
 app.post('/api/upload-profile-image', upload.single('image'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'No file provided.'
-      });
-    }
-
-    // Assuming you want to associate the image with a user
-    const userId = req.body.userId; // You'll need to send userId from the client
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found.'
-      });
-    }
-
-    // Update user with profile image
-    user.profileImage = {
-      name: `${uuidv4()}.${req.file.mimetype.split('/')[1]}`,
-      data: req.file.buffer,
-      contentType: req.file.mimetype
-    };
-
-    await user.save();
-
-    return res.status(201).json({
-      success: true,
-      message: 'Profile image uploaded successfully.',
-      imageName: user.profileImage.name
-    });
-  } catch (error) {
-    console.error('Image upload error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Error uploading image',
-      error: error.message
-    });
-  }
+  // Keep existing code...
 });
 
 // Existing routes
 app.use("/api/auth", userRoutes);
+
+// Add assessment routes
+app.use("/api/assessment", assessmentRoutes);
 
 // MongoDB connection and server start
 mongoose

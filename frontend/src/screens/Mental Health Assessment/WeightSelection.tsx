@@ -14,7 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/MentalNavigator';
 import BackButton from '@/src/components/BackButton';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAssessmentStore } from '@/src/store/Store';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const { width } = Dimensions.get('window');
@@ -25,7 +25,7 @@ const MIN_WEIGHT = 40;
 const MAX_WEIGHT = 200;
 const TOTAL_WEIGHTS = MAX_WEIGHT - MIN_WEIGHT + 1;
 const VISIBLE_WEIGHTS = 5; // Number of weights visible in the ruler
-
+const updateWeight = useAssessmentStore(state => state.setWeight);
 const WeightSelection: React.FC = () => {
     const [weight, setWeight] = useState<number>(128);
     const [unit, setUnit] = useState<'kg' | 'lbs'>('kg');
@@ -34,6 +34,7 @@ const WeightSelection: React.FC = () => {
     const scrollXValue = useRef(0);
     const startScrollX = useRef(0);
     const animationIsRunning = useRef(false);
+    const updateWeightInStore = useAssessmentStore(state => state.setWeight);
 
     // Add listener to track scrollX value
     useEffect(() => {
@@ -137,10 +138,8 @@ const WeightSelection: React.FC = () => {
     // Continue handler
     const handleContinue = async () => {
         try {
-            // Store weight in AsyncStorage
-            await AsyncStorage.setItem('userWeight', weight.toString());
-            await AsyncStorage.setItem('userWeightUnit', unit);
-
+            // Save weight to Zustand store
+            updateWeightInStore(weight, unit);
             // Navigate to next screen
             navigation.navigate('HeigherSelection'); // Replace with your next screen name
         } catch (error) {

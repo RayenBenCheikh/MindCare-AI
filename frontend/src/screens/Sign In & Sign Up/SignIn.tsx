@@ -7,9 +7,9 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/src/navigation/AuthNavigator'; // Adjust the import path as necessary
+import { AuthStackParamList } from '@/src/navigation/AuthNavigator'; // Adjust the import path as necessary
 // Define navigation prop type
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
 const SignIn = () => {
   const [email, setEmail] = useState('');

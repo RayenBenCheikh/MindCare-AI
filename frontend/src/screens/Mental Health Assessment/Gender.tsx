@@ -13,12 +13,11 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { SvgXml } from 'react-native-svg';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/MentalNavigator'; // Adjust the import path as necessary
-
+import { useAssessmentStore } from '@/src/store/Store';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 // Gender symbol icons
@@ -38,6 +37,9 @@ const GenderSelection = () => {
   const [selectedGender, setSelectedGender] = useState<'male' | 'female' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigation = useNavigation<NavigationProp>();
+  // Get the setGender action from Zustand
+  const setGender = useAssessmentStore(state => state.setGender);
+
   const handleGenderSelection = (gender: 'male' | 'female') => {
     setSelectedGender(gender);
   };
@@ -46,25 +48,8 @@ const GenderSelection = () => {
 
     setIsLoading(true);
     try {
-      // First, store locally in case user isn't authenticated yet
-      await AsyncStorage.setItem('userGender', selectedGender);
-
-      // Try to get auth token - if available, update on server
-      const token = await AsyncStorage.getItem('userToken');
-
-      if (token) {
-        // User is authenticated, update on server
-        await axios.post(
-          'http://localhost:5000/api/auth/update-gender',
-          { gender: selectedGender },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            }
-          }
-        );
-      }
+      // Save gender to Zustand store
+      setGender(selectedGender);
 
       // Navigate to next screen - replace with your next screen
       navigation.navigate('AgeSelection');
@@ -81,8 +66,8 @@ const GenderSelection = () => {
   };
 
   const handleSkip = () => {
-    // Store "prefer_not_to_say" and navigate
-    AsyncStorage.setItem('userGender', 'prefer_not_to_say');
+    // Store "prefer_not_to_say" in Zustand
+    setGender('prefer_not_to_say');
     navigation.navigate("AgeSelection");
   };
   return (

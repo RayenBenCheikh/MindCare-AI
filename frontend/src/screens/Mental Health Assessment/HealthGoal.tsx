@@ -10,10 +10,9 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/MentalNavigator';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import BackButton from '@/src/components/BackButton';
 import { SvgXml } from 'react-native-svg';
-
+import { useAssessmentStore } from '@/src/store/Store';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 interface GoalOption {
@@ -27,7 +26,8 @@ const { width } = Dimensions.get('window');
 const HealthGoal: React.FC = () => {
     const navigation = useNavigation<NavigationProp>();
     const [selectedGoal, setSelectedGoal] = useState<string>('goal2');
-
+    // Get the setHealthGoal action from our Zustand store
+    const setHealthGoal = useAssessmentStore(state => state.setHealthGoal);
     const goalOptions: GoalOption[] = [
         {
             id: 'goal1',
@@ -78,12 +78,11 @@ const HealthGoal: React.FC = () => {
     const handleContinue = async () => {
         const selectedOption = goalOptions.find(option => option.id === selectedGoal);
 
-        try {
-            await AsyncStorage.setItem('healthGoal', selectedGoal);
-            await AsyncStorage.setItem('healthGoalText', selectedOption?.title || '');
+        if (selectedOption) {
+            // Save to Zustand store instead of AsyncStorage
+            setHealthGoal(selectedGoal, selectedOption.title);
+
             navigation.navigate('GenderSelection');
-        } catch (error) {
-            console.error('Error saving health goal:', error);
         }
     };
 

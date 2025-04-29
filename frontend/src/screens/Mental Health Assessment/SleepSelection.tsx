@@ -13,7 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/MentalNavigator';
 import BackButton from '@/src/components/BackButton';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAssessmentStore } from '@/src/store/Store';
 import { SvgXml } from 'react-native-svg';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -91,6 +91,7 @@ const SleepSelection: React.FC = () => {
     const sliderHeight = height * 0.5;
     const itemHeight = sliderHeight / (sleepOptions.length - 1);
     const previousIndex = useRef(selectedIndex);
+    const setSleepQuality = useAssessmentStore(state => state.setSleepQuality);
 
     // Set up initial position and value listener
     useEffect(() => {
@@ -158,9 +159,8 @@ const SleepSelection: React.FC = () => {
     const handleSelectionComplete = async () => {
         try {
             const selectedOption = sleepOptions[selectedIndex];
-            await AsyncStorage.setItem('sleepQuality', selectedOption.label);
-            await AsyncStorage.setItem('sleepHours', selectedOption.hours);
-
+            // Use Zustand store instead of AsyncStorage
+            setSleepQuality(selectedOption.label, selectedOption.hours);
             // Add a small delay before navigation for better UX
             setTimeout(() => {
                 navigation.navigate('HelpSelection');
@@ -294,7 +294,7 @@ const SleepSelection: React.FC = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8F5F0', // Cream background
+        backgroundColor: '#F8F5F0',
         paddingHorizontal: 20,
     },
     headerContainer: {

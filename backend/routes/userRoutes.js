@@ -45,37 +45,57 @@ const validate = (req, res, next) => {
 };
 
 // 🔹 Inscription
-router.post(
-    "/register",
-    [
-        body("name").trim().notEmpty().withMessage("Name is required"),
-        body("email").isEmail().withMessage("Invalid email address"),
-        body("password").isLength({ min: 8 }).withMessage("Password must be at least 8 characters long"),
-        validate,
-    ],
-    async (req, res) => {
-        try {
-            const { name, email, password } = req.body;
+router.post("/register", async (req, res) => {
+    try {
+        const { email, password, name } = req.body;
 
-            // Check if email already exists
-            const existingUser = await User.findOne({ email });
-            if (existingUser) {
-                return res.status(400).json({ message: "Email already in use" });
-            }
-
-            const hashedPassword = await bcrypt.hash(password, 10);
-            const newUser = new User({ name, email, password: hashedPassword });
-            await newUser.save();
-            res.status(201).json({ message: "Utilisateur créé avec succès !" });
-        } catch (error) {
-            if (error.code === 11000) {
-                return res.status(400).json({ message: "Email already in use" });
-            }
-            res.status(500).json({ message: "Server error", error: error.message });
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ message: "Email already in use" });
         }
-    }
-);
 
+        // Generate username from email if name is not provided
+        const username = name || email.split('@')[0];
+
+        // Hash password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Create new user
+        const newUser = new User({
+            name: username, // Use email username or provided name
+            email,
+            password: hashedPassword
+        });
+
+        // Save user
+        await newUser.save();
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { id: newUser._id },
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' }
+        );
+
+        res.status(201).json({
+            message: "Registration successful!",
+            token,
+            user: {
+                id: newUser._id,
+                email: newUser.email,
+                name: newUser.name
+            }
+        });
+    } catch (error) {
+        console.error("Registration error:", error);
+        res.status(500).json({
+            message: "Registration failed. Please try again.",
+            error: error.message
+        });
+    }
+});
 // 🔹 Connexion
 router.post(
     "/login",

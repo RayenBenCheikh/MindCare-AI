@@ -13,7 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/MentalNavigator';
 import BackButton from '@/src/components/BackButton';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAssessmentStore } from '@/src/store/Store';
 import Animated, {
     useSharedValue,
     useAnimatedScrollHandler,
@@ -137,7 +137,7 @@ const MoodSelection: React.FC = () => {
     const navigation = useNavigation<NavigationProp>();
     const scrollX = useSharedValue(0);
     const flatListRef = useRef<FlatList>(null);
-
+    const setMood = useAssessmentStore(state => state.setMood);
     // Function to update the selected mood based on index
     const updateSelectedMood = (index: number) => {
         // Adjust index to account for the left spacer
@@ -180,13 +180,13 @@ const MoodSelection: React.FC = () => {
 
     const handleContinue = async () => {
         try {
-            await AsyncStorage.setItem('userMood', selectedMood.id);
+            // Save mood to Zustand store - FIXED: Pass the selectedMood data, not the setter function
+            setMood(selectedMood.id, selectedMood.label);
             navigation.navigate('SleepSelection');
         } catch (error) {
             console.error('Error saving mood:', error);
         }
     };
-
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />

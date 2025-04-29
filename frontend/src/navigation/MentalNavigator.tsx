@@ -8,9 +8,11 @@ import HeightSelection from '../screens/Mental Health Assessment/HeightSelection
 import MoodSelection from '../screens/Mental Health Assessment/MoodSelection';
 import SleepSelection from '../screens/Mental Health Assessment/SleepSelection';
 import HelpSelection from '../screens/Mental Health Assessment/HelpSelection';
+import HealthGoal from '../screens/Mental Health Assessment/HealthGoal';
 
 const Stack = createNativeStackNavigator();
 export type RootStackParamList = {
+    HealthGoal: undefined;
     AgeSelection: undefined;
     GenderSelection: undefined;
     WeightSelection: undefined;
@@ -23,7 +25,8 @@ export type RootStackParamList = {
 const MentalNavigator = () => {
     return (
 
-        <Stack.Navigator initialRouteName="GenderSelection">
+        <Stack.Navigator initialRouteName="HealthGoal">
+            <Stack.Screen name="HealthGoal" component={HealthGoal} options={{ headerShown: false }} />
             <Stack.Screen name="GenderSelection" component={GenderSelection} options={{ headerShown: false }} />
             <Stack.Screen name="AgeSelection" component={AgeSelection} options={{ headerShown: false }} />
             <Stack.Screen name="WeightSelection" component={WeightSelection} options={{ headerShown: false }} />

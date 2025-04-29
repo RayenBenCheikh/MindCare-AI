@@ -196,7 +196,7 @@ const MoodSelection: React.FC = () => {
                 <BackButton onPress={() => navigation.goBack()} />
                 <Text style={styles.headerText}>Assessment</Text>
                 <View style={styles.progressPill}>
-                    <Text style={styles.progressText}>5 of 14</Text>
+                    <Text style={styles.progressText}>6 of 10</Text>
                 </View>
             </View>
 

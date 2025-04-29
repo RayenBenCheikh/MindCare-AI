@@ -94,7 +94,7 @@ const GenderSelection = () => {
         <BackButton />
         <Text style={styles.headerText}>Assessment</Text>
         <View style={styles.progressPill}>
-          <Text style={styles.progressText}>2 of 14</Text>
+          <Text style={styles.progressText}>2 of 10</Text>
         </View>
       </View>
 

@@ -14,4 +14,5 @@ WelcomeScreen5: require("../assets/img/WelcomeScreen5.png"),
 WelcomeScreen6: require("../assets/img/WelcomeScreen6.png"),
 maleScreen: require("../assets/img/maleScreen.png"),
 FemaleScreen: require("../assets/img/FemaleScreen.png"),
+Professional: require("../assets/img/professional.png"),
 };

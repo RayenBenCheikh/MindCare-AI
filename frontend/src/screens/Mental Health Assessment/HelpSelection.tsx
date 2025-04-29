@@ -15,6 +15,7 @@ import { RootStackParamList } from '@/src/navigation/MentalNavigator';
 import BackButton from '@/src/components/BackButton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SvgXml } from 'react-native-svg';
+import { images } from '@/src/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -41,29 +42,6 @@ const HelpSelection: React.FC = () => {
         }
     };
 
-    // SVG for the illustration
-    const illustrationSvg = `
-    <svg width="300" height="300" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- Question mark 1 -->
-        <text x="120" y="100" font-family="Arial" font-size="40" fill="#C9B5FD">?</text>
-        
-        <!-- Question mark 2 -->
-        <text x="230" y="130" font-family="Arial" font-size="40" fill="#C9B5FD">?</text>
-        
-        <!-- Question mark 3 -->
-        <text x="60" y="180" font-family="Arial" font-size="40" fill="#C9B5FD">?</text>
-        
-        <!-- Gray circle background -->
-        <circle cx="150" cy="180" r="80" fill="#E5E5E5" />
-        
-        <!-- Confused character -->
-        <path d="M190 180 Q200 100 170 120 Q150 130 140 150 Q130 170 150 190 Q170 210 190 180 Z" fill="#F39C12" stroke="#653E1D" stroke-width="2" />
-        <path d="M150 130 Q160 120 170 130 Q180 140 170 150 Q160 160 150 150 Q140 140 150 130 Z" fill="#653E1D" />
-        <path d="M140 150 Q145 155 150 150 Q155 145 160 150 Q165 155 160 160 Q155 165 150 160 Q145 155 140 150 Z" fill="#F39C12" stroke="#653E1D" stroke-width="1" />
-        
-        <!-- Confused lines -->
-        <path d="M110 80 Q130 60 150 70 Q170 80 190 60 Q210 40 230 60 Q250 80 230 100 Q210 120 190 100 Q170 80 150 90 Q130 100 110 80" fill="none" stroke="#653E1D" stroke-width="2" />
-    </svg>`;
 
     return (
         <SafeAreaView style={styles.container}>
@@ -74,7 +52,7 @@ const HelpSelection: React.FC = () => {
                 <BackButton onPress={() => navigation.goBack()} />
                 <Text style={styles.headerText}>Assessment</Text>
                 <View style={styles.progressPill}>
-                    <Text style={styles.progressText}>6 of 14</Text>
+                    <Text style={styles.progressText}>8 of 10</Text>
                 </View>
             </View>
 
@@ -85,7 +63,11 @@ const HelpSelection: React.FC = () => {
 
             {/* Illustration */}
             <View style={styles.illustrationContainer}>
-                <SvgXml xml={illustrationSvg} width={280} height={280} />
+                <Image
+                    source={images.Professional}
+                    style={{ width: 200, height: 200 }}
+                    resizeMode="contain"
+                />
             </View>
 
             {/* Selection Buttons */}

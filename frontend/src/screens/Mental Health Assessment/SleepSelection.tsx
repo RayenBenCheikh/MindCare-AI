@@ -4,7 +4,6 @@ import {
     Text,
     StyleSheet,
     SafeAreaView,
-    StatusBar,
     TouchableOpacity,
     Dimensions,
     Animated,
@@ -22,83 +21,150 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const { width, height } = Dimensions.get('window');
 
 const sleepOptions = [
-    { label: 'Excellent', hours: '7-9 HOURS', color: '#9CCC65', emoji: '😊' },
-    { label: 'Good', hours: '6-7 HOURS', color: '#FFD54F', emoji: '🙂' },
-    { label: 'Fair', hours: '5 HOURS', color: '#D7CCC8', emoji: '😐' },
-    { label: 'Poor', hours: '3-4 HOURS', color: '#F39C12', emoji: '😟' },
-    { label: 'Worst', hours: '<3 HOURS', color: '#7986CB', emoji: '😢' },
+    {
+        label: 'Excellent',
+        hours: '7-9 HOURS',
+        color: '#9CCC65',
+        emoji: '😊',
+        emojiSvg: `<svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <circle cx="18" cy="18" r="18" fill="#9CCC65"/>
+            <path d="M12 16C13.1 16 14 14.9 14 13.5C14 12.1 13.1 11 12 11C10.9 11 10 12.1 10 13.5C10 14.9 10.9 16 12 16Z" fill="#5D4037"/>
+            <path d="M24 16C25.1 16 26 14.9 26 13.5C26 12.1 25.1 11 24 11C22.9 11 22 12.1 22 13.5C22 14.9 22.9 16 24 16Z" fill="#5D4037"/>
+            <path d="M24 23C22.67 25 20.5 26 18 26C15.5 26 13.33 25 12 23C12 21.17 14.67 20 18 20C21.33 20 24 21.17 24 23Z" fill="#5D4037"/>
+        </svg>`
+    },
+    {
+        label: 'Good',
+        hours: '6-7 HOURS',
+        color: '#FFD54F',
+        emoji: '🙂',
+        emojiSvg: `<svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <circle cx="18" cy="18" r="18" fill="#FFD54F"/>
+            <path d="M12 16C13.1 16 14 14.9 14 13.5C14 12.1 13.1 11 12 11C10.9 11 10 12.1 10 13.5C10 14.9 10.9 16 12 16Z" fill="#5D4037"/>
+            <path d="M24 16C25.1 16 26 14.9 26 13.5C26 12.1 25.1 11 24 11C22.9 11 22 12.1 22 13.5C22 14.9 22.9 16 24 16Z" fill="#5D4037"/>
+            <path d="M12 22H24" stroke="#5D4037" stroke-width="2" stroke-linecap="round"/>
+        </svg>`
+    },
+    {
+        label: 'Fair',
+        hours: '5 HOURS',
+        color: '#D7CCC8',
+        emoji: '😐',
+        emojiSvg: `<svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <circle cx="18" cy="18" r="18" fill="#D7CCC8"/>
+            <path d="M12 16C13.1 16 14 14.9 14 13.5C14 12.1 13.1 11 12 11C10.9 11 10 12.1 10 13.5C10 14.9 10.9 16 12 16Z" fill="#5D4037"/>
+            <path d="M24 16C25.1 16 26 14.9 26 13.5C26 12.1 25.1 11 24 11C22.9 11 22 12.1 22 13.5C22 14.9 22.9 16 24 16Z" fill="#5D4037"/>
+            <path d="M12 22H24" stroke="#5D4037" stroke-width="2" stroke-linecap="round"/>
+        </svg>`
+    },
+    {
+        label: 'Poor',
+        hours: '3-4 HOURS',
+        color: '#F39C12',
+        emoji: '😟',
+        emojiSvg: `<svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <circle cx="18" cy="18" r="18" fill="#F39C12"/>
+            <path d="M12 16C13.1 16 14 14.9 14 13.5C14 12.1 13.1 11 12 11C10.9 11 10 12.1 10 13.5C10 14.9 10.9 16 12 16Z" fill="#5D4037"/>
+            <path d="M24 16C25.1 16 26 14.9 26 13.5C26 12.1 25.1 11 24 11C22.9 11 22 12.1 22 13.5C22 14.9 22.9 16 24 16Z" fill="#5D4037"/>
+            <path d="M12 26C14 24 16 23 18 23C20 23 22 24 24 26" stroke="#5D4037" stroke-width="2" stroke-linecap="round"/>
+        </svg>`
+    },
+    {
+        label: 'Worst',
+        hours: '<3 HOURS',
+        color: '#7986CB',
+        emoji: '😢',
+        emojiSvg: `<svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <circle cx="18" cy="18" r="18" fill="#7986CB"/>
+            <path d="M13 16L11 14" stroke="#5D4037" stroke-width="2" stroke-linecap="round"/>
+            <path d="M25 16L23 14" stroke="#5D4037" stroke-width="2" stroke-linecap="round"/>
+            <path d="M12 26C14 24 16 23 18 23C20 23 22 24 24 26" stroke="#5D4037" stroke-width="2" stroke-linecap="round"/>
+        </svg>`
+    },
 ];
 
 const SleepSelection: React.FC = () => {
     const [selectedIndex, setSelectedIndex] = useState(3); // Default to "Poor"
     const navigation = useNavigation<NavigationProp>();
     const translateY = useRef(new Animated.Value(0)).current;
-    const currentYValue = useRef(0); // Store current Y value
-    const sliderHeight = height * 0.45; // Adjusted height for better spacing
+    const currentYValue = useRef(0);
+    const sliderHeight = height * 0.5;
     const itemHeight = sliderHeight / (sleepOptions.length - 1);
+    const previousIndex = useRef(selectedIndex);
 
     // Set up initial position and value listener
     useEffect(() => {
-        // Set initial position
-        translateY.setValue(selectedIndex * itemHeight);
-        currentYValue.current = selectedIndex * itemHeight;
+        const initialPosition = selectedIndex * itemHeight;
+        translateY.setValue(initialPosition);
+        currentYValue.current = initialPosition;
 
-        // Set up listener to track current value
         const id = translateY.addListener(({ value }) => {
             currentYValue.current = value;
         });
 
-        // Clean up listener on unmount
         return () => {
             translateY.removeListener(id);
         };
     }, []);
 
-    // Create icon components for the sleep quality options
-    const renderEmojiIcon = (index: number) => {
-        const option = sleepOptions[index];
-        return (
-            <View style={[styles.emojiContainer, { backgroundColor: option.color }]}>
-                <Text style={styles.emoji}>{option.emoji}</Text>
-            </View>
-        );
-    };
+    // Handle navigation when selection changes
+    useEffect(() => {
+        // Only navigate if this isn't the initial render and index actually changed
+        if (previousIndex.current !== selectedIndex && previousIndex.current !== -1) {
+            handleSelectionComplete();
+        }
+        previousIndex.current = selectedIndex;
+    }, [selectedIndex]);
 
-    const panResponder = PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderMove: (_, gestureState) => {
-            const newY = Math.min(
-                Math.max(gestureState.dy + currentYValue.current, 0),
-                sliderHeight
-            );
-            translateY.setValue(newY);
-        },
-        onPanResponderRelease: (_, gestureState) => {
-            // Calculate nearest index position
-            const newIndex = Math.round(currentYValue.current / itemHeight);
-            const clampedIndex = Math.min(Math.max(newIndex, 0), sleepOptions.length - 1);
-
-            // Animate to the nearest position
-            setSelectedIndex(clampedIndex);
-            Animated.spring(translateY, {
-                toValue: clampedIndex * itemHeight,
-                tension: 50,
-                friction: 10,
-                useNativeDriver: true,
-            }).start();
-        },
+    // Calculate the percentage filled for slider
+    const filledPercentage = translateY.interpolate({
+        inputRange: [0, sliderHeight],
+        outputRange: [0, 1],
+        extrapolate: 'clamp'
     });
-    // Function to handle the continue button press
-    const handleContinue = async () => {
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: () => true,
+            onPanResponderMove: (_, gestureState) => {
+                const newY = Math.min(
+                    Math.max(0, currentYValue.current + gestureState.dy),
+                    sliderHeight
+                );
+                translateY.setValue(newY);
+            },
+            onPanResponderRelease: () => {
+                // Calculate nearest index position
+                const newIndex = Math.round(currentYValue.current / itemHeight);
+                const clampedIndex = Math.min(Math.max(newIndex, 0), sleepOptions.length - 1);
+
+                // Animate to the nearest position
+                Animated.spring(translateY, {
+                    toValue: clampedIndex * itemHeight,
+                    tension: 50,
+                    friction: 10,
+                    useNativeDriver: true,
+                }).start(() => {
+                    // Only update selected index if it's different
+                    if (selectedIndex !== clampedIndex) {
+                        setSelectedIndex(clampedIndex);
+                    }
+                });
+            },
+        })
+    ).current;
+
+    const handleSelectionComplete = async () => {
         try {
             const selectedOption = sleepOptions[selectedIndex];
-            // Save selection to AsyncStorage
             await AsyncStorage.setItem('sleepQuality', selectedOption.label);
             await AsyncStorage.setItem('sleepHours', selectedOption.hours);
 
-            // Navigate to the next screen
-            navigation.navigate('HelpSelection'); // Update to your actual next screen
+            // Add a small delay before navigation for better UX
+            setTimeout(() => {
+                navigation.navigate('HelpSelection');
+            }, 300);
         } catch (error) {
             console.error('Error saving sleep quality:', error);
         }
@@ -106,14 +172,12 @@ const SleepSelection: React.FC = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
             {/* Header */}
             <View style={styles.headerContainer}>
                 <BackButton onPress={() => navigation.goBack()} />
                 <Text style={styles.headerText}>Assessment</Text>
                 <View style={styles.progressPill}>
-                    <Text style={styles.progressText}>8 of 14</Text>
+                    <Text style={styles.progressText}>7 of 10</Text>
                 </View>
             </View>
 
@@ -122,41 +186,40 @@ const SleepSelection: React.FC = () => {
                 How would you rate your sleep quality?
             </Text>
 
-            {/* Sleep Quality Options */}
-            <View style={styles.sliderContainer}>
-                {/* Sleep Quality Labels and Hours */}
-                <View style={styles.labelsContainer}>
+            {/* Sleep Quality Selection */}
+            <View style={styles.selectionContainer}>
+                {/* Sleep Quality Labels */}
+                <View style={styles.labelsColumn}>
                     {sleepOptions.map((option, index) => (
                         <View
-                            key={index}
+                            key={`label-${index}`}
                             style={[
-                                styles.labelRow,
-                                { marginBottom: index < sleepOptions.length - 1 ? itemHeight - 30 : 0 }
+                                styles.labelContainer,
+                                {
+                                    marginTop: index === 0 ? 0 : itemHeight - 36,
+                                    opacity: selectedIndex === index ? 1 : 0.5
+                                }
                             ]}
                         >
-                            <Text
-                                style={[
-                                    styles.labelText,
-                                    selectedIndex === index && styles.selectedLabelText
-                                ]}
-                            >
+                            <Text style={[
+                                styles.qualityLabel,
+                                selectedIndex === index ? styles.selectedLabel : {}
+                            ]}>
                                 {option.label}
                             </Text>
                             <View style={styles.hoursContainer}>
                                 <SvgXml
                                     xml={`<svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                        <circle cx="12" cy="12" r="10" stroke="#BDBDBD" stroke-width="2"/>
-                                        <path d="M12 6V12L16 16" stroke="#BDBDBD" stroke-width="2" stroke-linecap="round"/>
+                                        <circle cx="12" cy="12" r="10" stroke="${selectedIndex === index ? '#5D4037' : '#BDBDBD'}" stroke-width="2"/>
+                                        <path d="M12 6V12L16 16" stroke="${selectedIndex === index ? '#5D4037' : '#BDBDBD'}" stroke-width="2" stroke-linecap="round"/>
                                     </svg>`}
                                     width={16}
                                     height={16}
                                 />
-                                <Text
-                                    style={[
-                                        styles.hoursText,
-                                        selectedIndex === index && styles.selectedHoursText
-                                    ]}
-                                >
+                                <Text style={[
+                                    styles.hoursText,
+                                    selectedIndex === index ? styles.selectedHoursText : {}
+                                ]}>
                                     {option.hours}
                                 </Text>
                             </View>
@@ -164,70 +227,66 @@ const SleepSelection: React.FC = () => {
                     ))}
                 </View>
 
-                {/* Slider Track and Thumb */}
-                <View style={styles.sliderTrackContainer}>
-                    {/* Vertical track */}
-                    <View style={styles.sliderTrack}>
-                        {/* Orange Indicator Line */}
+                {/* Slider */}
+                <View style={styles.sliderColumn}>
+                    {/* Background Track */}
+                    <View style={styles.sliderTrack} />
+
+                    <View style={styles.sliderFillContainer}>
                         <Animated.View
                             style={[
-                                styles.sliderIndicator,
+                                styles.sliderFill,
                                 {
-                                    height: translateY,
-                                    backgroundColor: '#F39C12',
+                                    transform: [{
+                                        scaleY: filledPercentage,
+                                    }]
                                 }
                             ]}
                         />
                     </View>
 
-                    {/* Draggable Thumb */}
+                    {/* Thumb - draggable handle */}
                     <Animated.View
-                        {...panResponder.panHandlers}
                         style={[
                             styles.sliderThumb,
                             {
-                                backgroundColor: sleepOptions[selectedIndex].color,
-                                transform: [{ translateY }],
-                            },
+                                transform: [{ translateY }]
+                            }
                         ]}
+                        {...panResponder.panHandlers}
                     >
-                        <View style={styles.thumbInner}>
-                            {/* This is the refresh/sync icon in the thumb */}
-                            <SvgXml
-                                xml={`<svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                    <path d="M20 11C19.7554 9.24017 18.9391 7.60461 17.6766 6.35384C16.4142 5.10307 14.7758 4.30258 13.0137 4.07647C11.2516 3.85036 9.46362 4.20726 7.9252 5.09748C6.38678 5.98769 5.18325 7.36526 4.5 9" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <path d="M4 4V9H9" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <path d="M4 13C4.24456 14.7598 5.06093 16.3954 6.32336 17.6462C7.58579 18.8969 9.22424 19.6974 10.9863 19.9235C12.7484 20.1496 14.5364 19.7927 16.0748 18.9025C17.6132 18.0123 18.8168 16.6347 19.5 15" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <path d="M20 20V15H15" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>`}
-                                width={20}
-                                height={20}
-                            />
-                        </View>
+                        <SvgXml
+                            xml={`<svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 11C19.7554 9.24017 18.9391 7.60461 17.6766 6.35384C16.4142 5.10307 14.7758 4.30258 13.0137 4.07647C11.2516 3.85036 9.46362 4.20726 7.9252 5.09748C6.38678 5.98769 5.18325 7.36526 4.5 9" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M4 4V9H9" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M4 13C4.24456 14.7598 5.06093 16.3954 6.32336 17.6462C7.58579 18.8969 9.22424 19.6974 10.9863 19.9235C12.7484 20.1496 14.5364 19.7927 16.0748 18.9025C17.6132 18.0123 18.8168 16.6347 19.5 15" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M20 20V15H15" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>`}
+                            width={20}
+                            height={20}
+                        />
                     </Animated.View>
                 </View>
 
-                {/* Emoji Icons */}
-                <View style={styles.emojisContainer}>
+                {/* Emoji Column */}
+                <View style={styles.emojisColumn}>
                     {sleepOptions.map((option, index) => (
                         <View
-                            key={index}
+                            key={`emoji-${index}`}
                             style={[
-                                styles.emojiRow,
-                                { marginBottom: index < sleepOptions.length - 1 ? itemHeight - 30 : 0 }
+                                styles.emojiContainer,
+                                {
+                                    marginTop: index === 0 ? 0 : itemHeight - 36,
+                                    opacity: selectedIndex === index ? 1 : 0.5
+                                }
                             ]}
                         >
-                            {renderEmojiIcon(index)}
+                            <SvgXml xml={option.emojiSvg} width={36} height={36} />
                         </View>
                     ))}
                 </View>
             </View>
 
-            {/* Continue Button */}
-            <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-                <Text style={styles.continueButtonText}>Continue</Text>
-                <Text style={styles.continueArrow}>→</Text>
-            </TouchableOpacity>
         </SafeAreaView>
     );
 };
@@ -235,7 +294,7 @@ const SleepSelection: React.FC = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#F8F5F0', // Cream background
         paddingHorizontal: 20,
     },
     headerContainer: {
@@ -264,33 +323,44 @@ const styles = StyleSheet.create({
         fontSize: 32,
         fontWeight: 'bold',
         textAlign: 'center',
-        marginBottom: 40,
+        marginBottom: 60,
         color: '#5D4037',
         lineHeight: 40,
     },
-    sliderContainer: {
+    selectionContainer: {
+        flex: 1,
         flexDirection: 'row',
-        alignItems: 'flex-start',
         justifyContent: 'space-between',
-        marginTop: 30,
-        flex: 1,
+        paddingVertical: 20,
     },
-    labelsContainer: {
-        flex: 1,
-        justifyContent: 'space-between',
+    labelsColumn: {
+        flex: 1.2,
+        justifyContent: 'flex-start',
     },
-    labelRow: {
-        flexDirection: 'column',
+    sliderColumn: {
+        width: 4,
+        marginHorizontal: 30,
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        height: '100%',
+    },
+    emojisColumn: {
+        flex: 0.8,
+        justifyContent: 'flex-start',
+        alignItems: 'flex-end',
+    },
+    labelContainer: {
         alignItems: 'flex-start',
     },
-    labelText: {
-        fontSize: 20,
-        fontWeight: '600',
+    qualityLabel: {
+        fontSize: 24,
+        fontWeight: '500',
         color: '#BDBDBD',
-        marginBottom: 5,
+        marginBottom: 4,
     },
-    selectedLabelText: {
+    selectedLabel: {
         color: '#5D4037',
+        fontWeight: '600',
     },
     hoursContainer: {
         flexDirection: 'row',
@@ -304,72 +374,60 @@ const styles = StyleSheet.create({
     selectedHoursText: {
         color: '#5D4037',
     },
-    sliderTrackContainer: {
-        width: 8,
-        height: height * 0.45,
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        marginHorizontal: 20,
-    },
     sliderTrack: {
-        width: 8,
+        position: 'absolute',
+        top: 0,
         height: '100%',
-        backgroundColor: '#F5F5F5',
-        borderRadius: 4,
-        overflow: 'hidden',
+        width: 4,
+        backgroundColor: '#ECECEC',
+        borderRadius: 2,
     },
-    sliderIndicator: {
-        width: 8,
+    sliderFillContainer: {
         position: 'absolute',
         bottom: 0,
-        borderRadius: 4,
+        width: 4,
+        height: '100%',
+        overflow: 'hidden',
+    },
+    sliderFill: {
+        position: 'absolute',
+        bottom: 0,
+        width: 4,
+        height: '100%',
+        backgroundColor: '#F39C12',
+        borderRadius: 2,
+        transformOrigin: 'bottom',
     },
     sliderThumb: {
+        position: 'absolute',
+        top: -30,
         width: 60,
         height: 60,
         borderRadius: 30,
-        position: 'absolute',
-        top: -30,
-        left: -26,
+        backgroundColor: '#F39C12',
         alignItems: 'center',
         justifyContent: 'center',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
         shadowRadius: 4,
         elevation: 5,
     },
-    thumbInner: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    emojisContainer: {
-        justifyContent: 'space-between',
-    },
-    emojiRow: {
-        alignItems: 'center',
-    },
     emojiContainer: {
         width: 50,
         height: 50,
-        borderRadius: 25,
-        alignItems: 'center',
         justifyContent: 'center',
-    },
-    emoji: {
-        fontSize: 24,
+        alignItems: 'center',
     },
     continueButton: {
         backgroundColor: '#5D4037',
-        padding: 18,
-        borderRadius: 25,
+        paddingVertical: 18,
+        paddingHorizontal: 20,
+        borderRadius: 30,
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        marginVertical: 20,
+        marginBottom: 30,
     },
     continueButtonText: {
         color: 'white',

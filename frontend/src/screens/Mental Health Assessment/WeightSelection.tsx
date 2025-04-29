@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
     Text,
@@ -31,7 +31,25 @@ const WeightSelection: React.FC = () => {
     const [unit, setUnit] = useState<'kg' | 'lbs'>('kg');
     const navigation = useNavigation<NavigationProp>();
     const scrollX = useRef(new Animated.Value(0)).current;
+    const scrollXValue = useRef(0);
     const startScrollX = useRef(0);
+    const animationIsRunning = useRef(false);
+
+    // Add listener to track scrollX value
+    useEffect(() => {
+        const scrollListener = scrollX.addListener(({ value }) => {
+            scrollXValue.current = value;
+        });
+
+        // Initial position setup
+        const initialOffset = -(weight - MIN_WEIGHT) * MARKER_SPACING;
+        scrollX.setValue(initialOffset);
+        scrollXValue.current = initialOffset;
+
+        return () => {
+            scrollX.removeListener(scrollListener);
+        };
+    }, []);
 
     // Convert kg to lbs and vice versa
     const convertWeight = (weight: number, fromUnit: 'kg' | 'lbs', toUnit: 'kg' | 'lbs') => {
@@ -41,9 +59,14 @@ const WeightSelection: React.FC = () => {
             : Math.round(weight / 2.20462);
     };
 
-    // Initialize the slider position
-    const initialOffset = (weight - MIN_WEIGHT) * MARKER_SPACING;
-    scrollX.setValue(-initialOffset);
+    // Update weight when unit changes
+    useEffect(() => {
+        const offset = -scrollXValue.current;
+        const calculatedWeight = MIN_WEIGHT + Math.round(offset / MARKER_SPACING);
+        if (calculatedWeight !== weight && calculatedWeight >= MIN_WEIGHT && calculatedWeight <= MAX_WEIGHT) {
+            setWeight(calculatedWeight);
+        }
+    }, [unit]);
 
     // Set up pan responder for slider
     const panResponder = useRef(
@@ -51,27 +74,56 @@ const WeightSelection: React.FC = () => {
             onStartShouldSetPanResponder: () => true,
             onMoveShouldSetPanResponder: () => true,
             onPanResponderGrant: () => {
-                scrollX.addListener(({ value }) => {
-                    startScrollX.current = value;
-                });
+                // Store current position using our ref value
+                startScrollX.current = scrollXValue.current;
+                animationIsRunning.current = false;
             },
             onPanResponderMove: (_, gestureState) => {
+                if (animationIsRunning.current) return;
+
                 const newPosition = startScrollX.current + gestureState.dx;
-                const minPosition = -(TOTAL_WEIGHTS - 1) * MARKER_SPACING;
+                const minPosition = -(MAX_WEIGHT - MIN_WEIGHT) * MARKER_SPACING;
                 const maxPosition = 0;
 
-                const boundedPosition = Math.max(minPosition, Math.min(newPosition, maxPosition));
+                // Bound the position
+                const boundedPosition = Math.min(maxPosition, Math.max(minPosition, newPosition));
                 scrollX.setValue(boundedPosition);
 
-                // Update weight based on position
-                const calculatedWeight = MIN_WEIGHT - Math.round(boundedPosition / MARKER_SPACING);
-                if (calculatedWeight !== weight) {
+                // Calculate weight based on position with bounds checking
+                const offset = -boundedPosition;
+                const calculatedWeight = MIN_WEIGHT + Math.round(offset / MARKER_SPACING);
+
+                // Update weight if it's different and within bounds
+                if (calculatedWeight !== weight &&
+                    calculatedWeight >= MIN_WEIGHT &&
+                    calculatedWeight <= MAX_WEIGHT) {
                     setWeight(calculatedWeight);
                 }
             },
-            onPanResponderRelease: () => { },
+            onPanResponderRelease: (_, gestureState) => {
+                // Snap to nearest weight marker
+                const currentPosition = scrollXValue.current;
+                const targetWeight = Math.round(
+                    MIN_WEIGHT - currentPosition / MARKER_SPACING
+                );
+                const clampedWeight = Math.min(MAX_WEIGHT, Math.max(MIN_WEIGHT, targetWeight));
+                const snapToPosition = -(clampedWeight - MIN_WEIGHT) * MARKER_SPACING;
+
+                // Animate to the snapped position
+                animationIsRunning.current = true;
+                Animated.spring(scrollX, {
+                    toValue: snapToPosition,
+                    tension: 50,
+                    friction: 7,
+                    useNativeDriver: true,
+                }).start(() => {
+                    animationIsRunning.current = false;
+                    setWeight(clampedWeight);
+                });
+            },
         })
     ).current;
+
 
     // Change unit handler
     const handleUnitChange = (newUnit: 'kg' | 'lbs') => {
@@ -135,7 +187,7 @@ const WeightSelection: React.FC = () => {
                 <BackButton onPress={() => navigation.goBack()} />
                 <Text style={styles.headerText}>Assessment</Text>
                 <View style={styles.progressPill}>
-                    <Text style={styles.progressText}>4 of 14</Text>
+                    <Text style={styles.progressText}>4 of 10</Text>
                 </View>
             </View>
 

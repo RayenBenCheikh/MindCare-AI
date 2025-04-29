@@ -9,7 +9,6 @@ import {
     Dimensions,
     Animated,
     PanResponder,
-    Image
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -34,12 +33,25 @@ const SleepSelection: React.FC = () => {
     const [selectedIndex, setSelectedIndex] = useState(3); // Default to "Poor"
     const navigation = useNavigation<NavigationProp>();
     const translateY = useRef(new Animated.Value(0)).current;
+    const currentYValue = useRef(0); // Store current Y value
     const sliderHeight = height * 0.45; // Adjusted height for better spacing
     const itemHeight = sliderHeight / (sleepOptions.length - 1);
 
-    // Set initial position
+    // Set up initial position and value listener
     useEffect(() => {
+        // Set initial position
         translateY.setValue(selectedIndex * itemHeight);
+        currentYValue.current = selectedIndex * itemHeight;
+
+        // Set up listener to track current value
+        const id = translateY.addListener(({ value }) => {
+            currentYValue.current = value;
+        });
+
+        // Clean up listener on unmount
+        return () => {
+            translateY.removeListener(id);
+        };
     }, []);
 
     // Create icon components for the sleep quality options
@@ -57,14 +69,14 @@ const SleepSelection: React.FC = () => {
         onMoveShouldSetPanResponder: () => true,
         onPanResponderMove: (_, gestureState) => {
             const newY = Math.min(
-                Math.max(gestureState.dy + translateY.getValue(), 0),
+                Math.max(gestureState.dy + currentYValue.current, 0),
                 sliderHeight
             );
             translateY.setValue(newY);
         },
         onPanResponderRelease: (_, gestureState) => {
             // Calculate nearest index position
-            const newIndex = Math.round(translateY.getValue() / itemHeight);
+            const newIndex = Math.round(currentYValue.current / itemHeight);
             const clampedIndex = Math.min(Math.max(newIndex, 0), sleepOptions.length - 1);
 
             // Animate to the nearest position
@@ -77,7 +89,6 @@ const SleepSelection: React.FC = () => {
             }).start();
         },
     });
-
     // Function to handle the continue button press
     const handleContinue = async () => {
         try {

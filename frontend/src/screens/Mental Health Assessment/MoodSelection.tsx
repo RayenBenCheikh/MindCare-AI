@@ -14,18 +14,18 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/MentalNavigator';
 import BackButton from '@/src/components/BackButton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SvgXml } from 'react-native-svg';
 import Animated, {
     useSharedValue,
     useAnimatedScrollHandler,
     useAnimatedStyle,
     interpolate,
     Extrapolate,
+    runOnJS,
 } from 'react-native-reanimated';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const ITEM_WIDTH = 70;
 const SPACER_WIDTH = (width - ITEM_WIDTH) / 2;
 const RADIUS = 100;
@@ -137,43 +137,44 @@ const MoodSelection: React.FC = () => {
     const navigation = useNavigation<NavigationProp>();
     const scrollX = useSharedValue(0);
     const flatListRef = useRef<FlatList>(null);
-    const lastContentOffset = useRef(0);
 
-    // Calculate currently visible mood based on scroll position
-    useEffect(() => {
-        // Center emoji is at index 1 + 2 = 3 (accounting for 'left-spacer')
-        const defaultIndex = 3 + Math.floor(moods.length / 2);
-        const offset = defaultIndex * ITEM_WIDTH - SPACER_WIDTH;
+    // Function to update the selected mood based on index
+    const updateSelectedMood = (index: number) => {
+        // Adjust index to account for the left spacer
+        const moodIndex = index - 1;
+        // Only update if it's a valid mood index
+        if (moodIndex >= 0 && moodIndex < moods.length) {
+            setSelectedMood(moods[moodIndex]);
+        }
+    };
 
-        requestAnimationFrame(() => {
-            flatListRef.current?.scrollToOffset({
-                offset,
-                animated: false,
-            });
-            scrollX.value = offset;
-        });
-    }, []);
-
-    // Scroll handler for the emoji slider
+    // Scroll handler with callback to update selected mood
     const scrollHandler = useAnimatedScrollHandler({
         onScroll: (event) => {
             scrollX.value = event.contentOffset.x;
-            lastContentOffset.current = event.contentOffset.x;
+            // Calculate which mood is currently centered
+            const slideIndex = Math.round(event.contentOffset.x / ITEM_WIDTH);
+            runOnJS(updateSelectedMood)(slideIndex);
         },
     });
 
-    // Scroll to center emoji on mount
+    // Initialize to neutral mood (middle option)
     useEffect(() => {
         // Default to neutral mood (middle)
-        const defaultIndex = 2 + 1; // Add 1 for left spacer
-        const offset = defaultIndex * ITEM_WIDTH - SPACER_WIDTH;
+        const neutralIndex = Math.floor(moods.length / 2);
+        const defaultIndex = neutralIndex + 1; // Add 1 for left spacer
+        const offset = defaultIndex * ITEM_WIDTH;
 
+        // Set timeout to ensure the component is fully mounted
         setTimeout(() => {
-            flatListRef.current?.scrollToOffset({
-                offset,
-                animated: false,
-            });
-            scrollX.value = offset;
+            if (flatListRef.current) {
+                flatListRef.current.scrollToOffset({
+                    offset,
+                    animated: false,
+                });
+                scrollX.value = offset;
+                setSelectedMood(moods[neutralIndex]);
+            }
         }, 100);
     }, []);
 
@@ -233,9 +234,13 @@ const MoodSelection: React.FC = () => {
                             scrollX={scrollX}
                         />
                     )}
+                    onMomentumScrollEnd={(event) => {
+                        // Ensure selection is updated when scrolling stops
+                        const slideIndex = Math.round(event.nativeEvent.contentOffset.x / ITEM_WIDTH);
+                        updateSelectedMood(slideIndex);
+                    }}
                 />
             </View>
-
             {/* Continue Button */}
             <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
                 <Text style={styles.continueButtonText}>Continue</Text>

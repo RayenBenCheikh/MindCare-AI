@@ -11,16 +11,17 @@ const AuthProvider = ({ children }: Props) => {
     const [userToken, setUserToken] = useState<string | null>(null);
     const [hasSeenWelcome, setHasSeenWelcome] = useState(false);
 
+    // Load data when component mounts
     useEffect(() => {
         const loadData = async () => {
-            //await AsyncStorage.clear()
             try {
-                const welcome = await AsyncStorage.getItem('hasSeenWelcome');
                 const token = await AsyncStorage.getItem('userToken');
-                setHasSeenWelcome(welcome === 'true');
+                const welcomeSeen = await AsyncStorage.getItem('hasSeenWelcome');
+
                 setUserToken(token);
+                setHasSeenWelcome(welcomeSeen === 'true');
             } catch (e) {
-                console.error('Error loading auth state:', e);
+                console.error('Error loading auth data:', e);
             } finally {
                 setIsLoading(false);
             }
@@ -29,59 +30,50 @@ const AuthProvider = ({ children }: Props) => {
         loadData();
     }, []);
 
-    /**
-     * Logs in a user, given a username and password.
-     *
-     * @param {Object} data - An object containing the username and password.
-     * @param {string} data.username - The username.
-     * @param {string} data.password - The password.
-     *
-     * @throws {Error} - If there is an error storing the user token in AsyncStorage.
-     *
-     * @returns {Promise<void>} - A promise that resolves when the user is logged in.
-     */
-    const signIn = async (_data: { username: string; password: string }) => {
-        const token = 'dummy-auth-token';
+    // Sign in function
+    const signIn = async (token: string, user: any) => {
         try {
             await AsyncStorage.setItem('userToken', token);
+            await AsyncStorage.setItem('user', JSON.stringify(user));
             setUserToken(token);
         } catch (e) {
-            console.error('Sign-in error:', e);
+            console.error('Error saving auth data:', e);
         }
     };
 
-    /**
-     * Removes the user token from AsyncStorage and sets the userToken state to null
-     *
-     * @throws {Error} - If there is an error removing the user token from AsyncStorage
-     */
+    // Sign out function
     const signOut = async () => {
         try {
             await AsyncStorage.removeItem('userToken');
+            await AsyncStorage.removeItem('user');
             setUserToken(null);
         } catch (e) {
-            console.error('Sign-out error:', e);
+            console.error('Error removing auth data:', e);
         }
     };
 
-    /**
-     * Marks the welcome sequence as complete in AsyncStorage.
-     *
-     * @throws {Error} - If there is an error storing the welcome complete flag in AsyncStorage.
-     *
-     * @returns {Promise<void>} - A promise that resolves when the flag has been written.
-     */
+    // Complete welcome function
     const completeWelcome = async () => {
         try {
             await AsyncStorage.setItem('hasSeenWelcome', 'true');
             setHasSeenWelcome(true);
         } catch (e) {
-            console.error('Welcome complete error:', e);
+            console.error('Error setting welcome flag:', e);
         }
     };
 
+    // Create context value object
+    const contextValue = {
+        isLoading,
+        userToken,
+        hasSeenWelcome,
+        signIn,
+        signOut,
+        completeWelcome
+    };
+
     return (
-        <AuthContext.Provider value={{ signIn, signOut, completeWelcome, isLoading, userToken, hasSeenWelcome }}>
+        <AuthContext.Provider value={contextValue}>
             {children}
         </AuthContext.Provider>
     );

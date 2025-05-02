@@ -1,16 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { colors } from '@/src/theme';
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthContext } from '@/src/context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '@/src/navigation/AuthNavigator'; // Adjust the import path as necessary
 // Define navigation prop type
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
-
 const SignIn = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,6 +18,9 @@ const SignIn = () => {
   const [error, setError] = useState('');
 
   const navigation = useNavigation<NavigationProp>();
+
+  // Get signIn function from AuthContext
+  const { signIn } = useContext(AuthContext);
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -36,15 +38,15 @@ const SignIn = () => {
       });
 
       const { token, user } = response.data;
-      // Store the JWT token in AsyncStorage
-      await AsyncStorage.setItem('userToken', token);
-      await AsyncStorage.setItem('user', JSON.stringify(user));
 
-      Alert.alert('Success', 'Logged in successfully!', [
-        { text: 'OK', onPress: () => console.log('User logged in:', user) },
-      ]);
-      // Optionally navigate to a home screen after login
-      // navigation.navigate('Home');
+      // Use the context's signIn function instead of manually setting AsyncStorage
+      await signIn(token, user);
+
+      Alert.alert('Success', 'Logged in successfully!');
+
+      // No need for manual navigation - RootNavigator will handle it automatically
+      // when the userToken changes in the context
+
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.message) {
         setError(err.response.data.message);
@@ -55,7 +57,6 @@ const SignIn = () => {
       setLoading(false);
     }
   };
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />

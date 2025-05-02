@@ -25,7 +25,7 @@ const MIN_WEIGHT = 40;
 const MAX_WEIGHT = 200;
 const TOTAL_WEIGHTS = MAX_WEIGHT - MIN_WEIGHT + 1;
 const VISIBLE_WEIGHTS = 5; // Number of weights visible in the ruler
-const updateWeight = useAssessmentStore(state => state.setWeight);
+
 const WeightSelection: React.FC = () => {
     const [weight, setWeight] = useState<number>(128);
     const [unit, setUnit] = useState<'kg' | 'lbs'>('kg');
@@ -35,6 +35,7 @@ const WeightSelection: React.FC = () => {
     const startScrollX = useRef(0);
     const animationIsRunning = useRef(false);
     const updateWeightInStore = useAssessmentStore(state => state.setWeight);
+
 
     // Add listener to track scrollX value
     useEffect(() => {
@@ -141,7 +142,7 @@ const WeightSelection: React.FC = () => {
             // Save weight to Zustand store
             updateWeightInStore(weight, unit);
             // Navigate to next screen
-            navigation.navigate('HeigherSelection'); // Replace with your next screen name
+            navigation.navigate('HeightSelection'); // Replace with your next screen name
         } catch (error) {
             console.error('Error saving weight:', error);
         }

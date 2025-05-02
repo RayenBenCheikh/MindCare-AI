@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
+import { AuthContext } from '@/src/context/AuthContext';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/src/navigation/AuthNavigator'; // Adjust the import path as necessary
+import { AuthStackParamList } from '@/src/navigation/AuthNavigator'; // Adjust the import path as necessary
 import { colors } from '@/src/theme';
 
 // Define navigation prop type
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
 const SignUpScreen = () => {
   const [email, setEmail] = useState('');
@@ -22,7 +22,7 @@ const SignUpScreen = () => {
   const [error, setError] = useState('');
 
   const navigation = useNavigation<NavigationProp>();
-
+  const { signIn } = useContext(AuthContext);
   const validateEmail = (text: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     setEmail(text);
@@ -51,9 +51,18 @@ const SignUpScreen = () => {
         email,
         password,
       });
-      Alert.alert('Success', response.data.message, [
+      {/*Alert.alert('Success', response.data.message, [
         { text: 'OK', onPress: () => navigation.navigate('SignIn') },
-      ]);
+      ]);*/}
+      if (response.data.token && response.data.user) {
+        await signIn(response.data.token, response.data.user);
+        Alert.alert('Success', 'Account created successfully!');
+      } else {
+        // If API doesn't return token, go to SignIn
+        Alert.alert('Success', 'Account created! Please sign in.', [
+          { text: 'OK', onPress: () => navigation.navigate('SignIn') },
+        ]);
+      }
     } catch (err) {
       if (axios.isAxiosError(err)) {
         setError(err.response?.data?.error || 'Something went wrong. Please try again.');

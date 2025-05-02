@@ -3,9 +3,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthContext } from '../context/AuthContext';
 import AuthNavigator from './AuthNavigator';
 import WelcomeNavigator from './WelcomeNavigation';
-import { View, ActivityIndicator } from 'react-native';
 import LoadingScreen3 from '../screens/Splash&loading/loadingScreen3';
-
+import MentalNavigator from './MentalNavigator'; // Make sure this is imported
 
 const Stack = createNativeStackNavigator();
 
@@ -13,7 +12,6 @@ const RootNavigator = () => {
     const { isLoading, userToken, hasSeenWelcome, completeWelcome } = useContext(AuthContext);
 
     if (isLoading) {
-        // TODO: Change this with actual loading screen
         return (<LoadingScreen3 />);
     }
 
@@ -25,7 +23,8 @@ const RootNavigator = () => {
                     component={() => <WelcomeNavigator onWelcomeComplete={completeWelcome} />}
                 />
             ) : userToken ? (
-                <Stack.Screen name="Main" component={AuthNavigator} />
+
+                <Stack.Screen name="Mental" component={MentalNavigator} />
             ) : (
                 <Stack.Screen name="Auth" component={AuthNavigator} />
             )}

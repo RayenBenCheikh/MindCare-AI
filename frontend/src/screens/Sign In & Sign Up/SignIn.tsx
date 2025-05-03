@@ -43,7 +43,7 @@ const SignIn = () => {
       await signIn(token, user);
 
       Alert.alert('Success', 'Logged in successfully!');
-
+      console.log('Token saved to AsyncStorage:', token);
       // No need for manual navigation - RootNavigator will handle it automatically
       // when the userToken changes in the context
 

@@ -38,7 +38,7 @@ const HelpSelection: React.FC = () => {
                 setProfessionalHelp(selectedOption);
 
                 // Complete the assessment after this final question
-                navigation.navigate('AgeSelection'); // Change to your final screen
+                navigation.navigate('MedicationSelection'); // Change to your final screen
             } catch (error) {
                 console.error('Error saving selection:', error);
             }

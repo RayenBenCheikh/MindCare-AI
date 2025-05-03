@@ -10,7 +10,7 @@ import assessmentRoutes from "./routes/AssessmentRoutes.js";
 import { cleanEnv, str, port } from "envalid";
 
 dotenv.config();
-
+const medicationRoutes = require('./routes/MedicationRoutes');
 // Environment validation
 const env = cleanEnv(process.env, {
   MONGO_URI: str({ desc: 'MongoDB connection string' }),
@@ -60,7 +60,7 @@ app.use("/api/auth", userRoutes);
 
 // Add assessment routes
 app.use("/api/assessment", assessmentRoutes);
-
+app.use('/api/medications', medicationRoutes);
 // MongoDB connection and server start
 mongoose
   .connect(env.MONGO_URI, {

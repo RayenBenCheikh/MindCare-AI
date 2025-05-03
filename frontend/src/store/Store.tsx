@@ -27,9 +27,15 @@ interface AssessmentData {
         label: string;
         hours: string;
     };
+
     professionalHelp: 'yes' | 'no' | null;
+    medication: 'prescribed' | 'otc' | 'none' | 'no_answer' | null;
     completedAt: string | null;
     isSubmitted: boolean;
+    prescribedMedications: Array<{
+        id: string;
+        name: string;
+    }> | null;
 }
 
 // Define the store interface
@@ -52,6 +58,12 @@ interface AssessmentStore {
     submitAssessment: () => Promise<void>;
     saveProgress: () => Promise<void>;
     resetAssessment: () => void;
+    setMedication: (option: 'prescribed' | 'otc' | 'none' | 'no_answer') => void;
+    savePrescribedMedications: (medications: Array<{
+        id: string;
+        name: string;
+    }>) => void;
+
 }
 
 // Create the Zustand store with persist middleware
@@ -69,7 +81,9 @@ export const useAssessmentStore = create<AssessmentStore>()(
                 sleepQuality: { label: '', hours: '' },
                 professionalHelp: null,
                 completedAt: null,
-                isSubmitted: false
+                isSubmitted: false,
+                medication: null,
+                prescribedMedications: null,
             },
             isLoading: false,
             error: null,
@@ -137,6 +151,18 @@ export const useAssessmentStore = create<AssessmentStore>()(
                     completedAt: new Date().toISOString()
                 }
             })),
+            setMedication: (option) => set(state => ({
+                assessmentData: {
+                    ...state.assessmentData,
+                    medication: option
+                }
+            })),
+            savePrescribedMedications: (medications) => set(state => ({
+                assessmentData: {
+                    ...state.assessmentData,
+                    prescribedMedications: medications
+                }
+            })),
 
             submitAssessment: async () => {
                 set({ isLoading: true, error: null });
@@ -150,10 +176,10 @@ export const useAssessmentStore = create<AssessmentStore>()(
                     if (!token) {
                         throw new Error('User not authenticated');
                     }
-
+                    console.log('Submitting assessment data:', JSON.stringify(assessmentData));
                     // Submit data to your API - updated URL to your actual backend endpoint
                     const response = await axios.post(
-                        'http://localhost:5000/api/assessment/submit',
+                        'http://10.0.2.2:5000/api/assessment/submit',
                         assessmentData,
                         {
                             headers: {
@@ -162,7 +188,7 @@ export const useAssessmentStore = create<AssessmentStore>()(
                             }
                         }
                     );
-
+                    console.log('Server response:', response.data);
                     // Mark as submitted if successful
                     set(state => ({
                         isLoading: false,
@@ -193,7 +219,7 @@ export const useAssessmentStore = create<AssessmentStore>()(
                     }
 
                     await axios.post(
-                        'http://localhost:5000/api/assessment/save-progress',
+                        'http://10.0.2.2:5000/api/assessment/save-progress',
                         assessmentData,
                         {
                             headers: {
@@ -220,7 +246,9 @@ export const useAssessmentStore = create<AssessmentStore>()(
                     sleepQuality: { label: '', hours: '' },
                     professionalHelp: null,
                     completedAt: null,
-                    isSubmitted: false
+                    isSubmitted: false,
+                    medication: null,
+                    prescribedMedications: null,
                 },
                 error: null
             })

@@ -119,6 +119,9 @@ router.post("/save-progress", auth, async (req, res) => {
             professionalHelp
         } = req.body;
 
+        console.log('Received assessment data:', req.body);
+        console.log('User ID from token:', req.user.id);
+
         // Look for existing draft assessment
         let assessment = await Assessment.findOne({
             user: req.user.id,
@@ -137,10 +140,13 @@ router.post("/save-progress", auth, async (req, res) => {
                     height,
                     mood,
                     sleepQuality,
-                    professionalHelp
+                    professionalHelp,
+                    updatedAt: new Date()
                 },
                 { new: true }
             );
+
+            console.log('Updated existing assessment:', assessment._id);
         } else {
             // Create new draft assessment
             assessment = new Assessment({
@@ -152,10 +158,11 @@ router.post("/save-progress", auth, async (req, res) => {
                 height,
                 mood,
                 sleepQuality,
-                professionalHelp,
-                isSubmitted: false
+                professionalHelp
             });
+
             await assessment.save();
+            console.log('Created new assessment:', assessment._id);
         }
 
         res.status(200).json({
@@ -172,7 +179,6 @@ router.post("/save-progress", auth, async (req, res) => {
         });
     }
 });
-
 // Get all user assessments (history)
 router.get("/history", auth, async (req, res) => {
     try {

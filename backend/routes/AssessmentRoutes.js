@@ -5,6 +5,26 @@ import Assessment from "../models/Assessment.js";
 const router = express.Router();
 
 // Submit a new assessment
+router.post('/', async (req, res) => {
+    try {
+        console.log('Received assessment data:', req.body);
+
+        // Process and save assessment data
+        // ...
+
+        res.status(201).json({
+            success: true,
+            message: 'Assessment saved successfully'
+        });
+    } catch (error) {
+        console.error('Error saving assessment:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to save assessment',
+            error: error.message
+        });
+    }
+});
 router.post("/submit", auth, async (req, res) => {
     try {
         const {

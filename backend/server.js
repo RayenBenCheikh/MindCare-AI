@@ -66,7 +66,7 @@ app.post('/api/upload-profile-image', upload.single('image'), async (req, res) =
 
 // Register routes
 app.use("/api/auth", userRoutes);
-app.use("/api/assessment", assessmentRoutes);
+app.use('/api/assessments', assessmentRoutes);
 app.use('/api/medications', medicationRoutes);
 
 // MongoDB connection and server start

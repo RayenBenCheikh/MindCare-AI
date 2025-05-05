@@ -24,14 +24,14 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const { width } = Dimensions.get('window');
 const MARKER_WIDTH = 2;
 const MARKER_SPACING = 15;
-const HEIGHT_OFFSET = -14;
+const HEIGHT_OFFSET = -14; // Adjusted height offset to match the screenshot (165cm showing at 145cm marker)
 const MIN_HEIGHT_CM = 100;
 const MAX_HEIGHT_CM = 220;
 const TOTAL_HEIGHTS_CM = MAX_HEIGHT_CM - MIN_HEIGHT_CM + 1;
 
 const HeightSelection: React.FC = () => {
     // We'll keep the ruler value in heightRulerValue and the display value in heightValue
-    const [heightRulerValue, setHeightRulerValue] = useState<number>(150); // Default height 150cm (shows as 170cm)
+    const [heightRulerValue, setHeightRulerValue] = useState<number>(150 - HEIGHT_OFFSET); // Default position adjusted for offset
     const [unit, setUnit] = useState<'cm' | 'ft'>('cm');
     const navigation = useNavigation<NavigationProp>();
     const scrollViewRef = useRef<ScrollView>(null);
@@ -79,17 +79,6 @@ const HeightSelection: React.FC = () => {
     const displayedHeight = unit === 'cm'
         ? getDisplayHeight(heightRulerValue)
         : convertHeight(getDisplayHeight(heightRulerValue), 'cm', 'ft');
-
-    // Format height for display
-    const formatHeightForDisplay = (heightVal: number) => {
-        if (unit === 'cm') {
-            return heightVal;
-        } else {
-            const feet = Math.floor(heightVal / 100);
-            const inches = heightVal % 100;
-            return `${feet}'${inches}"`;
-        }
-    };
 
     // Calculate scroll position from height
     const getScrollPositionFromHeight = (height: number): number => {
@@ -182,7 +171,7 @@ const HeightSelection: React.FC = () => {
             } else {
                 // For feet/inches, convert the display height
                 const displayHeightFt = convertHeight(saveHeight, 'cm', 'ft');
-                updateHeightInStore(displayHeightFt, 'ft');
+                updateHeightInStore(displayHeightFt, 'ft', saveHeight);
             }
 
             // Navigate to next screen
@@ -236,104 +225,112 @@ const HeightSelection: React.FC = () => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <View style={styles.outerContainer}>
+            <SafeAreaView style={styles.container}>
+                <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-            {/* Main Content */}
-            <View style={styles.contentContainer}>
-                {/* Header */}
-                <View style={styles.headerContainer}>
-                    <BackButton onPress={() => navigation.goBack()} />
-                    <Text style={styles.headerText}>Assessment</Text>
-                    <View style={styles.progressPill}>
-                        <Text style={styles.progressText}>5 of 10</Text>
-                    </View>
-                </View>
-
-                {/* Title */}
-                <Text style={styles.titleText}>What's your height?</Text>
-
-                {/* Unit Selector */}
-                <View style={styles.unitSelectorContainer}>
-                    <TouchableOpacity
-                        style={[
-                            styles.unitButton,
-                            unit === 'cm' && styles.activeUnitButton
-                        ]}
-                        onPress={() => handleUnitChange('cm')}
-                    >
-                        <Text style={[
-                            styles.unitButtonText,
-                            unit === 'cm' && styles.activeUnitButtonText
-                        ]}>cm</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[
-                            styles.unitButton,
-                            unit === 'ft' && styles.activeUnitButton
-                        ]}
-                        onPress={() => handleUnitChange('ft')}
-                    >
-                        <Text style={[
-                            styles.unitButtonText,
-                            unit === 'ft' && styles.activeUnitButtonText
-                        ]}>ft</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Height Display */}
-                <View style={styles.heightDisplayContainer}>
-                    <Text style={styles.heightText}>
-                        {unit === 'cm'
-                            ? getDisplayHeight(heightRulerValue)
-                            : Math.floor(displayedHeight / 100)
-                        }
-                    </Text>
-                    {unit === 'ft' && (
-                        <Text style={styles.inchesText}>{displayedHeight % 100}"</Text>
-                    )}
-                    {unit === 'cm' && (
-                        <Text style={styles.unitText}>{unit}</Text>
-                    )}
-                </View>
-
-                {/* Height Ruler */}
-                <View style={styles.rulerContainer}>
-                    {/* Center Indicator */}
-                    <View style={styles.centerIndicator} />
-
-                    {/* ScrollView-based ruler */}
-                    <ScrollView
-                        ref={scrollViewRef}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.rulerScrollContent}
-                        onScroll={handleScroll}
-                        onScrollEndDrag={handleScrollEnd}
-                        onMomentumScrollEnd={handleScrollEnd}
-                        scrollEventThrottle={16}
-                        decelerationRate="fast"
-                    >
-                        <View style={styles.rulerContent}>
-                            {renderRulerMarkers()}
+                {/* Main Content */}
+                <View style={styles.contentContainer}>
+                    {/* Header */}
+                    <View style={styles.headerContainer}>
+                        <BackButton onPress={() => navigation.goBack()} />
+                        <Text style={styles.headerText}>Assessment</Text>
+                        <View style={styles.progressPill}>
+                            <Text style={styles.progressText}>5 of 10</Text>
                         </View>
-                    </ScrollView>
-                </View>
+                    </View>
 
-                {/* Flexible spacer to push content up */}
-                <View style={styles.flexSpacer} />
-            </View>
+                    {/* Title */}
+                    <Text style={styles.titleText}>What's your height?</Text>
+
+                    {/* Unit Selector */}
+                    <View style={styles.unitSelectorContainer}>
+                        <TouchableOpacity
+                            style={[
+                                styles.unitButton,
+                                unit === 'cm' && styles.activeUnitButton
+                            ]}
+                            onPress={() => handleUnitChange('cm')}
+                        >
+                            <Text style={[
+                                styles.unitButtonText,
+                                unit === 'cm' && styles.activeUnitButtonText
+                            ]}>cm</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[
+                                styles.unitButton,
+                                unit === 'ft' && styles.activeUnitButton
+                            ]}
+                            onPress={() => handleUnitChange('ft')}
+                        >
+                            <Text style={[
+                                styles.unitButtonText,
+                                unit === 'ft' && styles.activeUnitButtonText
+                            ]}>ft</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Height Display */}
+                    <View style={styles.heightDisplayContainer}>
+                        <Text style={styles.heightText}>
+                            {unit === 'cm'
+                                ? getDisplayHeight(heightRulerValue)
+                                : Math.floor(displayedHeight / 100)
+                            }
+                        </Text>
+                        {unit === 'ft' && (
+                            <Text style={styles.inchesText}>{displayedHeight % 100}"</Text>
+                        )}
+                        {unit === 'cm' && (
+                            <Text style={styles.unitText}>{unit}</Text>
+                        )}
+                    </View>
+
+                    {/* Height Ruler */}
+                    <View style={styles.rulerContainer}>
+                        {/* Center Indicator */}
+                        <View style={styles.centerIndicator} />
+
+                        {/* ScrollView-based ruler */}
+                        <ScrollView
+                            ref={scrollViewRef}
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.rulerScrollContent}
+                            onScroll={handleScroll}
+                            onScrollEndDrag={handleScrollEnd}
+                            onMomentumScrollEnd={handleScrollEnd}
+                            scrollEventThrottle={16}
+                            decelerationRate="fast"
+                        >
+                            <View style={styles.rulerContent}>
+                                {renderRulerMarkers()}
+                            </View>
+                        </ScrollView>
+                    </View>
+
+                    {/* Flexible spacer to push content up */}
+                    <View style={styles.flexSpacer} />
+                </View>
+            </SafeAreaView>
 
             {/* Footer with Continue Button - Fixed at bottom */}
-            <View style={styles.footerContainer}>
-                <ContinueButton onPress={handleContinue} />
-            </View>
-        </SafeAreaView>
+            <SafeAreaView style={styles.footerSafeArea}>
+                <View style={styles.footerContainer}>
+                    <ContinueButton onPress={handleContinue} />
+                </View>
+            </SafeAreaView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
+    outerContainer: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+    },
     container: {
         flex: 1,
         backgroundColor: '#FFFFFF',
@@ -346,12 +343,17 @@ const styles = StyleSheet.create({
         flex: 1,
         minHeight: 20, // Minimum height to ensure some space
     },
-    footerContainer: {
-        paddingHorizontal: 20,
-        paddingBottom: Platform.OS === 'ios' ? 30 : 20,
+    footerSafeArea: {
         backgroundColor: '#FFFFFF',
     },
-    // All other styles remain the same
+    footerContainer: {
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        paddingBottom: Platform.OS === 'ios' ? 20 : 16,
+        backgroundColor: '#FFFFFF',
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderTopColor: 'rgba(0,0,0,0.1)',
+    },
     headerContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',

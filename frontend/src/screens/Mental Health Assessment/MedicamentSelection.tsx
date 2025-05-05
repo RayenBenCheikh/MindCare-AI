@@ -9,7 +9,8 @@ import {
     FlatList,
     ScrollView,
     ActivityIndicator,
-    TextInput
+    TextInput,
+    Alert
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -42,7 +43,7 @@ const MedicamentSelection: React.FC = () => {
 
     const navigation = useNavigation<NavigationProp>();
     const savePrescribedMedications = useAssessmentStore(state => state.savePrescribedMedications);
-
+    const submitAssessment = useAssessmentStore(state => state.submitAssessment);
     // Fetch medications by selected letter
     useEffect(() => {
         const fetchMedications = async () => {
@@ -121,12 +122,52 @@ const MedicamentSelection: React.FC = () => {
         setSelectedMeds(selectedMeds.filter(med => med.id !== medId));
     };
 
-    const handleContinue = () => {
-        // Save selected medications to store
-        savePrescribedMedications(selectedMeds);
+    const handleContinue = async () => {
+        try {
+            // Save selected medications to store
+            savePrescribedMedications(selectedMeds);
 
-        // Navigate to the next screen in your assessment flow
-        navigation.navigate('AssessmentCompleted');
+            // Show loading state
+            setIsLoading(true);
+            setError(null);
+
+            try {
+                // Submit the assessment
+                const response = await submitAssessment();
+                console.log('Assessment submitted successfully:', response);
+
+                // Navigate to next screen on success
+                navigation.navigate('HeightSelection');
+            } catch (error: any) {
+                console.error('Error submitting assessment:', error);
+
+                // Improved error message
+                let errorMessage = 'There was a problem saving your assessment.';
+
+                if (error.response) {
+                    if (error.response.status === 404) {
+                        errorMessage = 'Server endpoint not found. Please contact support.';
+                    } else {
+                        errorMessage = `Server error (${error.response.status}): ${error.response.data?.message || 'Unknown error'}`;
+                    }
+                } else if (error.message) {
+                    errorMessage += ' ' + error.message;
+                }
+
+                setError(errorMessage);
+
+                Alert.alert(
+                    'Submission Error',
+                    errorMessage,
+                    [{ text: 'OK' }]
+                );
+            } finally {
+                setIsLoading(false);
+            }
+        } catch (error) {
+            console.error('Error saving medications:', error);
+            setError('Error saving medications. Please try again.');
+        }
     };
 
     const renderMedicationItem = ({ item }: { item: Medication }) => {
@@ -496,3 +537,4 @@ const styles = StyleSheet.create({
 });
 
 export default MedicamentSelection;
+

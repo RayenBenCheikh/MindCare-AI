@@ -23,15 +23,15 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const { width } = Dimensions.get('window');
 const MARKER_WIDTH = 2;
-const MARKER_SPACING = 15; // Keep original spacing
+const MARKER_SPACING = 15;
 const MIN_WEIGHT = 40;
 const MAX_WEIGHT = 200;
 const TOTAL_WEIGHTS = MAX_WEIGHT - MIN_WEIGHT + 1;
-const WEIGHT_OFFSET = -14; // Add offset between ruler and displayed weight
+const WEIGHT_OFFSET = -14;
 
 const WeightSelection: React.FC = () => {
     // We'll store the ruler value and calculate display value with offset
-    const [rulerWeight, setRulerWeight] = useState<number>(70 - WEIGHT_OFFSET); // Default adjusted for offset
+    const [rulerWeight, setRulerWeight] = useState<number>(85); // Default to show 83kg initially
     const [unit, setUnit] = useState<'kg' | 'lbs'>('kg');
     const navigation = useNavigation<NavigationProp>();
     const scrollViewRef = useRef<ScrollView>(null);
@@ -159,7 +159,7 @@ const WeightSelection: React.FC = () => {
             } else {
                 // For lbs, convert the display weight
                 const weightInLbs = convertWeight(saveWeight, 'kg', 'lbs');
-                updateWeightInStore(weightInLbs, 'lbs');
+                updateWeightInStore(weightInLbs, 'lbs', saveWeight);
             }
 
             // Navigate to next screen
@@ -211,12 +211,12 @@ const WeightSelection: React.FC = () => {
 
         return markers;
     };
+
     return (
         <View style={styles.outerContainer}>
             <SafeAreaView style={styles.container}>
                 <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-                {/* Main Content Container */}
                 <View style={styles.contentContainer}>
                     {/* Header */}
                     <View style={styles.headerContainer}>
@@ -331,7 +331,6 @@ const styles = StyleSheet.create({
         borderTopWidth: StyleSheet.hairlineWidth,
         borderTopColor: 'rgba(0,0,0,0.1)',
     },
-    // All other styles remain the same
     headerContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',

@@ -3,22 +3,23 @@ import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
 import multer from "multer";
-import { v4 as uuidv4 } from "uuid";
-import User from "./models/User.js";
-import userRoutes from "./routes/userRoutes.js";
-import assessmentRoutes from "./routes/AssessmentRoutes.js";
 import { cleanEnv, str, port } from "envalid";
 
+// Import routes with .js extensions (required for ES modules)
+import userRoutes from "./routes/userRoutes.js";
+import medicationRoutes from './routes/MedicationRoutes.js';
+import assessmentRoutes from './routes/AssessmentRoutes.js';
+
+// Initialize app and config
+const app = express();
 dotenv.config();
-const medicationRoutes = require('./routes/MedicationRoutes');
+
 // Environment validation
 const env = cleanEnv(process.env, {
   MONGO_URI: str({ desc: 'MongoDB connection string' }),
   PORT: port({ default: 5000, desc: 'Server port' })
   // Include any other environment variables you're using
 });
-
-const app = express();
 
 // CORS and middleware
 app.use(cors({
@@ -53,14 +54,21 @@ app.get('/health', (req, res) => {
 // Image upload route
 app.post('/api/upload-profile-image', upload.single('image'), async (req, res) => {
   // Keep existing code...
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
+
+  res.status(200).json({
+    message: 'File uploaded successfully',
+    file: req.file.filename
+  });
 });
 
-// Existing routes
+// Register routes
 app.use("/api/auth", userRoutes);
-
-// Add assessment routes
 app.use("/api/assessment", assessmentRoutes);
 app.use('/api/medications', medicationRoutes);
+
 // MongoDB connection and server start
 mongoose
   .connect(env.MONGO_URI, {

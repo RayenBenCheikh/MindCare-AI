@@ -1,5 +1,4 @@
-// In your backend models/Medication.js
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const MedicationSchema = new mongoose.Schema({
     Nom: String,
@@ -21,4 +20,5 @@ const MedicationSchema = new mongoose.Schema({
     VEIC: String
 });
 
-module.exports = mongoose.model('Medication', MedicationSchema);
+const Medication = mongoose.model('Medication', MedicationSchema, 'Medicament_list');
+export default Medication;

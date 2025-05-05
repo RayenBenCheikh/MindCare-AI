@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
     Text,
@@ -6,37 +6,54 @@ import {
     TouchableOpacity,
     SafeAreaView,
     StatusBar,
-    Animated,
-    PanResponder,
-    Dimensions
+    Dimensions,
+    ScrollView,
+    NativeSyntheticEvent,
+    NativeScrollEvent,
+    Platform
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/MentalNavigator';
 import BackButton from '@/src/components/BackButton';
 import { useAssessmentStore } from '@/src/store/Store';
+import ContinueButton from '@/src/components/Continue';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const { width } = Dimensions.get('window');
-const RULER_WIDTH = width * 0.9;
 const MARKER_WIDTH = 2;
 const MARKER_SPACING = 15;
+const HEIGHT_OFFSET = -14;
 const MIN_HEIGHT_CM = 100;
 const MAX_HEIGHT_CM = 220;
-const MIN_HEIGHT_FT = 3;  // 3'0"
-const MAX_HEIGHT_FT = 7;  // 7'3"
 const TOTAL_HEIGHTS_CM = MAX_HEIGHT_CM - MIN_HEIGHT_CM + 1;
 
 const HeightSelection: React.FC = () => {
-    const [heightValue, setHeightValue] = useState<number>(170); // Default height 170cm
+    // We'll keep the ruler value in heightRulerValue and the display value in heightValue
+    const [heightRulerValue, setHeightRulerValue] = useState<number>(150); // Default height 150cm (shows as 170cm)
     const [unit, setUnit] = useState<'cm' | 'ft'>('cm');
     const navigation = useNavigation<NavigationProp>();
-    const scrollX = useRef(new Animated.Value(0)).current;
-    const startScrollX = useRef(0);
+    const scrollViewRef = useRef<ScrollView>(null);
+
+    // Track if the first render has completed
+    const initialRenderComplete = useRef(false);
+
+    // Keep track of if we should update height on scroll
+    const shouldUpdateHeight = useRef(true);
 
     // Get the setHeight action from Zustand store
     const updateHeightInStore = useAssessmentStore(state => state.setHeight);
+
+    // Get the display height (ruler height + offset)
+    const getDisplayHeight = (rulerHeight: number): number => {
+        return rulerHeight + HEIGHT_OFFSET;
+    };
+
+    // Get the real height without offset
+    const getRulerHeight = (displayHeight: number): number => {
+        return displayHeight - HEIGHT_OFFSET;
+    };
 
     // Convert height between cm and feet/inches
     const convertHeight = (heightVal: number, fromUnit: 'cm' | 'ft', toUnit: 'cm' | 'ft') => {
@@ -58,6 +75,11 @@ const HeightSelection: React.FC = () => {
         }
     };
 
+    // Calculate the displayed height value
+    const displayedHeight = unit === 'cm'
+        ? getDisplayHeight(heightRulerValue)
+        : convertHeight(getDisplayHeight(heightRulerValue), 'cm', 'ft');
+
     // Format height for display
     const formatHeightForDisplay = (heightVal: number) => {
         if (unit === 'cm') {
@@ -69,49 +91,82 @@ const HeightSelection: React.FC = () => {
         }
     };
 
+    // Calculate scroll position from height
+    const getScrollPositionFromHeight = (height: number): number => {
+        return (height - MIN_HEIGHT_CM) * MARKER_SPACING - (width / 2) + MARKER_SPACING;
+    };
+
+    // Calculate height from scroll position
+    const getHeightFromScrollPosition = (scrollPosition: number): number => {
+        const centerPositionX = scrollPosition + (width / 2);
+        const markerIndex = Math.round(centerPositionX / MARKER_SPACING);
+        return MIN_HEIGHT_CM + markerIndex;
+    };
+
+    // Scroll to specific height
+    const scrollToHeight = (height: number, animated: boolean = true) => {
+        if (!scrollViewRef.current) return;
+
+        shouldUpdateHeight.current = false; // Prevent height updates during programmatic scrolling
+
+        const position = getScrollPositionFromHeight(height);
+        scrollViewRef.current.scrollTo({ x: position, animated });
+
+        // Re-enable height updates after scrolling completes
+        setTimeout(() => {
+            shouldUpdateHeight.current = true;
+        }, animated ? 300 : 50);
+    };
+
     // Initialize the slider position
-    const initialOffset = (heightValue - MIN_HEIGHT_CM) * MARKER_SPACING;
-    scrollX.setValue(-initialOffset);
+    useEffect(() => {
+        // Only run this once after first render
+        if (!initialRenderComplete.current) {
+            setTimeout(() => {
+                scrollToHeight(heightRulerValue, false);
+                initialRenderComplete.current = true;
+            }, 300);
+        }
+    }, []);
 
-    // Set up pan responder for slider
-    const panResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: () => true,
-            onPanResponderGrant: () => {
-                scrollX.addListener(({ value }) => {
-                    startScrollX.current = value;
-                });
-            },
-            onPanResponderMove: (_, gestureState) => {
-                const newPosition = startScrollX.current + gestureState.dx;
-                const minPosition = -(TOTAL_HEIGHTS_CM - 1) * MARKER_SPACING;
-                const maxPosition = 0;
+    // Handle unit change
+    useEffect(() => {
+        if (initialRenderComplete.current) {
+            // Re-center on height after unit change
+            scrollToHeight(heightRulerValue);
+        }
+    }, [unit]);
 
-                const boundedPosition = Math.max(minPosition, Math.min(newPosition, maxPosition));
-                scrollX.setValue(boundedPosition);
+    // Handle scrolling and update height
+    const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        if (!shouldUpdateHeight.current) return;
 
-                // Update height based on position
-                const calculatedHeight = MIN_HEIGHT_CM - Math.round(boundedPosition / MARKER_SPACING);
-                if (calculatedHeight !== heightValue && unit === 'cm') {
-                    setHeightValue(calculatedHeight);
-                } else if (unit === 'ft') {
-                    // Converting the cm value to feet/inches
-                    const feetInchFormat = convertHeight(calculatedHeight, 'cm', 'ft');
-                    if (feetInchFormat !== heightValue) {
-                        setHeightValue(feetInchFormat);
-                    }
-                }
-            },
-            onPanResponderRelease: () => { },
-        })
-    ).current;
+        const offsetX = event.nativeEvent.contentOffset.x;
+        const calculatedHeight = getHeightFromScrollPosition(offsetX);
+
+        if (calculatedHeight >= MIN_HEIGHT_CM && calculatedHeight <= MAX_HEIGHT_CM) {
+            setHeightRulerValue(calculatedHeight);
+        }
+    };
+
+    // Handle scroll end to snap to nearest marker
+    const handleScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        // Get the exact height at current scroll position
+        const offsetX = event.nativeEvent.contentOffset.x;
+        const calculatedHeight = getHeightFromScrollPosition(offsetX);
+
+        if (calculatedHeight >= MIN_HEIGHT_CM && calculatedHeight <= MAX_HEIGHT_CM) {
+            // Update the height value
+            setHeightRulerValue(calculatedHeight);
+
+            // Scroll to exact position for this height
+            scrollToHeight(calculatedHeight);
+        }
+    };
 
     // Change unit handler
     const handleUnitChange = (newUnit: 'cm' | 'ft') => {
         if (unit !== newUnit) {
-            const newHeight = convertHeight(heightValue, unit, newUnit);
-            setHeightValue(newHeight);
             setUnit(newUnit);
         }
     };
@@ -119,13 +174,15 @@ const HeightSelection: React.FC = () => {
     // Continue handler
     const handleContinue = async () => {
         try {
-            // Store height in Zustand store instead of AsyncStorage
+            // Store height in store - use the DISPLAY height (with offset)
+            const saveHeight = getDisplayHeight(heightRulerValue);
+
             if (unit === 'cm') {
-                updateHeightInStore(heightValue, 'cm');
+                updateHeightInStore(saveHeight, 'cm');
             } else {
-                // For feet/inches, also store the CM equivalent
-                const cmHeight = convertHeight(heightValue, 'ft', 'cm');
-                updateHeightInStore(heightValue, 'ft');
+                // For feet/inches, convert the display height
+                const displayHeightFt = convertHeight(saveHeight, 'cm', 'ft');
+                updateHeightInStore(displayHeightFt, 'ft');
             }
 
             // Navigate to next screen
@@ -138,7 +195,14 @@ const HeightSelection: React.FC = () => {
     // Generate ruler markers
     const renderRulerMarkers = () => {
         const markers = [];
+        const paddingWidth = width / 2; // Add padding on each side for better scrolling
 
+        // Left padding
+        markers.push(
+            <View key="left-padding" style={{ width: paddingWidth }} />
+        );
+
+        // Generate markers for each height value
         for (let i = 0; i <= TOTAL_HEIGHTS_CM; i++) {
             const markerHeight = MIN_HEIGHT_CM + i;
             const isMainMarker = i % 5 === 0;
@@ -151,20 +215,22 @@ const HeightSelection: React.FC = () => {
                         {
                             height: isMainMarker ? 40 : 20,
                             opacity: isMainMarker ? 1 : 0.5,
-                            left: i * MARKER_SPACING
                         }
                     ]}
                 >
                     {isMainMarker && (
                         <Text style={styles.markerText}>
-                            {unit === 'cm'
-                                ? markerHeight
-                                : formatHeightForDisplay(convertHeight(markerHeight, 'cm', 'ft'))}
+                            {markerHeight}
                         </Text>
                     )}
                 </View>
             );
         }
+
+        // Right padding
+        markers.push(
+            <View key="right-padding" style={{ width: paddingWidth }} />
+        );
 
         return markers;
     };
@@ -173,83 +239,96 @@ const HeightSelection: React.FC = () => {
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-            {/* Header */}
-            <View style={styles.headerContainer}>
-                <BackButton onPress={() => navigation.goBack()} />
-                <Text style={styles.headerText}>Assessment</Text>
-                <View style={styles.progressPill}>
-                    <Text style={styles.progressText}>5 of 10</Text>
+            {/* Main Content */}
+            <View style={styles.contentContainer}>
+                {/* Header */}
+                <View style={styles.headerContainer}>
+                    <BackButton onPress={() => navigation.goBack()} />
+                    <Text style={styles.headerText}>Assessment</Text>
+                    <View style={styles.progressPill}>
+                        <Text style={styles.progressText}>5 of 10</Text>
+                    </View>
                 </View>
-            </View>
 
-            {/* Title */}
-            <Text style={styles.titleText}>What's your height?</Text>
+                {/* Title */}
+                <Text style={styles.titleText}>What's your height?</Text>
 
-            {/* Unit Selector */}
-            <View style={styles.unitSelectorContainer}>
-                <TouchableOpacity
-                    style={[
-                        styles.unitButton,
-                        unit === 'cm' && styles.activeUnitButton
-                    ]}
-                    onPress={() => handleUnitChange('cm')}
-                >
-                    <Text style={[
-                        styles.unitButtonText,
-                        unit === 'cm' && styles.activeUnitButtonText
-                    ]}>cm</Text>
-                </TouchableOpacity>
+                {/* Unit Selector */}
+                <View style={styles.unitSelectorContainer}>
+                    <TouchableOpacity
+                        style={[
+                            styles.unitButton,
+                            unit === 'cm' && styles.activeUnitButton
+                        ]}
+                        onPress={() => handleUnitChange('cm')}
+                    >
+                        <Text style={[
+                            styles.unitButtonText,
+                            unit === 'cm' && styles.activeUnitButtonText
+                        ]}>cm</Text>
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={[
-                        styles.unitButton,
-                        unit === 'ft' && styles.activeUnitButton
-                    ]}
-                    onPress={() => handleUnitChange('ft')}
-                >
-                    <Text style={[
-                        styles.unitButtonText,
-                        unit === 'ft' && styles.activeUnitButtonText
-                    ]}>ft</Text>
-                </TouchableOpacity>
-            </View>
+                    <TouchableOpacity
+                        style={[
+                            styles.unitButton,
+                            unit === 'ft' && styles.activeUnitButton
+                        ]}
+                        onPress={() => handleUnitChange('ft')}
+                    >
+                        <Text style={[
+                            styles.unitButtonText,
+                            unit === 'ft' && styles.activeUnitButtonText
+                        ]}>ft</Text>
+                    </TouchableOpacity>
+                </View>
 
-            {/* Height Display */}
-            <View style={styles.heightDisplayContainer}>
-                <Text style={styles.heightText}>
-                    {unit === 'cm' ? heightValue : Math.floor(heightValue / 100)}
-                </Text>
-                {unit === 'ft' && (
-                    <Text style={styles.inchesText}>{heightValue % 100}"</Text>
-                )}
-                {unit === 'cm' && (
-                    <Text style={styles.unitText}>{unit}</Text>
-                )}
-            </View>
-
-            {/* Height Ruler */}
-            <View style={styles.rulerContainer}>
-                <Animated.View
-                    style={[
-                        styles.rulerContent,
-                        {
-                            transform: [{ translateX: scrollX }]
+                {/* Height Display */}
+                <View style={styles.heightDisplayContainer}>
+                    <Text style={styles.heightText}>
+                        {unit === 'cm'
+                            ? getDisplayHeight(heightRulerValue)
+                            : Math.floor(displayedHeight / 100)
                         }
-                    ]}
-                    {...panResponder.panHandlers}
-                >
-                    {renderRulerMarkers()}
-                </Animated.View>
+                    </Text>
+                    {unit === 'ft' && (
+                        <Text style={styles.inchesText}>{displayedHeight % 100}"</Text>
+                    )}
+                    {unit === 'cm' && (
+                        <Text style={styles.unitText}>{unit}</Text>
+                    )}
+                </View>
 
-                {/* Center Indicator */}
-                <View style={styles.centerIndicator} />
+                {/* Height Ruler */}
+                <View style={styles.rulerContainer}>
+                    {/* Center Indicator */}
+                    <View style={styles.centerIndicator} />
+
+                    {/* ScrollView-based ruler */}
+                    <ScrollView
+                        ref={scrollViewRef}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.rulerScrollContent}
+                        onScroll={handleScroll}
+                        onScrollEndDrag={handleScrollEnd}
+                        onMomentumScrollEnd={handleScrollEnd}
+                        scrollEventThrottle={16}
+                        decelerationRate="fast"
+                    >
+                        <View style={styles.rulerContent}>
+                            {renderRulerMarkers()}
+                        </View>
+                    </ScrollView>
+                </View>
+
+                {/* Flexible spacer to push content up */}
+                <View style={styles.flexSpacer} />
             </View>
 
-            {/* Continue Button */}
-            <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-                <Text style={styles.continueButtonText}>Continue</Text>
-                <Text style={styles.continueArrow}>→</Text>
-            </TouchableOpacity>
+            {/* Footer with Continue Button - Fixed at bottom */}
+            <View style={styles.footerContainer}>
+                <ContinueButton onPress={handleContinue} />
+            </View>
         </SafeAreaView>
     );
 };
@@ -258,8 +337,21 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FFFFFF',
+    },
+    contentContainer: {
+        flex: 1,
         paddingHorizontal: 20,
     },
+    flexSpacer: {
+        flex: 1,
+        minHeight: 20, // Minimum height to ensure some space
+    },
+    footerContainer: {
+        paddingHorizontal: 20,
+        paddingBottom: Platform.OS === 'ios' ? 30 : 20,
+        backgroundColor: '#FFFFFF',
+    },
+    // All other styles remain the same
     headerContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -347,16 +439,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         position: 'relative',
     },
+    rulerScrollContent: {
+        paddingVertical: 20,
+    },
     rulerContent: {
-        height: 150,
-        position: 'absolute',
         flexDirection: 'row',
         alignItems: 'flex-end',
+        height: 150,
     },
     marker: {
         width: MARKER_WIDTH,
         backgroundColor: '#D8C3B5',
-        position: 'absolute',
+        marginHorizontal: (MARKER_SPACING - MARKER_WIDTH) / 2,
         bottom: 40,
     },
     markerText: {
@@ -376,26 +470,6 @@ const styles = StyleSheet.create({
         borderRadius: 4,
         bottom: 40,
         zIndex: 10,
-    },
-    continueButton: {
-        backgroundColor: '#5D4037',
-        padding: 18,
-        borderRadius: 25,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 'auto',
-        marginBottom: 20,
-    },
-    continueButtonText: {
-        color: 'white',
-        fontSize: 18,
-        fontWeight: '600',
-    },
-    continueArrow: {
-        color: 'white',
-        fontSize: 18,
-        marginLeft: 8,
     },
 });
 

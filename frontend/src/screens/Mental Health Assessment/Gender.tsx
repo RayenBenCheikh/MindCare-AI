@@ -18,6 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/MentalNavigator'; // Adjust the import path as necessary
 import { useAssessmentStore } from '@/src/store/Store';
+import ContinueButton from '@/src/components/Continue';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 // Gender symbol icons
@@ -137,23 +138,7 @@ const GenderSelection = () => {
           <Text style={styles.skipXIcon}>×</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.continueButton,
-            (!selectedGender || isLoading) && styles.disabledButton
-          ]}
-          disabled={!selectedGender || isLoading}
-          onPress={handleContinue}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#FFFFFF" size="small" />
-          ) : (
-            <>
-              <Text style={styles.continueText}>Continue</Text>
-              <Text style={styles.continueArrow}>→</Text>
-            </>
-          )}
-        </TouchableOpacity>
+        <ContinueButton onPress={handleContinue} disabled={!selectedGender || isLoading} />
       </View>
     </SafeAreaView>
   );

@@ -8,7 +8,8 @@ import {
     TouchableOpacity,
     FlatList,
     ScrollView,
-    ActivityIndicator
+    ActivityIndicator,
+    TextInput
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -17,6 +18,7 @@ import BackButton from '@/src/components/BackButton';
 import { useAssessmentStore } from '@/src/store/Store';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
+import ContinueButton from '@/src/components/Continue';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -27,7 +29,7 @@ type Medication = {
 
 // Generate the alphabet array for filtering
 const ALPHABET = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
-ALPHABET.push("...");
+ALPHABET.push("🔍");
 
 const MedicamentSelection: React.FC = () => {
     const [selectedLetter, setSelectedLetter] = useState<string>('A');
@@ -35,42 +37,72 @@ const MedicamentSelection: React.FC = () => {
     const [selectedMeds, setSelectedMeds] = useState<Medication[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [searchMode, setSearchMode] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const navigation = useNavigation<NavigationProp>();
     const savePrescribedMedications = useAssessmentStore(state => state.savePrescribedMedications);
 
-    // Fetch medications by selected letter from your MongoDB database
+    // Fetch medications by selected letter
     useEffect(() => {
-        const fetchMedicationsByLetter = async () => {
+        const fetchMedications = async () => {
+            // Don't fetch if we're in search mode but haven't entered a query yet
+            if (searchMode && !searchQuery.trim()) {
+                setMedications([]);
+                return;
+            }
+
             setIsLoading(true);
             setError(null);
 
             try {
-                // This URL should point to your backend API that queries your MongoDB
-                const response = await axios.get(
-                    `http://10.0.2.2:5000/api/medications/byLetter?letter=${selectedLetter}`
-                );
+                let url = '';
 
-                // Map the response to just include id and name as specified
-                const mappedMedications = response.data.map((med: any) => ({
-                    id: med._id,
-                    name: med.Nom
-                }));
+                if (searchMode) {
+                    // Fetch by search query
+                    url = `http://10.0.2.2:5000/api/medications/search?term=${encodeURIComponent(searchQuery)}`;
+                    console.log(`Searching for medications containing: "${searchQuery}"`);
+                } else {
+                    // Fetch by letter
+                    url = `http://10.0.2.2:5000/api/medications/byLetter?letter=${selectedLetter}`;
+                    console.log(`Fetching medications for letter: ${selectedLetter}`);
+                }
 
-                setMedications(mappedMedications);
-            } catch (err) {
+                const response = await axios.get(url);
+
+                if (response.data && Array.isArray(response.data)) {
+                    const mappedMedications = response.data.map((med: any) => ({
+                        id: med._id || String(Math.random()),
+                        name: med.Nom || 'Unknown'
+                    }));
+
+                    setMedications(mappedMedications);
+                } else {
+                    setMedications([]);
+                }
+            } catch (err: any) {
                 console.error('Error fetching medications:', err);
-                setError('Failed to load medications. Please try again.');
+                setError(`Failed to load medications: ${err.message}`);
+                setMedications([]);
             } finally {
                 setIsLoading(false);
             }
         };
 
-        fetchMedicationsByLetter();
-    }, [selectedLetter]);
+        const debounceTimeout = setTimeout(() => {
+            fetchMedications();
+        }, searchMode ? 500 : 0); // Add debounce for search typing
+
+        return () => clearTimeout(debounceTimeout);
+    }, [selectedLetter, searchMode, searchQuery]);
 
     const handleSelectLetter = (letter: string) => {
-        setSelectedLetter(letter);
+        if (letter === "🔍") {
+            setSearchMode(true);
+        } else {
+            setSearchMode(false);
+            setSelectedLetter(letter);
+        }
     };
 
     const handleSelectMedication = (med: Medication) => {
@@ -90,7 +122,7 @@ const MedicamentSelection: React.FC = () => {
     };
 
     const handleContinue = () => {
-        // Save selected medications to store (only id and name as specified)
+        // Save selected medications to store
         savePrescribedMedications(selectedMeds);
 
         // Navigate to the next screen in your assessment flow
@@ -122,7 +154,7 @@ const MedicamentSelection: React.FC = () => {
                 <BackButton onPress={() => navigation.goBack()} />
                 <Text style={styles.headerText}>Assessment</Text>
                 <View style={styles.progressPill}>
-                    <Text style={styles.progressText}>10 of 14</Text>
+                    <Text style={styles.progressText}>10 of 10</Text>
                 </View>
             </View>
 
@@ -131,33 +163,57 @@ const MedicamentSelection: React.FC = () => {
                 Please specify your medications!
             </Text>
 
-            {/* Alphabet Filter */}
-            <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.alphabetContainer}
-                contentContainerStyle={styles.alphabetContent}
-            >
-                {ALPHABET.map(letter => (
+            {/* Search Input or Alphabet Filter */}
+            {searchMode ? (
+                <View style={styles.searchContainer}>
+                    <Icon name="magnify" size={24} color="#5D4037" style={styles.searchIcon} />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Type medication name..."
+                        placeholderTextColor="#9E9E9E"
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        autoFocus
+                    />
                     <TouchableOpacity
-                        key={letter}
-                        style={[
-                            styles.letterButton,
-                            selectedLetter === letter && styles.selectedLetterButton
-                        ]}
-                        onPress={() => handleSelectLetter(letter)}
+                        style={styles.clearButton}
+                        onPress={() => {
+                            setSearchQuery('');
+                            setSearchMode(false);
+                            setSelectedLetter('A');
+                        }}
                     >
-                        <Text
-                            style={[
-                                styles.letterText,
-                                selectedLetter === letter && styles.selectedLetterText
-                            ]}
-                        >
-                            {letter}
-                        </Text>
+                        <Icon name="close-circle" size={20} color="#9E9E9E" />
                     </TouchableOpacity>
-                ))}
-            </ScrollView>
+                </View>
+            ) : (
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.alphabetContainer}
+                    contentContainerStyle={styles.alphabetContent}
+                >
+                    {ALPHABET.map(letter => (
+                        <TouchableOpacity
+                            key={letter}
+                            style={[
+                                styles.letterButton,
+                                selectedLetter === letter && !searchMode && styles.selectedLetterButton
+                            ]}
+                            onPress={() => handleSelectLetter(letter)}
+                        >
+                            <Text
+                                style={[
+                                    styles.letterText,
+                                    selectedLetter === letter && !searchMode && styles.selectedLetterText
+                                ]}
+                            >
+                                {letter}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            )}
 
             {/* Error message if API call fails */}
             {error && (
@@ -182,7 +238,11 @@ const MedicamentSelection: React.FC = () => {
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
                             <Text style={styles.emptyText}>No medications found</Text>
-                            <Text style={styles.emptySubText}>Try a different letter</Text>
+                            <Text style={styles.emptySubText}>
+                                {searchMode
+                                    ? "Try a different search term"
+                                    : "Try a different letter"}
+                            </Text>
                         </View>
                     }
                 />
@@ -212,20 +272,10 @@ const MedicamentSelection: React.FC = () => {
                 </View>
             )}
 
-            {/* Continue Button */}
-            <TouchableOpacity
-                style={styles.continueButton}
-                onPress={handleContinue}
-            >
-                <Text style={styles.continueButtonText}>
-                    Continue
-                </Text>
-                <Text style={styles.continueArrow}>→</Text>
-            </TouchableOpacity>
+            <ContinueButton onPress={handleContinue} />
         </SafeAreaView>
     );
 };
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -420,6 +470,29 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: '600',
     },
+    searchContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#E6DED5',
+        borderRadius: 20,
+        paddingHorizontal: 15,
+        alignItems: 'center',
+        marginBottom: 15,
+        height: 48,
+    },
+    searchIcon: {
+        marginRight: 8,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 16,
+        color: '#5D4037',
+        paddingVertical: 8,
+    },
+    clearButton: {
+        padding: 5,
+    },
+
+
 });
 
 export default MedicamentSelection;

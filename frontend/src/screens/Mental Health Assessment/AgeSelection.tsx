@@ -15,6 +15,7 @@ import BackButton from '@/src/components/BackButton';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/MentalNavigator'; // Adjust the import path as necessary
+import ContinueButton from '@/src/components/Continue';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const { height } = Dimensions.get('window');
@@ -159,20 +160,7 @@ const AgeSelection = () => {
             </View>
 
             {/* Continue Button */}
-            <TouchableOpacity
-                style={styles.continueButton}
-                onPress={handleContinue}
-                disabled={isLoading}
-            >
-                {isLoading ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                    <>
-                        <Text style={styles.continueText}>Continue</Text>
-                        <Text style={styles.continueArrow}>→</Text>
-                    </>
-                )}
-            </TouchableOpacity>
+            <ContinueButton onPress={handleContinue} />
         </SafeAreaView>
     );
 };

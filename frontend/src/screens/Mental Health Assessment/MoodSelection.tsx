@@ -22,6 +22,7 @@ import Animated, {
     Extrapolate,
     runOnJS,
 } from 'react-native-reanimated';
+import ContinueButton from '@/src/components/Continue';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -240,12 +241,10 @@ const MoodSelection: React.FC = () => {
                         updateSelectedMood(slideIndex);
                     }}
                 />
+                <ContinueButton onPress={handleContinue} />
             </View>
             {/* Continue Button */}
-            <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-                <Text style={styles.continueButtonText}>Continue</Text>
-                <Text style={styles.continueArrow}>→</Text>
-            </TouchableOpacity>
+
         </SafeAreaView>
     );
 };
@@ -335,23 +334,12 @@ const styles = StyleSheet.create({
         fontSize: 32,
     },
     continueButton: {
-        backgroundColor: '#5D4037',
         padding: 18,
         borderRadius: 25,
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 20,
-    },
-    continueButtonText: {
-        color: 'white',
-        fontSize: 18,
-        fontWeight: '600',
-    },
-    continueArrow: {
-        color: 'white',
-        fontSize: 18,
-        marginLeft: 8,
     },
 });
 

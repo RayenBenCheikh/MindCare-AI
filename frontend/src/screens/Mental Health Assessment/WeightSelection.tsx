@@ -6,132 +6,144 @@ import {
     TouchableOpacity,
     SafeAreaView,
     StatusBar,
-    Animated,
-    PanResponder,
-    Dimensions
+    Dimensions,
+    ScrollView,
+    NativeSyntheticEvent,
+    NativeScrollEvent,
+    Platform
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/MentalNavigator';
 import BackButton from '@/src/components/BackButton';
 import { useAssessmentStore } from '@/src/store/Store';
+import ContinueButton from '@/src/components/Continue';
+
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const { width } = Dimensions.get('window');
-const RULER_WIDTH = width * 0.9;
 const MARKER_WIDTH = 2;
-const MARKER_SPACING = 15;
+const MARKER_SPACING = 15; // Keep original spacing
 const MIN_WEIGHT = 40;
 const MAX_WEIGHT = 200;
 const TOTAL_WEIGHTS = MAX_WEIGHT - MIN_WEIGHT + 1;
-const VISIBLE_WEIGHTS = 5; // Number of weights visible in the ruler
+const WEIGHT_OFFSET = -14; // Add offset between ruler and displayed weight
 
 const WeightSelection: React.FC = () => {
-    const [weight, setWeight] = useState<number>(128);
+    // We'll store the ruler value and calculate display value with offset
+    const [rulerWeight, setRulerWeight] = useState<number>(70 - WEIGHT_OFFSET); // Default adjusted for offset
     const [unit, setUnit] = useState<'kg' | 'lbs'>('kg');
     const navigation = useNavigation<NavigationProp>();
-    const scrollX = useRef(new Animated.Value(0)).current;
-    const scrollXValue = useRef(0);
-    const startScrollX = useRef(0);
-    const animationIsRunning = useRef(false);
+    const scrollViewRef = useRef<ScrollView>(null);
+
+    // Track if the first render has completed
+    const initialRenderComplete = useRef(false);
+
+    // Keep track of if we should update weight on scroll
+    const shouldUpdateWeight = useRef(true);
+
+    // Get the setWeight action from Zustand store
     const updateWeightInStore = useAssessmentStore(state => state.setWeight);
 
-
-    // Add listener to track scrollX value
-    useEffect(() => {
-        const scrollListener = scrollX.addListener(({ value }) => {
-            scrollXValue.current = value;
-        });
-
-        // Initial position setup
-        const initialOffset = -(weight - MIN_WEIGHT) * MARKER_SPACING;
-        scrollX.setValue(initialOffset);
-        scrollXValue.current = initialOffset;
-
-        return () => {
-            scrollX.removeListener(scrollListener);
-        };
-    }, []);
-
-    // Convert kg to lbs and vice versa
-    const convertWeight = (weight: number, fromUnit: 'kg' | 'lbs', toUnit: 'kg' | 'lbs') => {
-        if (fromUnit === toUnit) return weight;
-        return fromUnit === 'kg'
-            ? Math.round(weight * 2.20462)
-            : Math.round(weight / 2.20462);
+    // Get display weight (ruler weight + offset)
+    const getDisplayWeight = (rWeight: number): number => {
+        return rWeight + WEIGHT_OFFSET;
     };
 
-    // Update weight when unit changes
+    // Get ruler weight from display weight
+    const getRulerWeight = (dWeight: number): number => {
+        return dWeight - WEIGHT_OFFSET;
+    };
+
+    // Convert kg to lbs and vice versa
+    const convertWeight = (value: number, fromUnit: 'kg' | 'lbs', toUnit: 'kg' | 'lbs'): number => {
+        if (fromUnit === toUnit) return value;
+
+        if (fromUnit === 'kg' && toUnit === 'lbs') {
+            return Math.round(value * 2.20462);
+        } else {
+            return Math.round(value / 2.20462);
+        }
+    };
+
+    // Display weight with offset applied
+    const displayWeight = unit === 'kg'
+        ? getDisplayWeight(rulerWeight)
+        : convertWeight(getDisplayWeight(rulerWeight), 'kg', 'lbs');
+
+    // Calculate scroll position from weight
+    const getScrollPositionFromWeight = (rWeight: number): number => {
+        return (rWeight - MIN_WEIGHT) * MARKER_SPACING - (width / 2) + MARKER_SPACING;
+    };
+
+    // Calculate weight from scroll position
+    const getWeightFromScrollPosition = (scrollPosition: number): number => {
+        const centerPositionX = scrollPosition + (width / 2);
+        const markerIndex = Math.round(centerPositionX / MARKER_SPACING);
+        return MIN_WEIGHT + markerIndex;
+    };
+
+    // Scroll to specific weight
+    const scrollToWeight = (rWeight: number, animated: boolean = true) => {
+        if (!scrollViewRef.current) return;
+
+        shouldUpdateWeight.current = false; // Prevent weight updates during programmatic scrolling
+
+        const position = getScrollPositionFromWeight(rWeight);
+        scrollViewRef.current.scrollTo({ x: position, animated });
+
+        // Re-enable weight updates after scrolling completes
+        setTimeout(() => {
+            shouldUpdateWeight.current = true;
+        }, animated ? 300 : 50);
+    };
+
+    // Initialize the slider position
     useEffect(() => {
-        const offset = -scrollXValue.current;
-        const calculatedWeight = MIN_WEIGHT + Math.round(offset / MARKER_SPACING);
-        if (calculatedWeight !== weight && calculatedWeight >= MIN_WEIGHT && calculatedWeight <= MAX_WEIGHT) {
-            setWeight(calculatedWeight);
+        // Only run this once after first render
+        if (!initialRenderComplete.current) {
+            setTimeout(() => {
+                scrollToWeight(rulerWeight, false);
+                initialRenderComplete.current = true;
+            }, 300);
+        }
+    }, []);
+
+    // Handle unit change
+    useEffect(() => {
+        if (initialRenderComplete.current) {
+            // When unit changes, keep ruler at same position
+            scrollToWeight(rulerWeight);
         }
     }, [unit]);
 
-    // Set up pan responder for slider
-    const panResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: () => true,
-            onPanResponderGrant: () => {
-                // Store current position using our ref value
-                startScrollX.current = scrollXValue.current;
-                animationIsRunning.current = false;
-            },
-            onPanResponderMove: (_, gestureState) => {
-                if (animationIsRunning.current) return;
+    // Handle scrolling and update weight
+    const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        if (!shouldUpdateWeight.current) return;
 
-                const newPosition = startScrollX.current + gestureState.dx;
-                const minPosition = -(MAX_WEIGHT - MIN_WEIGHT) * MARKER_SPACING;
-                const maxPosition = 0;
+        const offsetX = event.nativeEvent.contentOffset.x;
+        const calculatedRulerWeight = getWeightFromScrollPosition(offsetX);
 
-                // Bound the position
-                const boundedPosition = Math.min(maxPosition, Math.max(minPosition, newPosition));
-                scrollX.setValue(boundedPosition);
+        if (calculatedRulerWeight >= MIN_WEIGHT && calculatedRulerWeight <= MAX_WEIGHT) {
+            setRulerWeight(calculatedRulerWeight);
+        }
+    };
 
-                // Calculate weight based on position with bounds checking
-                const offset = -boundedPosition;
-                const calculatedWeight = MIN_WEIGHT + Math.round(offset / MARKER_SPACING);
+    // Handle scroll end to snap to nearest marker
+    const handleScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        // Get the exact weight at current scroll position
+        const offsetX = event.nativeEvent.contentOffset.x;
+        const calculatedRulerWeight = getWeightFromScrollPosition(offsetX);
 
-                // Update weight if it's different and within bounds
-                if (calculatedWeight !== weight &&
-                    calculatedWeight >= MIN_WEIGHT &&
-                    calculatedWeight <= MAX_WEIGHT) {
-                    setWeight(calculatedWeight);
-                }
-            },
-            onPanResponderRelease: (_, gestureState) => {
-                // Snap to nearest weight marker
-                const currentPosition = scrollXValue.current;
-                const targetWeight = Math.round(
-                    MIN_WEIGHT - currentPosition / MARKER_SPACING
-                );
-                const clampedWeight = Math.min(MAX_WEIGHT, Math.max(MIN_WEIGHT, targetWeight));
-                const snapToPosition = -(clampedWeight - MIN_WEIGHT) * MARKER_SPACING;
-
-                // Animate to the snapped position
-                animationIsRunning.current = true;
-                Animated.spring(scrollX, {
-                    toValue: snapToPosition,
-                    tension: 50,
-                    friction: 7,
-                    useNativeDriver: true,
-                }).start(() => {
-                    animationIsRunning.current = false;
-                    setWeight(clampedWeight);
-                });
-            },
-        })
-    ).current;
-
+        if (calculatedRulerWeight >= MIN_WEIGHT && calculatedRulerWeight <= MAX_WEIGHT) {
+            setRulerWeight(calculatedRulerWeight);
+            scrollToWeight(calculatedRulerWeight);
+        }
+    };
 
     // Change unit handler
     const handleUnitChange = (newUnit: 'kg' | 'lbs') => {
         if (unit !== newUnit) {
-            const newWeight = convertWeight(weight, unit, newUnit);
-            setWeight(newWeight);
             setUnit(newUnit);
         }
     };
@@ -139,10 +151,19 @@ const WeightSelection: React.FC = () => {
     // Continue handler
     const handleContinue = async () => {
         try {
-            // Save weight to Zustand store
-            updateWeightInStore(weight, unit);
+            // Store the DISPLAY weight (with offset)
+            const saveWeight = getDisplayWeight(rulerWeight);
+
+            if (unit === 'kg') {
+                updateWeightInStore(saveWeight, 'kg');
+            } else {
+                // For lbs, convert the display weight
+                const weightInLbs = convertWeight(saveWeight, 'kg', 'lbs');
+                updateWeightInStore(weightInLbs, 'lbs');
+            }
+
             // Navigate to next screen
-            navigation.navigate('HeightSelection'); // Replace with your next screen name
+            navigation.navigate('HeightSelection');
         } catch (error) {
             console.error('Error saving weight:', error);
         }
@@ -151,7 +172,14 @@ const WeightSelection: React.FC = () => {
     // Generate ruler markers
     const renderRulerMarkers = () => {
         const markers = [];
+        const paddingWidth = width / 2; // Add padding on each side for better scrolling
 
+        // Left padding
+        markers.push(
+            <View key="left-padding" style={{ width: paddingWidth }} />
+        );
+
+        // Generate markers for each weight value
         for (let i = 0; i <= TOTAL_WEIGHTS; i++) {
             const markerWeight = MIN_WEIGHT + i;
             const isMainMarker = i % 5 === 0;
@@ -164,104 +192,146 @@ const WeightSelection: React.FC = () => {
                         {
                             height: isMainMarker ? 40 : 20,
                             opacity: isMainMarker ? 1 : 0.5,
-                            left: i * MARKER_SPACING
                         }
                     ]}
                 >
                     {isMainMarker && (
-                        <Text style={styles.markerText}>{markerWeight}</Text>
+                        <Text style={styles.markerText}>
+                            {markerWeight}
+                        </Text>
                     )}
                 </View>
             );
         }
 
+        // Right padding
+        markers.push(
+            <View key="right-padding" style={{ width: paddingWidth }} />
+        );
+
         return markers;
     };
-
     return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <View style={styles.outerContainer}>
+            <SafeAreaView style={styles.container}>
+                <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-            {/* Header */}
-            <View style={styles.headerContainer}>
-                <BackButton onPress={() => navigation.goBack()} />
-                <Text style={styles.headerText}>Assessment</Text>
-                <View style={styles.progressPill}>
-                    <Text style={styles.progressText}>4 of 10</Text>
+                {/* Main Content Container */}
+                <View style={styles.contentContainer}>
+                    {/* Header */}
+                    <View style={styles.headerContainer}>
+                        <BackButton onPress={() => navigation.goBack()} />
+                        <Text style={styles.headerText}>Assessment</Text>
+                        <View style={styles.progressPill}>
+                            <Text style={styles.progressText}>4 of 10</Text>
+                        </View>
+                    </View>
+
+                    {/* Title */}
+                    <Text style={styles.titleText}>What's your weight?</Text>
+
+                    {/* Unit Selector */}
+                    <View style={styles.unitSelectorContainer}>
+                        <TouchableOpacity
+                            style={[
+                                styles.unitButton,
+                                unit === 'kg' && styles.activeUnitButton
+                            ]}
+                            onPress={() => handleUnitChange('kg')}
+                        >
+                            <Text style={[
+                                styles.unitButtonText,
+                                unit === 'kg' && styles.activeUnitButtonText
+                            ]}>kg</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[
+                                styles.unitButton,
+                                unit === 'lbs' && styles.activeUnitButton
+                            ]}
+                            onPress={() => handleUnitChange('lbs')}
+                        >
+                            <Text style={[
+                                styles.unitButtonText,
+                                unit === 'lbs' && styles.activeUnitButtonText
+                            ]}>lbs</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Weight Display */}
+                    <View style={styles.weightDisplayContainer}>
+                        <Text style={styles.weightText}>{displayWeight}</Text>
+                        <Text style={styles.unitText}>{unit}</Text>
+                    </View>
+
+                    {/* Weight Ruler */}
+                    <View style={styles.rulerContainer}>
+                        {/* Center Indicator */}
+                        <View style={styles.centerIndicator} />
+
+                        {/* ScrollView-based ruler */}
+                        <ScrollView
+                            ref={scrollViewRef}
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.rulerScrollContent}
+                            onScroll={handleScroll}
+                            onScrollEndDrag={handleScrollEnd}
+                            onMomentumScrollEnd={handleScrollEnd}
+                            scrollEventThrottle={16}
+                            decelerationRate="fast"
+                        >
+                            <View style={styles.rulerContent}>
+                                {renderRulerMarkers()}
+                            </View>
+                        </ScrollView>
+                    </View>
+
+                    {/* Flexible spacer to push content up and footer down */}
+                    <View style={styles.flexSpacer} />
                 </View>
-            </View>
+            </SafeAreaView>
 
-            {/* Title */}
-            <Text style={styles.titleText}>What's your weight?</Text>
-
-            {/* Unit Selector */}
-            <View style={styles.unitSelectorContainer}>
-                <TouchableOpacity
-                    style={[
-                        styles.unitButton,
-                        unit === 'kg' && styles.activeUnitButton
-                    ]}
-                    onPress={() => handleUnitChange('kg')}
-                >
-                    <Text style={[
-                        styles.unitButtonText,
-                        unit === 'kg' && styles.activeUnitButtonText
-                    ]}>kg</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[
-                        styles.unitButton,
-                        unit === 'lbs' && styles.activeUnitButton
-                    ]}
-                    onPress={() => handleUnitChange('lbs')}
-                >
-                    <Text style={[
-                        styles.unitButtonText,
-                        unit === 'lbs' && styles.activeUnitButtonText
-                    ]}>lbs</Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* Weight Display */}
-            <View style={styles.weightDisplayContainer}>
-                <Text style={styles.weightText}>{weight}</Text>
-                <Text style={styles.unitText}>{unit}</Text>
-            </View>
-
-            {/* Weight Ruler */}
-            <View style={styles.rulerContainer}>
-                <Animated.View
-                    style={[
-                        styles.rulerContent,
-                        {
-                            transform: [{ translateX: scrollX }]
-                        }
-                    ]}
-                    {...panResponder.panHandlers}
-                >
-                    {renderRulerMarkers()}
-                </Animated.View>
-
-                {/* Center Indicator */}
-                <View style={styles.centerIndicator} />
-            </View>
-
-            {/* Continue Button */}
-            <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-                <Text style={styles.continueButtonText}>Continue</Text>
-                <Text style={styles.continueArrow}>→</Text>
-            </TouchableOpacity>
-        </SafeAreaView>
+            {/* Footer with Continue Button - Outside SafeAreaView for consistent positioning */}
+            <SafeAreaView style={styles.footerSafeArea}>
+                <View style={styles.footerContainer}>
+                    <ContinueButton onPress={handleContinue} />
+                </View>
+            </SafeAreaView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
+    outerContainer: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+    },
     container: {
         flex: 1,
         backgroundColor: '#FFFFFF',
+    },
+    contentContainer: {
+        flex: 1,
         paddingHorizontal: 20,
     },
+    flexSpacer: {
+        flex: 1,
+        minHeight: 20,
+    },
+    footerSafeArea: {
+        backgroundColor: '#FFFFFF',
+    },
+    footerContainer: {
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        paddingBottom: Platform.OS === 'ios' ? 20 : 16,
+        backgroundColor: '#FFFFFF',
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderTopColor: 'rgba(0,0,0,0.1)',
+    },
+    // All other styles remain the same
     headerContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -343,16 +413,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         position: 'relative',
     },
+    rulerScrollContent: {
+        paddingVertical: 20,
+    },
     rulerContent: {
-        height: 150,
-        position: 'absolute',
         flexDirection: 'row',
         alignItems: 'flex-end',
+        height: 150,
     },
     marker: {
         width: MARKER_WIDTH,
         backgroundColor: '#D8C3B5',
-        position: 'absolute',
+        marginHorizontal: (MARKER_SPACING - MARKER_WIDTH) / 2,
         bottom: 40,
     },
     markerText: {
@@ -372,26 +444,6 @@ const styles = StyleSheet.create({
         borderRadius: 4,
         bottom: 40,
         zIndex: 10,
-    },
-    continueButton: {
-        backgroundColor: '#5D4037',
-        padding: 18,
-        borderRadius: 25,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 'auto',
-        marginBottom: 20,
-    },
-    continueButtonText: {
-        color: 'white',
-        fontSize: 18,
-        fontWeight: '600',
-    },
-    continueArrow: {
-        color: 'white',
-        fontSize: 18,
-        marginLeft: 8,
     },
 });
 

@@ -15,6 +15,7 @@ import { RootStackParamList } from '@/src/navigation/MentalNavigator';
 import BackButton from '@/src/components/BackButton';
 import { useAssessmentStore } from '@/src/store/Store';
 import { images } from '@/src/theme';
+import ContinueButton from '@/src/components/Continue';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -102,17 +103,8 @@ const HelpSelection: React.FC = () => {
             </View>
 
             {/* Continue Button */}
-            <TouchableOpacity
-                style={[
-                    styles.continueButton,
-                    !selectedOption && styles.continueButttonDisabled
-                ]}
-                onPress={handleContinue}
-                disabled={!selectedOption}
-            >
-                <Text style={styles.continueButtonText}>Continue</Text>
-                <Text style={styles.continueArrow}>→</Text>
-            </TouchableOpacity>
+            <ContinueButton onPress={handleContinue} disabled={!selectedOption} />
+
         </SafeAreaView>
     );
 };
@@ -122,6 +114,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#FFFFFF',
         paddingHorizontal: 20,
+        marginTop: 20,
     },
     headerContainer: {
         flexDirection: 'row',
@@ -196,19 +189,7 @@ const styles = StyleSheet.create({
         marginTop: 'auto',
         marginBottom: 20,
     },
-    continueButttonDisabled: {
-        opacity: 0.7,
-    },
-    continueButtonText: {
-        color: 'white',
-        fontSize: 18,
-        fontWeight: '600',
-    },
-    continueArrow: {
-        color: 'white',
-        fontSize: 18,
-        marginLeft: 8,
-    },
+
 });
 
 export default HelpSelection;

@@ -1,8 +1,84 @@
+import React from 'react';
+import {
+    TouchableOpacity,
+    Text,
+    StyleSheet,
+    View,
+    GestureResponderEvent
+} from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+import { colors } from '../theme';
 
-import { Svg, Path } from 'react-native-svg';
-export default function ContinueButton() {
-    <Svg width="81" height="80" viewBox="0 0 81 80" fill="none">
-        <Path d="M0.5 40C0.5 17.91 17.91 0.5 40 0.5C62.09 0.5 80 17.91 80 40C80 62.09 62.09 80 40 80C17.91 80 0.5 62.09 0.5 40Z" fill="#4F3422" />
-        <Path d="M48.4335 33.9124C47.0934 32.166 45.2145 30.9105 43.0882 30.3408L42.5706 32.2726C44.2716 32.7284 45.7748 33.7328 46.8468 35.1299C47.7145 36.2607 48.2606 37.5977 48.4373 39L30.5 39V41L48.4373 41C48.2606 42.4024 47.7145 43.7393 46.8468 44.8701C45.7748 46.2673 44.2716 47.2716 42.5706 47.7274L43.0882 49.6593C45.2145 49.0895 47.0934 47.8341 48.4335 46.0876C49.7736 44.3412 50.5 42.2014 50.5 40C50.5 37.7987 49.7736 35.6588 48.4335 33.9124Z" fill="white" />
-    </Svg>
+type ContinueButtonProps = {
+    onPress: (event: GestureResponderEvent) => void;
+    disabled?: boolean;
+    style?: object;
 };
+
+const ContinueButton: React.FC<ContinueButtonProps> = ({
+    onPress,
+    disabled = false,
+    style
+}) => {
+    return (
+        <TouchableOpacity
+            style={[
+                styles.button,
+                disabled && styles.buttonDisabled,
+                style
+            ]}
+            onPress={onPress}
+            disabled={disabled}
+            activeOpacity={0.8}
+        >
+            <View style={styles.buttonContent}>
+                <Text style={styles.buttonText}>Continue</Text>
+                {/* Fixed SVG syntax for React Native */}
+                <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <Path d="M2 12L21 12" stroke="white" strokeWidth="2" strokeLinejoin="round" />
+                    <Path d="M16.5529 17.7956C17.8287 17.4537 18.9561 16.7004 19.7601 15.6526C20.5642 14.6047 21 13.3208 21 12C21 10.6792 20.5642 9.3953 19.7601 8.34743C18.9561 7.29957 17.8287 6.54629 16.5529 6.20445"
+                        stroke="white"
+                        strokeWidth="2"
+                        strokeLinejoin="round" />
+                </Svg>
+            </View>
+        </TouchableOpacity>
+    );
+};
+
+const styles = StyleSheet.create({
+    button: {
+        backgroundColor: colors.marron, // Brown color
+        borderRadius: 30,
+        paddingVertical: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginVertical: 15,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    buttonDisabled: {
+        backgroundColor: '#A1887F', // Lighter brown when disabled
+        opacity: 0.7,
+    },
+    buttonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginEnd: 1
+    },
+    buttonText: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: '600',
+        marginRight: 10,
+    }
+});
+
+export default ContinueButton;

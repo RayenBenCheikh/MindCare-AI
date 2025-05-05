@@ -13,6 +13,7 @@ import { RootStackParamList } from '@/src/navigation/MentalNavigator';
 import BackButton from '@/src/components/BackButton';
 import { SvgXml } from 'react-native-svg';
 import { useAssessmentStore } from '@/src/store/Store';
+import ContinueButton from '@/src/components/Continue';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 interface GoalOption {
@@ -144,11 +145,7 @@ const HealthGoal: React.FC = () => {
                 ))}
             </View>
 
-            {/* Continue Button */}
-            <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-                <Text style={styles.continueButtonText}>Continue</Text>
-                <Text style={styles.continueArrow}>→</Text>
-            </TouchableOpacity>
+            <ContinueButton onPress={handleContinue} />
         </SafeAreaView>
     );
 };

@@ -15,6 +15,7 @@ import BackButton from '@/src/components/BackButton';
 import { useAssessmentStore } from '@/src/store/Store';
 // Define icons for the options
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Svg, { Path } from 'react-native-svg';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -35,10 +36,11 @@ const MedicationSelection: React.FC = () => {
             setMedication(selectedOption);
 
             // Navigate based on selection
-            if (selectedOption === 'prescribed') {
+            if (selectedOption === 'prescribed' || selectedOption === 'otc') {
+                // Navigate to medication selection for both prescribed meds and OTC supplements
                 navigation.navigate('MedicamentSelection');
             } else {
-                // For any other option, go to the next screen in your assessment flow
+                // For 'none' or 'no_answer', go to the next screen
                 navigation.navigate('AssessmentCompleted');
             }
         }
@@ -53,7 +55,7 @@ const MedicationSelection: React.FC = () => {
                 <BackButton onPress={() => navigation.goBack()} />
                 <Text style={styles.headerText}>Assessment</Text>
                 <View style={styles.progressPill}>
-                    <Text style={styles.progressText}>9 of 14</Text>
+                    <Text style={styles.progressText}>9 of 10</Text>
                 </View>
             </View>
 
@@ -129,7 +131,12 @@ const MedicationSelection: React.FC = () => {
                 disabled={!selectedOption}
             >
                 <Text style={styles.continueButtonText}>Continue</Text>
-                <Text style={styles.continueArrow}>→</Text>
+                <Svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <Path
+                        d="M17.9335 9.9124C16.5934 8.166 14.7145 6.9105 12.5882 6.3408L12.0706 8.2726C13.7716 8.7284 15.2748 9.7328 16.3468 11.1299C17.2145 12.2607 17.7606 13.5977 17.9373 15L0 15V17L17.9373 17C17.7606 18.4024 17.2145 19.7393 16.3468 20.8701C15.2748 22.2673 13.7716 23.2716 12.0706 23.7274L12.5882 25.6593C14.7145 25.0895 16.5934 23.8341 17.9335 22.0876C19.2736 20.3412 20 18.2014 20 16C20 13.7987 19.2736 11.6588 17.9335 9.9124Z"
+                        fill="white"
+                    />
+                </Svg>
             </TouchableOpacity>
         </SafeAreaView>
     );

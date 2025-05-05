@@ -1,67 +1,53 @@
 import mongoose from "mongoose";
 
-const assessmentSchema = new mongoose.Schema({
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true
-    },
-    healthGoal: {
-        id: { type: String },
-        text: { type: String }
-    },
-    gender: {
-        type: String,
-        enum: ['male', 'female', 'prefer_not_to_say'],
-        default: 'prefer_not_to_say'
-    },
-    age: {
-        type: Number,
-        min: 0,
-        max: 120
-    },
-    weight: {
-        value: { type: Number },
-        unit: {
-            type: String,
-            enum: ['kg', 'lbs'],
-            default: 'kg'
+const AssessmentSchema = new mongoose.Schema(
+    {
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: false // Make optional for non-authenticated users
+        },
+        healthGoal: {
+            id: String,
+            text: String
+        },
+        gender: String,
+        age: Number,
+        weight: {
+            value: Number,
+            unit: String,
+            valueInKg: Number
+        },
+        height: {
+            value: Number,
+            unit: String,
+            valueInCm: Number
+        },
+        mood: {
+            id: String,
+            label: String
+        },
+        sleepQuality: {
+            label: String,
+            hours: String
+        },
+        professionalHelp: String,
+        medication: String,
+        prescribedMedications: [
+            {
+                id: String,
+                name: String
+            }
+        ],
+        completedAt: Date,
+        isSubmitted: {
+            type: Boolean,
+            default: false
         }
     },
-    height: {
-        value: { type: Number },
-        unit: {
-            type: String,
-            enum: ['cm', 'ft'],
-            default: 'cm'
-        }
-    },
-    mood: {
-        id: { type: String },
-        label: { type: String }
-    },
-    sleepQuality: {
-        label: { type: String },
-        hours: { type: String }
-    },
-    professionalHelp: {
-        type: String,
-        enum: ['yes', 'no', null],
-        default: null
-    },
-    completedAt: {
-        type: Date
-    },
-    isSubmitted: {
-        type: Boolean,
-        default: false
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
+    {
+        timestamps: true
     }
-});
+);
 
-const Assessment = mongoose.model("Assessment", assessmentSchema);
-
-export default Assessment;
+export default mongoose.model("Assessment", AssessmentSchema);

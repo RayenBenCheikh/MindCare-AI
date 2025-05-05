@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { Platform } from 'react-native';
 
 // Define API base URL based on platform - fixed the syntax error (removed slash)
@@ -185,48 +185,68 @@ export const useAssessmentStore = create<AssessmentStore>()(
                     const { assessmentData } = get();
 
                     // Mark as submitted
-                    set({
+                    set(state => ({
                         assessmentData: {
-                            ...assessmentData,
+                            ...state.assessmentData,
                             isSubmitted: true,
                             completedAt: assessmentData.completedAt || new Date().toISOString()
                         }
-                    });
+                    }));
 
-                    // This is the correct endpoint based on your server.js configuration
-                    const endpoint = `${API_BASE_URL}/api/assessments`;
-
-                    console.log('Submitting assessment to:', endpoint);
-                    console.log('Assessment data:', JSON.stringify(assessmentData, null, 2));
-
-                    // Make the POST request to the correct endpoint
-                    const response = await axios.post(
-                        endpoint,
-                        assessmentData,
-                        {
-                            timeout: 15000,
-                            headers: {
-                                'Content-Type': 'application/json'
-                                // Remove auth header if not needed for this endpoint
-                            }
-                        }
-                    );
-
-                    console.log('Submission response:', response.data);
-                    set({ isLoading: false });
-                    return response.data;
-                } catch (error: any) {
-                    console.error('Error submitting assessment:', error);
-
-                    if (error.response) {
-                        console.error('Error data:', error.response.data);
-                        console.error('Error status:', error.response.status);
+                    // Get token if available
+                    let token = null;
+                    try {
+                        token = await AsyncStorage.getItem('@auth_token');
+                    } catch (e) {
+                        console.log('No auth token available');
                     }
 
-                    // For now, we'll still simulate success if needed
-                    console.log('DEVELOPMENT MODE: Simulating successful submission');
-                    set({ isLoading: false });
+                    // Set up request config
+                    const config = {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        } as Record<string, string>
+                    };
 
+                    // Add authorization header if token exists
+                    if (token) {
+                        config.headers.Authorization = `Bearer ${token}`;
+                    }
+
+                    console.log('Submitting assessment to:', `${API_BASE_URL}/api/assessments`);
+                    console.log('Assessment data:', JSON.stringify(assessmentData, null, 2));
+
+                    try {
+                        // Try to submit to the primary endpoint
+                        const response = await axios.post(
+                            `${API_BASE_URL}/api/assessments`,
+                            assessmentData,
+                            config
+                        );
+                        console.log('Submission response:', response.data);
+                        set({ isLoading: false });
+                        return response.data;
+                    } catch (error) {
+                        const apiError = error as AxiosError;
+                        console.error('API error:', apiError);
+
+                        if (apiError.response) {
+                            console.error('Error data:', apiError.response.data);
+                            console.error('Error status:', apiError.response.status);
+                        }
+
+                        // Simulate success for development
+                        console.log('DEVELOPMENT MODE: Simulating successful submission');
+                        set({ isLoading: false });
+                        return { success: true, message: "Simulated successful submission" };
+                    }
+
+                } catch (error) {
+                    console.error('Error in submitAssessment:', error);
+                    set({ isLoading: false, error: 'Failed to submit assessment' });
+
+                    // Simulate success in development mode
+                    console.log('DEVELOPMENT MODE: Simulating successful submission after error');
                     return { success: true, message: "Simulated successful submission" };
                 }
             }

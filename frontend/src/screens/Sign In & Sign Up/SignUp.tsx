@@ -3,15 +3,15 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Stat
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '@/src/context/AuthContext';
 import axios from 'axios';
-import { useNavigation } from '@react-navigation/native';
+import { CommonActions, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '@/src/navigation/AuthNavigator'; // Adjust the import path as necessary
 import { colors } from '@/src/theme';
 
-// Define navigation prop type
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
 const SignUpScreen = () => {
+  // Existing state variables
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -23,13 +23,17 @@ const SignUpScreen = () => {
 
   const navigation = useNavigation<NavigationProp>();
   const { signIn } = useContext(AuthContext);
+
+  // Email validation function remains the same
   const validateEmail = (text: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     setEmail(text);
     setIsEmailValid(text.length === 0 || emailRegex.test(text));
   };
 
+  // Modified handleSignUp function to navigate to MentalNavigator
   const handleSignUp = async () => {
+    // Validation checks remain the same
     if (!isEmailValid || email.length === 0) {
       setError('Please enter a valid email address.');
       return;
@@ -51,14 +55,42 @@ const SignUpScreen = () => {
         email,
         password,
       });
-      {/*Alert.alert('Success', response.data.message, [
-        { text: 'OK', onPress: () => navigation.navigate('SignIn') },
-      ]);*/}
+
       if (response.data.token && response.data.user) {
+        // Sign in the user with the returned token and user data
         await signIn(response.data.token, response.data.user);
-        Alert.alert('Success', 'Account created successfully!');
+
+        // Quick success message
+        Alert.alert('Success', 'Account created successfully!', [
+          {
+            text: 'Continue to Assessment',
+            onPress: () => {
+              // Navigate to the Mental Health Assessment flow
+              // This will reset the navigation stack and go to the MentalNavigator
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [
+                    {
+                      name: 'Mental',
+                      state: {
+                        routes: [
+                          {
+
+                            name: 'HealthGoal'
+
+                          }
+                        ]
+                      }
+                    },
+                  ],
+                })
+              );
+            }
+          }
+        ]);
       } else {
-        // If API doesn't return token, go to SignIn
+        // If for some reason API doesn't return token, go to SignIn
         Alert.alert('Success', 'Account created! Please sign in.', [
           { text: 'OK', onPress: () => navigation.navigate('SignIn') },
         ]);

@@ -9,12 +9,41 @@ router.post('/', async (req, res) => {
     try {
         console.log('Received assessment data:', req.body);
 
-        // Process and save assessment data
-        // ...
+        // Create assessment data object without user field first
+        const assessmentData = {
+            healthGoal: req.body.healthGoal,
+            gender: req.body.gender,
+            age: req.body.age,
+            weight: req.body.weight,
+            height: req.body.height,
+            mood: req.body.mood,
+            sleepQuality: req.body.sleepQuality,
+            professionalHelp: req.body.professionalHelp,
+            medication: req.body.medication,
+            prescribedMedications: req.body.prescribedMedications,
+            completedAt: req.body.completedAt || new Date().toISOString(),
+            isSubmitted: true
+        };
 
+        // Add user ID if available from auth token
+        if (req.user && req.user.id) {
+            assessmentData.user = req.user.id;
+        }
+        // Otherwise leave it undefined (don't set to "guest")
+
+        // Create and save assessment
+        const assessment = new Assessment(assessmentData);
+
+        // Add debug logging
+        console.log('About to save assessment...');
+        const savedAssessment = await assessment.save();
+        console.log('Assessment saved with ID:', savedAssessment._id);
+
+        // Return success response
         res.status(201).json({
             success: true,
-            message: 'Assessment saved successfully'
+            message: 'Assessment saved successfully',
+            assessmentId: savedAssessment._id
         });
     } catch (error) {
         console.error('Error saving assessment:', error);

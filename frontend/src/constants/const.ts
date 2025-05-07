@@ -1,1 +1,1 @@
-export const TIMEZONE = "America/New_York";
+export const TIMEZONE = "Africa/Tunis";

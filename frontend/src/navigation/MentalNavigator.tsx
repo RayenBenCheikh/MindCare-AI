@@ -11,6 +11,7 @@ import HelpSelection from '../screens/Mental Health Assessment/HelpSelection';
 import HealthGoal from '../screens/Mental Health Assessment/HealthGoal';
 import MedicationSelection from '../screens/Mental Health Assessment/MedicationSelection';
 import MedicamentSelection from '../screens/Mental Health Assessment/MedicamentSelection';
+import Home from '../screens/home/Home';
 
 const Stack = createNativeStackNavigator();
 export type RootStackParamList = {
@@ -24,7 +25,7 @@ export type RootStackParamList = {
     HelpSelection: undefined;
     MedicationSelection: undefined;
     MedicamentSelection: undefined;
-    AssessmentCompleted: undefined;
+    Home: undefined;
     // Add other screens as needed
 };
 const MentalNavigator = () => {
@@ -41,6 +42,7 @@ const MentalNavigator = () => {
             <Stack.Screen name="HelpSelection" component={HelpSelection} options={{ headerShown: false }} />
             <Stack.Screen name="MedicationSelection" component={MedicationSelection} options={{ headerShown: false }} />
             <Stack.Screen name="MedicamentSelection" component={MedicamentSelection} options={{ headerShown: false }} />
+            <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
         </Stack.Navigator>
     );
 };

@@ -177,7 +177,6 @@ export const useAssessmentStore = create<AssessmentStore>()(
                 },
                 error: null
             }),
-
             submitAssessment: async () => {
                 set({ isLoading: true, error: null });
 
@@ -193,31 +192,29 @@ export const useAssessmentStore = create<AssessmentStore>()(
                         }
                     }));
 
-                    // Get token if available
+                    // Get token
                     let token = null;
                     try {
                         token = await AsyncStorage.getItem('@auth_token');
+                        if (!token) {
+                            return { success: false, message: "Please sign in to submit your assessment" };
+                        }
                     } catch (e) {
-                        console.log('No auth token available');
+                        console.log('Error retrieving auth token:', e);
+                        return { success: false, message: "Authentication required" };
                     }
 
-                    // Set up request config
+                    // Set up request config with authorization
                     const config = {
                         headers: {
-                            'Content-Type': 'application/json'
-                        } as Record<string, string>
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
                     };
 
-                    // Add authorization header if token exists
-                    if (token) {
-                        config.headers.Authorization = `Bearer ${token}`;
-                    }
-
-                    console.log('Submitting assessment to:', `${API_BASE_URL}/api/assessments`);
-                    console.log('Assessment data:', JSON.stringify(assessmentData, null, 2));
+                    console.log('Submitting assessment with auth token');
 
                     try {
-                        // Try to submit to the primary endpoint
                         const response = await axios.post(
                             `${API_BASE_URL}/api/assessments`,
                             assessmentData,
@@ -227,30 +224,23 @@ export const useAssessmentStore = create<AssessmentStore>()(
                         set({ isLoading: false });
                         return response.data;
                     } catch (error) {
-                        const apiError = error as AxiosError;
-                        console.error('API error:', apiError);
+                        console.error('API error:', error);
 
-                        if (apiError.response) {
-                            console.error('Error data:', apiError.response.data);
-                            console.error('Error status:', apiError.response.status);
+                        if (axios.isAxiosError(error) && error.response?.status === 401) {
+                            set({ isLoading: false, error: 'Authentication required' });
+                            return { success: false, message: "Please sign in again" };
                         }
 
-                        // Simulate success for development
-                        console.log('DEVELOPMENT MODE: Simulating successful submission');
-                        set({ isLoading: false });
-                        return { success: true, message: "Simulated successful submission" };
+                        set({ isLoading: false, error: 'Failed to submit assessment' });
+                        return { success: false, message: "Failed to save assessment" };
                     }
-
                 } catch (error) {
                     console.error('Error in submitAssessment:', error);
                     set({ isLoading: false, error: 'Failed to submit assessment' });
-
-                    // Simulate success in development mode
-                    console.log('DEVELOPMENT MODE: Simulating successful submission after error');
-                    return { success: true, message: "Simulated successful submission" };
+                    return { success: false };
                 }
             }
-        }),
+        }),  // <-- Added missing parenthesis and comma here
         {
             name: 'assessment-store',
             storage: createJSONStorage(() => AsyncStorage),

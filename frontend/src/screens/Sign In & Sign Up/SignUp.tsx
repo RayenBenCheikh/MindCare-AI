@@ -65,27 +65,7 @@ const SignUpScreen = () => {
           {
             text: 'Continue to Assessment',
             onPress: () => {
-              // Navigate to the Mental Health Assessment flow
-              // This will reset the navigation stack and go to the MentalNavigator
-              navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [
-                    {
-                      name: 'Mental',
-                      state: {
-                        routes: [
-                          {
-
-                            name: 'HealthGoal'
-
-                          }
-                        ]
-                      }
-                    },
-                  ],
-                })
-              );
+              navigation.navigate('SignIn'); // Navigate to the SignIn screen
             }
           }
         ]);

@@ -10,16 +10,20 @@ const AuthProvider = ({ children }: Props) => {
     const [isLoading, setIsLoading] = useState(true);
     const [userToken, setUserToken] = useState<string | null>(null);
     const [hasSeenWelcome, setHasSeenWelcome] = useState(false);
-
+    const [userData, setUserData] = useState<any | null>(null);
     // Load data when component mounts
     useEffect(() => {
         const loadData = async () => {
             try {
-                const token = await AsyncStorage.getItem('userToken');
+                const token = await AsyncStorage.getItem('@auth_token');
                 const welcomeSeen = await AsyncStorage.getItem('hasSeenWelcome');
-
+                const userDataString = await AsyncStorage.getItem('@user_data');
                 setUserToken(token);
                 setHasSeenWelcome(welcomeSeen === 'true');
+
+                if (userDataString) {
+                    setUserData(JSON.parse(userDataString));
+                }
             } catch (e) {
                 console.error('Error loading auth data:', e);
             } finally {
@@ -33,20 +37,23 @@ const AuthProvider = ({ children }: Props) => {
     // Sign in function
     const signIn = async (token: string, user: any) => {
         try {
-            await AsyncStorage.setItem('userToken', token);
-            await AsyncStorage.setItem('user', JSON.stringify(user));
+            await AsyncStorage.setItem('@auth_token', token);
+            await AsyncStorage.setItem('@user_data', JSON.stringify(user)); // Store user data
             setUserToken(token);
+            setUserData(user); // Set user data in state
         } catch (e) {
-            console.error('Error saving auth data:', e);
+            console.log('Error during sign in:', e);
         }
     };
 
     // Sign out function
     const signOut = async () => {
         try {
-            await AsyncStorage.removeItem('userToken');
-            await AsyncStorage.removeItem('user');
+            // Use consistent key names
+            await AsyncStorage.removeItem('@auth_token');
+            await AsyncStorage.removeItem('@user_data');
             setUserToken(null);
+            setUserData(null); // Also clear user data from state
         } catch (e) {
             console.error('Error removing auth data:', e);
         }
@@ -69,7 +76,9 @@ const AuthProvider = ({ children }: Props) => {
         hasSeenWelcome,
         signIn,
         signOut,
-        completeWelcome
+        completeWelcome,
+        userData,
+
     };
 
     return (

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import {
     View,
     Text,
@@ -9,18 +9,38 @@ import {
     TextInput,
     TouchableOpacity,
     StatusBar,
-    Dimensions
+    Dimensions,
+    ActivityIndicator
 } from 'react-native';
 import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { format } from 'date-fns';
-import { TIMEZONE } from '@/src/constants/const';
+import { colors, images } from '@/src/theme';
+import { AuthContext } from '@/src/context/AuthContext';
+import { API_BASE_URL, API_ENDPOINTS } from '@/src/api/config';
+import axios from 'axios';
 // Get screen dimensions
 const { width } = Dimensions.get('window');
+
+// Define the structure of the assessment data
+interface AssessmentData {
+    mood?: {
+        label?: string;
+    };
+    // Add other properties as needed
+}
 
 const Home = () => {
     const [activeMetricIndex, setActiveMetricIndex] = useState(0);
     const [activeResourceIndex, setActiveResourceIndex] = useState(0);
     const [currentDateTime, setCurrentDateTime] = useState('');
+    const [assessmentData, setAssessmentData] = useState<AssessmentData | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    // Get the user data from authentication context
+    const { userData, userToken } = useContext(AuthContext);
+
+    // Extract the user's name or use a fallback
+    const username = userData?.name || userData?.username || userData?.email?.split('@')[0] || "User";
+
     // Update the time every minute
     useEffect(() => {
         // Function to update the current date and time
@@ -40,7 +60,35 @@ const Home = () => {
 
         // Clean up the interval on component unmount
         return () => clearInterval(intervalId);
-    }, []);
+    }, []
+    );
+    useEffect(() => {
+        const fetchAssessmentData = async () => {
+            if (!userToken) return;
+
+            try {
+                const response = await axios.get(
+                    `${API_BASE_URL}/api/assessments/latest`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${userToken}`
+                        }
+                    }
+                );
+
+                if (response.data.success && response.data.assessment) {
+                    console.log('Assessment data fetched:', response.data.assessment);
+                    setAssessmentData(response.data.assessment);
+                }
+            } catch (error) {
+                console.error('Error fetching assessment data:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchAssessmentData();
+    }, [userToken]);
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor="#483524" />
@@ -62,25 +110,15 @@ const Home = () => {
             <View style={styles.profileSection}>
                 <View style={styles.profileContainer}>
                     <Image
-                        source={{ uri: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2' }}
+                        source={
+                            typeof userData?.profileImage === 'string' && userData?.profileImage
+                                ? { uri: userData.profileImage }
+                                : images.Professional // Use a local fallback image
+                        }
                         style={styles.profileImage}
                     />
                     <View>
-                        <Text style={styles.greeting}>Hi, Shinomiya!</Text>
-                        <View style={styles.statusContainer}>
-                            <View style={styles.badgeContainer}>
-                                <Ionicons name="star" size={14} color="#8DAA6D" />
-                                <Text style={styles.badgeText}>Pro</Text>
-                            </View>
-                            <View style={styles.badgeContainer}>
-                                <Ionicons name="stats-chart" size={14} color="#E18942" />
-                                <Text style={styles.badgeText}>80%</Text>
-                            </View>
-                            <View style={styles.badgeContainer}>
-                                <Ionicons name="happy" size={14} color="#FFC107" />
-                                <Text style={styles.badgeText}>Happy</Text>
-                            </View>
-                        </View>
+                        <Text style={styles.greeting}>Hi, {username}!</Text>
                     </View>
                 </View>
             </View>
@@ -120,12 +158,12 @@ const Home = () => {
                     }}
                     scrollEventThrottle={16}
                 >
-                    {/* Freud Score Card */}
+                    {/*  Score Card */}
                     <View style={styles.metricCard}>
                         <View style={[styles.metricCardContent, { backgroundColor: '#8DAA6D' }]}>
                             <View style={styles.metricHeader}>
                                 <Ionicons name="heart" size={22} color="#FFFFFF" />
-                                <Text style={styles.metricTitle}>Freud Score</Text>
+                                <Text style={styles.metricTitle}> Score</Text>
                             </View>
                             <View style={styles.scoreCircleContainer}>
                                 <View style={styles.scoreCircle}>
@@ -144,16 +182,24 @@ const Home = () => {
                                 <Text style={styles.metricTitle}>Mood</Text>
                             </View>
                             <View style={styles.moodContainer}>
-                                <Text style={styles.moodText}>Sad</Text>
-                                <View style={styles.chartContainer}>
-                                    {/* Simplified bar chart */}
-                                    {[3, 2, 5, 6, 8, 4, 2, 1].map((height, index) => (
-                                        <View
-                                            key={index}
-                                            style={[styles.chartBar, { height: height * 5 }]}
-                                        />
-                                    ))}
-                                </View>
+                                {isLoading ? (
+                                    <ActivityIndicator color="#FFFFFF" size="large" />
+                                ) : (
+                                    <>
+                                        <Text style={styles.moodText}>
+                                            {assessmentData?.mood?.label || "Neutral"}
+                                        </Text>
+                                        <View style={styles.chartContainer}>
+                                            {/* You could generate dynamic bars based on mood rating */}
+                                            {[3, 2, 5, 6, 8, 4, 2, 1].map((height, index) => (
+                                                <View
+                                                    key={index}
+                                                    style={[styles.chartBar, { height: height * 5 }]}
+                                                />
+                                            ))}
+                                        </View>
+                                    </>
+                                )}
                             </View>
                         </View>
                     </View>
@@ -193,7 +239,7 @@ const Home = () => {
                         <View style={styles.trackerGraph}>
                             {/* Simplified line graph */}
                             <View style={styles.lineGraph}>
-                                <View style={[styles.linePoint, { top: 10 }]} />
+                                <View style={[styles.linePoint, { top: 20 }]} />
                                 <View style={[styles.linePoint, { top: 5, left: '30%' }]} />
                                 <View style={[styles.linePoint, { top: 15, left: '60%' }]} />
                                 <View style={[styles.linePoint, { top: 0, left: '90%' }]} />
@@ -378,31 +424,46 @@ const Home = () => {
                     ))}
                 </View>
 
-                {/* Floating Action Button */}
-                <View style={styles.floatingButtonContainer}>
+
+                {/* Bottom spacing */}
+                <View style={{ height: 100 }} />
+            </ScrollView>
+
+            <View style={styles.tabBarContainer}>
+                <View style={styles.floatingButtonWrapper}>
                     <TouchableOpacity style={styles.floatingButton}>
-                        <Ionicons name="add" size={30} color="#FFFFFF" />
+                        <Ionicons name="add" size={32} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
 
-                {/* Bottom spacing */}
-                <View style={{ height: 80 }} />
-            </ScrollView>
+                <View style={styles.pillTabBar}>
+                    <TouchableOpacity style={styles.tabItem}>
+                        <View style={styles.tabIconContainer}>
+                            <Ionicons name="home" size={24} color="#5D4037" />
+                        </View>
+                    </TouchableOpacity>
 
-            {/* Bottom Navigation */}
-            <View style={styles.bottomNavigation}>
-                <TouchableOpacity style={styles.navItem}>
-                    <Ionicons name="home" size={24} color="#8DAA6D" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.navItem}>
-                    <Ionicons name="chatbubble-outline" size={24} color="#8B7B73" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.navItem}>
-                    <Ionicons name="stats-chart" size={24} color="#8B7B73" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.navItem}>
-                    <Ionicons name="person-outline" size={24} color="#8B7B73" />
-                </TouchableOpacity>
+                    <TouchableOpacity style={styles.tabItem}>
+                        <View style={styles.tabIconContainer}>
+                            <Ionicons name="chatbubble-ellipses-outline" size={24} color="#AAAAAA" />
+                        </View>
+                    </TouchableOpacity>
+
+                    {/* Empty space for center button */}
+                    <View style={styles.tabItem} />
+
+                    <TouchableOpacity style={styles.tabItem}>
+                        <View style={styles.tabIconContainer}>
+                            <Ionicons name="stats-chart" size={24} color="#AAAAAA" />
+                        </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.tabItem}>
+                        <View style={styles.tabIconContainer}>
+                            <Ionicons name="person-outline" size={24} color="#AAAAAA" />
+                        </View>
+                    </TouchableOpacity>
+                </View>
             </View>
         </SafeAreaView>
     );
@@ -411,7 +472,7 @@ const Home = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#483524',
+        backgroundColor: colors.marron,
     },
     header: {
         flexDirection: 'row',
@@ -468,9 +529,6 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         marginBottom: 4,
     },
-    statusContainer: {
-        flexDirection: 'row',
-    },
     badgeContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -505,6 +563,7 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
         paddingTop: 20,
+        paddingBottom: 100,
     },
     sectionHeader: {
         flexDirection: 'row',
@@ -830,38 +889,61 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginTop: 15,
     },
-    floatingButtonContainer: {
+    tabBarContainer: {
+        position: 'static',
+        bottom: 20,
+        left: 0,
+        right: 0,
         alignItems: 'center',
-        marginTop: 15,
+        zIndex: 999,
+        width: '100%',
+        backgroundColor: colors.white
+    },
+
+    pillTabBar: {
+        flexDirection: 'row',
+        backgroundColor: 'white',
+        borderRadius: 30,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        elevation: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
+        width: '100%',
+        alignItems: 'center',
+    },
+    tabItem: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    tabIconContainer: {
+        width: 40,
+        height: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    floatingButtonWrapper: {
+        position: 'absolute',
+        alignItems: 'center',
+        bottom: 20,
+        zIndex: 1000,
+        elevation: 10,
     },
     floatingButton: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
+        width: 70,
+        height: 70,
+        borderRadius: 35,
         backgroundColor: '#8DAA6D',
         alignItems: 'center',
         justifyContent: 'center',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.16,
+        shadowOpacity: 0.2,
         shadowRadius: 6,
-        elevation: 5,
-    },
-    bottomNavigation: {
-        flexDirection: 'row',
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: '#FFFFFF',
-        height: 60,
-        borderTopWidth: 1,
-        borderTopColor: '#EEEEEE',
-    },
-    navItem: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
+        elevation: 10,
     },
 });
 

@@ -5,7 +5,7 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { colors } from '@/src/theme';
 import axios from 'axios';
 import { AuthContext } from '@/src/context/AuthContext';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '@/src/navigation/AuthNavigator'; // Adjust the import path as necessary
 // Define navigation prop type
@@ -32,6 +32,7 @@ const SignIn = () => {
     setLoading(true);
 
     try {
+      // 1. First login the user
       const response = await axios.post('http://10.0.2.2:5000/api/auth/login', {
         email,
         password,
@@ -39,14 +40,57 @@ const SignIn = () => {
 
       const { token, user } = response.data;
 
-      // Use the context's signIn function instead of manually setting AsyncStorage
+      // 2. Save the auth token and user data
       await signIn(token, user);
 
-      Alert.alert('Success', 'Logged in successfully!');
-      console.log('Token saved to AsyncStorage:', token);
-      // No need for manual navigation - RootNavigator will handle it automatically
-      // when the userToken changes in the context
+      // 3. Check if user has completed an assessment
+      try {
+        const assessmentResponse = await axios.get('http://10.0.2.2:5000/api/assessments/latest', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
+        // If we get a successful response, they have an assessment
+        if (assessmentResponse.data.success && assessmentResponse.data.assessment) {
+          console.log('User has a completed assessment - navigating to Home');
+
+          // Navigate to Home screen
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'Home' }],
+            })
+          );
+        } else {
+          // No assessment found - navigate to Mental Health Assessment
+          console.log('No assessment found - navigating to Assessment flow');
+
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                {
+                  name: 'Mental',
+                  params: { screen: 'HealthGoal' }
+                }
+              ],
+            })
+          );
+        }
+      } catch (assessmentError) {
+        console.log('Error checking assessment:', assessmentError);
+        // If there's an error checking assessment, default to assessment flow
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'Mental',
+                params: { screen: 'HealthGoal' }
+              }
+            ],
+          })
+        );
+      }
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.message) {
         setError(err.response.data.message);

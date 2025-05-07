@@ -23,10 +23,12 @@ const RootNavigator = () => {
                     component={() => <WelcomeNavigator onWelcomeComplete={completeWelcome} />}
                 />
             ) : userToken ? (
+                // When authenticated, allow access to both Home and Mental screens
+                <>
+                    <Stack.Screen name="Home" component={Home} />
+                    <Stack.Screen name="Mental" component={MentalNavigator} />
 
-                <Stack.Screen name="Home" component={Home} />
-
-
+                </>
             ) : (
                 <Stack.Screen name="Auth" component={AuthNavigator} />
             )}

@@ -42,7 +42,7 @@ const MedicationSelection: React.FC = () => {
                 navigation.navigate('MedicamentSelection');
             } else {
                 // For 'none' or 'no_answer', go to the next screen
-                navigation.navigate('AssessmentCompleted');
+                navigation.navigate('Home');
             }
         }
     };

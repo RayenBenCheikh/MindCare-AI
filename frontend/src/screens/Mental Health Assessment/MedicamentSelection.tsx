@@ -137,7 +137,7 @@ const MedicamentSelection: React.FC = () => {
                 console.log('Assessment submitted successfully:', response);
 
                 // Navigate to next screen on success
-                navigation.navigate('HeightSelection');
+                navigation.navigate('Home');
             } catch (error: any) {
                 console.error('Error submitting assessment:', error);
 

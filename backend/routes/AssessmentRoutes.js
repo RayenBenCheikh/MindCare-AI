@@ -5,12 +5,14 @@ import Assessment from "../models/Assessment.js";
 const router = express.Router();
 
 // Submit a new assessment
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
     try {
         console.log('Received assessment data:', req.body);
+        console.log('User ID from auth:', req.user.id); // This user comes from auth middleware
 
-        // Create assessment data object without user field first
+        // Create assessment data object including user ID
         const assessmentData = {
+            user: req.user.id, // Always set from auth middleware
             healthGoal: req.body.healthGoal,
             gender: req.body.gender,
             age: req.body.age,
@@ -25,17 +27,11 @@ router.post('/', async (req, res) => {
             isSubmitted: true
         };
 
-        // Add user ID if available from auth token
-        if (req.user && req.user.id) {
-            assessmentData.user = req.user.id;
-        }
-        // Otherwise leave it undefined (don't set to "guest")
-
         // Create and save assessment
         const assessment = new Assessment(assessmentData);
 
         // Add debug logging
-        console.log('About to save assessment...');
+        console.log('About to save assessment for user:', req.user.id);
         const savedAssessment = await assessment.save();
         console.log('Assessment saved with ID:', savedAssessment._id);
 

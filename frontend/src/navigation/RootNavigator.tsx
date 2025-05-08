@@ -5,7 +5,7 @@ import AuthNavigator from './AuthNavigator';
 import WelcomeNavigator from './WelcomeNavigation';
 import LoadingScreen3 from '../screens/Splash&loading/loadingScreen3';
 import MentalNavigator from './MentalNavigator'; // Make sure this is imported
-import Home from '../screens/home/Home';
+import TabNavigator from './TabBarNavigation';
 const Stack = createNativeStackNavigator();
 
 const RootNavigator = () => {
@@ -25,7 +25,7 @@ const RootNavigator = () => {
             ) : userToken ? (
                 // When authenticated, allow access to both Home and Mental screens
                 <>
-                    <Stack.Screen name="Home" component={Home} />
+                    <Stack.Screen name="TabNavigator" component={TabNavigator} options={{ headerShown: false }} />
                     <Stack.Screen name="Mental" component={MentalNavigator} />
 
                 </>

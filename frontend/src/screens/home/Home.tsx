@@ -18,22 +18,25 @@ import { colors, images } from '@/src/theme';
 import { AuthContext } from '@/src/context/AuthContext';
 import { API_BASE_URL, API_ENDPOINTS } from '@/src/api/config';
 import axios from 'axios';
+import { AssessmentData, useAssessmentStore } from '@/src/store/Store';
 // Get screen dimensions
 const { width } = Dimensions.get('window');
 
-// Define the structure of the assessment data
-interface AssessmentData {
-    mood?: {
-        label?: string;
-    };
-    // Add other properties as needed
-}
+// Helper function for sleep score calculation
+const getSleepScore = (sleepQuality?: { label?: string; hours?: string | number }) => {
+    if (!sleepQuality) return "?";
+    // Simple scoring logic - can be enhanced
+    return sleepQuality.label === "Good" ? "8" : sleepQuality.label === "Average" ? "6" : "4";
+};
 
 const Home = () => {
     const [activeMetricIndex, setActiveMetricIndex] = useState(0);
     const [activeResourceIndex, setActiveResourceIndex] = useState(0);
     const [currentDateTime, setCurrentDateTime] = useState('');
-    const [assessmentData, setAssessmentData] = useState<AssessmentData | null>(null);
+    const assessmentData = useAssessmentStore(state => state.assessmentData);
+
+    // For fetching from backend and using that data instead:
+    const [backendAssessmentData, setBackendAssessmentData] = useState<AssessmentData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     // Get the user data from authentication context
     const { userData, userToken } = useContext(AuthContext);
@@ -78,7 +81,7 @@ const Home = () => {
 
                 if (response.data.success && response.data.assessment) {
                     console.log('Assessment data fetched:', response.data.assessment);
-                    setAssessmentData(response.data.assessment);
+                    setBackendAssessmentData(response.data.assessment);
                 }
             } catch (error) {
                 console.error('Error fetching assessment data:', error);
@@ -203,6 +206,78 @@ const Home = () => {
                             </View>
                         </View>
                     </View>
+                    {/* Sleep Quality Card */}
+                    <View style={styles.metricCard}>
+                        <View style={[styles.metricCardContent, { backgroundColor: '#9B7FD4' }]}>
+                            <View style={styles.metricHeader}>
+                                <Ionicons name="moon" size={22} color="#FFFFFF" />
+                                <Text style={styles.metricTitle}>Sleep Quality</Text>
+                            </View>
+                            <View style={styles.moodContainer}>
+                                {isLoading ? (
+                                    <ActivityIndicator color="#FFFFFF" size="large" />
+                                ) : (
+                                    <>
+                                        <Text style={[styles.moodText, { fontSize: 30, marginBottom: 0 }]}>
+                                            {assessmentData?.sleepQuality?.label || "Worst"}
+                                        </Text>
+                                        <View style={styles.sleepHoursContainer}>
+                                            <Text style={[styles.moodText, { fontSize: 20 }]}>
+                                                {typeof assessmentData?.sleepQuality?.hours === 'number' && assessmentData.sleepQuality.hours < 3
+                                                    ? '<3'
+                                                    : assessmentData?.sleepQuality?.hours || "?"}
+                                            </Text>
+                                        </View>
+                                    </>
+                                )}
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Health Goal Card */}
+                    <View style={styles.metricCard}>
+                        <View style={[styles.metricCardContent, { backgroundColor: '#5D9CEC' }]}>
+                            <View style={styles.metricHeader}>
+                                <Ionicons name="flag" size={22} color="#FFFFFF" />
+                                <Text style={styles.metricTitle}>Health Goal</Text>
+                            </View>
+                            <View style={[styles.moodContainer, { justifyContent: 'center' }]}>
+                                {isLoading ? (
+                                    <ActivityIndicator color="#FFFFFF" size="large" />
+                                ) : (
+                                    <Text style={[styles.moodText, { fontSize: 22, textAlign: 'center' }]}>
+                                        {assessmentData?.healthGoal?.text || "No goal set"}
+                                    </Text>
+                                )}
+                            </View>
+                        </View>
+                    </View>
+                    {/* Professional Help Card */}
+                    <View style={styles.metricCard}>
+                        <View style={[styles.metricCardContent, { backgroundColor: '#FF7A90' }]}>
+                            <View style={styles.metricHeader}>
+                                <Ionicons name="medkit" size={22} color="#FFFFFF" />
+                                <Text style={styles.metricTitle}>Professional Help</Text>
+                            </View>
+                            <View style={[styles.moodContainer, { justifyContent: 'center' }]}>
+                                {isLoading ? (
+                                    <ActivityIndicator color="#FFFFFF" size="large" />
+                                ) : (
+                                    <>
+                                        <Text style={[styles.moodText, { fontSize: 26, textAlign: 'center', marginBottom: 5 }]}>
+                                            {assessmentData?.professionalHelp === "yes" ?
+                                                "Yes" :
+                                                assessmentData?.professionalHelp === "no" ?
+                                                    "No" :
+                                                    "Not specified"}
+                                        </Text>
+
+                                    </>
+                                )}
+                            </View>
+                        </View>
+                    </View>
+
                 </ScrollView>
 
                 {/* Pagination Dots */}
@@ -256,10 +331,16 @@ const Home = () => {
                     <View style={styles.trackerContent}>
                         <View>
                             <Text style={styles.trackerTitle}>Sleep Quality</Text>
-                            <Text style={styles.trackerValue}>Insomniac (~2h Avg)</Text>
+                            <Text style={styles.trackerValue}>
+                                {assessmentData && assessmentData.sleepQuality ?
+                                    `${assessmentData.sleepQuality.label} (${assessmentData.sleepQuality.hours})` :
+                                    "Loading..."}
+                            </Text>
                         </View>
                         <View style={styles.qualityIndicator}>
-                            <Text style={styles.qualityValue}>20</Text>
+                            <Text style={styles.qualityValue}>
+                                {assessmentData ? getSleepScore(assessmentData.sleepQuality) : "?"}
+                            </Text>
                         </View>
                     </View>
                 </View>
@@ -429,42 +510,7 @@ const Home = () => {
                 <View style={{ height: 100 }} />
             </ScrollView>
 
-            <View style={styles.tabBarContainer}>
-                <View style={styles.floatingButtonWrapper}>
-                    <TouchableOpacity style={styles.floatingButton}>
-                        <Ionicons name="add" size={32} color="#FFFFFF" />
-                    </TouchableOpacity>
-                </View>
 
-                <View style={styles.pillTabBar}>
-                    <TouchableOpacity style={styles.tabItem}>
-                        <View style={styles.tabIconContainer}>
-                            <Ionicons name="home" size={24} color="#5D4037" />
-                        </View>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.tabItem}>
-                        <View style={styles.tabIconContainer}>
-                            <Ionicons name="chatbubble-ellipses-outline" size={24} color="#AAAAAA" />
-                        </View>
-                    </TouchableOpacity>
-
-                    {/* Empty space for center button */}
-                    <View style={styles.tabItem} />
-
-                    <TouchableOpacity style={styles.tabItem}>
-                        <View style={styles.tabIconContainer}>
-                            <Ionicons name="stats-chart" size={24} color="#AAAAAA" />
-                        </View>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.tabItem}>
-                        <View style={styles.tabIconContainer}>
-                            <Ionicons name="person-outline" size={24} color="#AAAAAA" />
-                        </View>
-                    </TouchableOpacity>
-                </View>
-            </View>
         </SafeAreaView>
     );
 };
@@ -686,6 +732,14 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginRight: 15,
     },
+    sleepHoursContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 5,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 12,
+        paddingHorizontal: 25,
+    },
     trackerContent: {
         flex: 1,
         flexDirection: 'row',
@@ -889,61 +943,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginTop: 15,
     },
-    tabBarContainer: {
-        position: 'static',
-        bottom: 20,
-        left: 0,
-        right: 0,
-        alignItems: 'center',
-        zIndex: 999,
-        width: '100%',
-        backgroundColor: colors.white
-    },
 
-    pillTabBar: {
-        flexDirection: 'row',
-        backgroundColor: 'white',
-        borderRadius: 30,
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        elevation: 8,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 10,
-        width: '100%',
-        alignItems: 'center',
-    },
-    tabItem: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    tabIconContainer: {
-        width: 40,
-        height: 40,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    floatingButtonWrapper: {
-        position: 'absolute',
-        alignItems: 'center',
-        bottom: 20,
-        zIndex: 1000,
-        elevation: 10,
-    },
-    floatingButton: {
-        width: 70,
-        height: 70,
-        borderRadius: 35,
-        backgroundColor: '#8DAA6D',
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.2,
-        shadowRadius: 6,
-        elevation: 10,
+    professionalHelpIcon: {
+        marginTop: 10,
+        padding: 5,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 25,
     },
 });
 

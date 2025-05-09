@@ -43,54 +43,7 @@ const SignIn = () => {
       // 2. Save the auth token and user data
       await signIn(token, user);
 
-      // 3. Check if user has completed an assessment
-      try {
-        const assessmentResponse = await axios.get('http://10.0.2.2:5000/api/assessments/latest', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
 
-        // If we get a successful response, they have an assessment
-        if (assessmentResponse.data.success && assessmentResponse.data.assessment) {
-          console.log('User has a completed assessment - navigating to Home');
-
-          // Navigate to Home screen
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [{ name: 'Home' }],
-            })
-          );
-        } else {
-          // No assessment found - navigate to Mental Health Assessment
-          console.log('No assessment found - navigating to Assessment flow');
-
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [
-                {
-                  name: 'Mental',
-                  params: { screen: 'HealthGoal' }
-                }
-              ],
-            })
-          );
-        }
-      } catch (assessmentError) {
-        console.log('Error checking assessment:', assessmentError);
-        // If there's an error checking assessment, default to assessment flow
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [
-              {
-                name: 'Mental',
-                params: { screen: 'HealthGoal' }
-              }
-            ],
-          })
-        );
-      }
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.message) {
         setError(err.response.data.message);

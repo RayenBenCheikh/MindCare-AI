@@ -16,9 +16,10 @@ import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { colors, images } from '@/src/theme';
 import { AuthContext } from '@/src/context/AuthContext';
-import { API_BASE_URL, API_ENDPOINTS } from '@/src/api/config';
+
 import axios from 'axios';
 import { AssessmentData, useAssessmentStore } from '@/src/store/Store';
+import { API_ENDPOINTS } from '@/src/constants/const';
 // Get screen dimensions
 const { width } = Dimensions.get('window');
 
@@ -71,7 +72,7 @@ const Home = () => {
 
             try {
                 const response = await axios.get(
-                    `${API_BASE_URL}/api/assessments/latest`,
+                    `${API_ENDPOINTS.assessments.latest}`,
                     {
                         headers: {
                             Authorization: `Bearer ${userToken}`
@@ -190,7 +191,7 @@ const Home = () => {
                                 ) : (
                                     <>
                                         <Text style={styles.moodText}>
-                                            {assessmentData?.mood?.label || "Neutral"}
+                                            {backendAssessmentData?.mood?.label || "Neutral"}
                                         </Text>
                                         <View style={styles.chartContainer}>
                                             {/* You could generate dynamic bars based on mood rating */}

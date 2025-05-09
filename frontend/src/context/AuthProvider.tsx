@@ -1,6 +1,7 @@
 import React, { useEffect, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthContext } from './AuthContext';
+import { setAuthToken } from '../api/config';
 
 type Props = {
     children: ReactNode;
@@ -11,6 +12,15 @@ const AuthProvider = ({ children }: Props) => {
     const [userToken, setUserToken] = useState<string | null>(null);
     const [hasSeenWelcome, setHasSeenWelcome] = useState(false);
     const [userData, setUserData] = useState<any | null>(null);
+    useEffect(() => {
+        // Set the token whenever it changes
+        if (userToken) {
+            console.log('Setting auth token from context');
+            setAuthToken(userToken);
+        } else {
+            setAuthToken(null);
+        }
+    }, [userToken]);
     // Load data when component mounts
     useEffect(() => {
         const loadData = async () => {

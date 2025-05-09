@@ -15,8 +15,12 @@ import {
 import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { AuthContext } from '@/src/context/AuthContext';
-import axios from 'axios';
 import { useAssessmentStore } from '@/src/store/Store';
+import { api, API_ENDPOINTS } from '@/src/api/config';
+import axios from 'axios';
+import * as ImagePicker from 'expo-image-picker';
+import { Alert } from 'react-native';
+
 
 // Country interface
 interface Country {
@@ -50,12 +54,99 @@ const Profile: React.FC = () => {
     const [showLocationPicker, setShowLocationPicker] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [countries, setCountries] = useState<Country[]>([]);
+    const [showImageOptions, setShowImageOptions] = useState(false);
     const [loadingCountries, setLoadingCountries] = useState(false);
+    const [profileImage, setProfileImage] = useState(
+        typeof userData?.profileImage === 'string'
+            ? userData.profileImage
+            : 'https://images.unsplash.com/photo-1544005313-94ddf0286df2'
+    );
+    const requestPermission = async (type: 'camera' | 'mediaLibrary') => {
+        try {
+            if (type === 'camera') {
+                const { status } = await ImagePicker.requestCameraPermissionsAsync();
+                return status === 'granted';
+            } else {
+                const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                return status === 'granted';
+            }
+        } catch (error) {
+            console.error(`Error requesting ${type} permission:`, error);
+            return false;
+        }
+    };
+
+    const takePhoto = async () => {
+        try {
+            const hasPermission = await requestPermission('camera');
+            if (!hasPermission) {
+                Alert.alert('Permission Denied', 'Please allow camera access to take photos');
+                return;
+            }
+
+            const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.7,
+            });
+
+            if (!result.canceled && result.assets && result.assets[0]) {
+                console.log('Camera captured image URI:', result.assets[0].uri);
+                setProfileImage(result.assets[0].uri);
+                setShowImageOptions(false);
+            }
+        } catch (error) {
+            console.error('Error taking photo:', error);
+            Alert.alert('Error', 'Failed to take photo. Please try again.');
+        }
+    };
+
+    const pickImage = async () => {
+        try {
+            const hasPermission = await requestPermission('mediaLibrary');
+            if (!hasPermission) {
+                Alert.alert('Permission Denied', 'Please allow photo library access to select images');
+                return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.7,
+            });
+
+            if (!result.canceled && result.assets && result.assets[0]) {
+                console.log('Gallery selected image URI:', result.assets[0].uri);
+                setProfileImage(result.assets[0].uri);
+                setShowImageOptions(false);
+            }
+        } catch (error) {
+            console.error('Error picking image:', error);
+            Alert.alert('Error', 'Failed to select image. Please try again.');
+        }
+    };
+
+
     const saveProfileChanges = async () => {
         setIsSaving(true);
         setSaveError('');
         setSaveSuccess(false);
-
+        const requestPermission = async (type: 'camera' | 'mediaLibrary') => {
+            try {
+                if (type === 'camera') {
+                    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+                    return status === 'granted';
+                } else {
+                    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                    return status === 'granted';
+                }
+            } catch (error) {
+                console.error(`Error requesting ${type} permission:`, error);
+                return false;
+            }
+        };
         try {
             // Combine all data into one assessment object
             const combinedData = {
@@ -63,7 +154,7 @@ const Profile: React.FC = () => {
                 name: fullName,
                 email: email,
                 ...(password !== '**************' && { password }),
-
+                profileImage: profileImage,
                 // Assessment data
                 weight: {
                     value: Math.round(weight),
@@ -77,16 +168,7 @@ const Profile: React.FC = () => {
             };
 
             // Send all data to the assessments endpoint
-            const response = await axios.post(
-                'http://10.0.2.2:5000/api/assessments/save-progress',
-                combinedData,
-                {
-                    headers: {
-                        Authorization: `Bearer ${userToken}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
+            const response = await api.post(API_ENDPOINTS.assessments.saveProgress, combinedData);
 
             // Check if successful
             if (response.data.success) {
@@ -178,13 +260,58 @@ const Profile: React.FC = () => {
                 {/* Profile Image */}
                 <View style={styles.profileImageContainer}>
                     <Image
-                        source={{ uri: userData?.profileImage || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2' }}
+                        source={{ uri: profileImage }}
                         style={styles.profileImage}
+                        onError={() => {
+                            console.log('Image failed to load, using default');
+                            setProfileImage('https://images.unsplash.com/photo-1544005313-94ddf0286df2');
+                        }}
                     />
-                    <TouchableOpacity style={styles.editImageButton}>
+                    <TouchableOpacity
+                        style={styles.editImageButton}
+                        onPress={() => setShowImageOptions(true)}
+                    >
                         <MaterialCommunityIcons name="pencil" size={18} color="white" />
                     </TouchableOpacity>
                 </View>
+
+                {/* Image Options Modal */}
+                <Modal
+                    visible={showImageOptions}
+                    animationType="slide"
+                    transparent={true}
+                >
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setShowImageOptions(false)}
+                    >
+                        <View style={styles.imageOptionsContainer}>
+                            <View style={styles.imageOptionsHeader}>
+                                <Text style={styles.imageOptionsTitle}>Profile Picture</Text>
+                                <TouchableOpacity onPress={() => setShowImageOptions(false)}>
+                                    <Ionicons name="close" size={24} color="#5D4037" />
+                                </TouchableOpacity>
+                            </View>
+
+                            <TouchableOpacity
+                                style={styles.imageOption}
+                                onPress={takePhoto}
+                            >
+                                <Ionicons name="camera" size={24} color="#5D4037" />
+                                <Text style={styles.imageOptionText}>Take Photo</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.imageOption}
+                                onPress={pickImage}
+                            >
+                                <Ionicons name="images" size={24} color="#5D4037" />
+                                <Text style={styles.imageOptionText}>Choose from Gallery</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
+                </Modal>
 
                 {/* Form */}
                 <View style={styles.formContainer}>
@@ -626,6 +753,41 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         marginLeft: 8,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    imageOptionsContainer: {
+        backgroundColor: 'white',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        padding: 20,
+    },
+    imageOptionsHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 20,
+        paddingBottom: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E0E0E0',
+    },
+    imageOptionsTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#5D4037',
+    },
+    imageOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 15,
+    },
+    imageOptionText: {
+        fontSize: 16,
+        color: '#5D4037',
+        marginLeft: 15,
     },
 
 });

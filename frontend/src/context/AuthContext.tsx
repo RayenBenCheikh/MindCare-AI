@@ -1,5 +1,4 @@
 import { createContext } from 'react';
-
 export type AuthContextType = {
     isLoading: boolean;
     userToken: string | null;
@@ -19,4 +18,5 @@ export const AuthContext = createContext<AuthContextType>({
     signIn: async () => { },
     signOut: async () => { },
     completeWelcome: async () => { },
+
 });

@@ -3,7 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar, Alert }
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { colors } from '@/src/theme';
-import axios from 'axios';
+import { api } from '@/src/api/config';
+import { AxiosError } from 'axios';
 import { AuthContext } from '@/src/context/AuthContext';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -33,7 +34,7 @@ const SignIn = () => {
 
     try {
       // 1. First login the user
-      const response = await axios.post('http://10.0.2.2:5000/api/auth/login', {
+      const response = await api.post('/api/auth/login', {
         email,
         password,
       });
@@ -42,14 +43,16 @@ const SignIn = () => {
 
       // 2. Save the auth token and user data
       await signIn(token, user);
+    } catch (error: unknown) {
+      // Type guard to ensure error is treated as AxiosError
+      const err = error as AxiosError<{ message?: string }>;
 
-
-    } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.data?.message) {
+      if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else {
         setError('Something went wrong. Please try again.');
       }
+      console.error('Login error:', err);
     } finally {
       setLoading(false);
     }

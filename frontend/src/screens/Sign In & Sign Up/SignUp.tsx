@@ -2,11 +2,12 @@ import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '@/src/context/AuthContext';
-import axios from 'axios';
+import { AxiosError } from 'axios';
 import { CommonActions, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '@/src/navigation/AuthNavigator'; // Adjust the import path as necessary
 import { colors } from '@/src/theme';
+import { api } from '@/src/api/config';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
@@ -51,7 +52,7 @@ const SignUpScreen = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://10.0.2.2:5000/api/auth/register', {
+      const response = await api.post('/api/auth/register', {
         email,
         password,
       });
@@ -75,12 +76,16 @@ const SignUpScreen = () => {
           { text: 'OK', onPress: () => navigation.navigate('SignIn') },
         ]);
       }
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.error || 'Something went wrong. Please try again.');
+    } catch (error: unknown) {
+      // Type guard to ensure error is treated as AxiosError
+      const err = error as AxiosError<{ message?: string }>;
+
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
       } else {
         setError('Something went wrong. Please try again.');
       }
+      console.error('Login error:', err);
     } finally {
       setLoading(false);
     }

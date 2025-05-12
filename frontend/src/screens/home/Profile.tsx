@@ -2,25 +2,25 @@ import React, { useState, useContext, useEffect } from 'react';
 import {
     View,
     Text,
-    TextInput,
     StyleSheet,
     TouchableOpacity,
-    Image,
     SafeAreaView,
     ScrollView,
     ActivityIndicator,
-    Modal,
-    FlatList,
+    Alert
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { AuthContext } from '@/src/context/AuthContext';
 import { useAssessmentStore } from '@/src/store/Store';
-import { api, API_ENDPOINTS } from '@/src/api/config';
+import { api, API_BASE_URL } from '@/src/api/config';
+import { API_ENDPOINTS } from '@/src/constants/const';
+import FormField from '@/src/components/profile/FormField';
+import LocationPicker from '@/src/components/profile/LocationPicker';
+import ProfileImage from '@/src/components/profile/ProfileImage';
+import Header from '@/src/components/profile/Header';
+import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
-import * as ImagePicker from 'expo-image-picker';
-import { Alert } from 'react-native';
-
 
 // Country interface
 interface Country {
@@ -32,121 +32,39 @@ interface Country {
     };
 }
 
-
 const Profile: React.FC = () => {
+    const navigation = useNavigation();
+
     // Get user data from auth context
     const { userData, userToken } = useContext(AuthContext);
     const assessmentData = useAssessmentStore(state => state.assessmentData);
+
+    // States
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState('');
     const [saveSuccess, setSaveSuccess] = useState(false);
-    // State for loading backend data
     const [isLoading, setIsLoading] = useState(false);
-
-    // State for form fields
-    const [fullName, setFullName] = useState(userData?.name || 'Shinomiya Kagi');
-    const [email, setEmail] = useState(userData?.email || 'elementary221b@gmail.com');
+    const [fullName, setFullName] = useState(userData?.name || '');
+    const [email, setEmail] = useState(userData?.email || '');
     const [password, setPassword] = useState('**************');
     const [showPassword, setShowPassword] = useState(false);
     const [weight, setWeight] = useState(65);
     const [gender, setGender] = useState(assessmentData?.gender || 'Female');
     const [location, setLocation] = useState('Select a Country');
     const [showLocationPicker, setShowLocationPicker] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
     const [countries, setCountries] = useState<Country[]>([]);
-    const [showImageOptions, setShowImageOptions] = useState(false);
     const [loadingCountries, setLoadingCountries] = useState(false);
     const [profileImage, setProfileImage] = useState(
-        typeof userData?.profileImage === 'string'
+        typeof userData?.profileImage === 'string' && userData?.profileImage
             ? userData.profileImage
             : 'https://images.unsplash.com/photo-1544005313-94ddf0286df2'
     );
-    const requestPermission = async (type: 'camera' | 'mediaLibrary') => {
-        try {
-            if (type === 'camera') {
-                const { status } = await ImagePicker.requestCameraPermissionsAsync();
-                return status === 'granted';
-            } else {
-                const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                return status === 'granted';
-            }
-        } catch (error) {
-            console.error(`Error requesting ${type} permission:`, error);
-            return false;
-        }
-    };
-
-    const takePhoto = async () => {
-        try {
-            const hasPermission = await requestPermission('camera');
-            if (!hasPermission) {
-                Alert.alert('Permission Denied', 'Please allow camera access to take photos');
-                return;
-            }
-
-            const result = await ImagePicker.launchCameraAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: true,
-                aspect: [1, 1],
-                quality: 0.7,
-            });
-
-            if (!result.canceled && result.assets && result.assets[0]) {
-                console.log('Camera captured image URI:', result.assets[0].uri);
-                setProfileImage(result.assets[0].uri);
-                setShowImageOptions(false);
-            }
-        } catch (error) {
-            console.error('Error taking photo:', error);
-            Alert.alert('Error', 'Failed to take photo. Please try again.');
-        }
-    };
-
-    const pickImage = async () => {
-        try {
-            const hasPermission = await requestPermission('mediaLibrary');
-            if (!hasPermission) {
-                Alert.alert('Permission Denied', 'Please allow photo library access to select images');
-                return;
-            }
-
-            const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: true,
-                aspect: [1, 1],
-                quality: 0.7,
-            });
-
-            if (!result.canceled && result.assets && result.assets[0]) {
-                console.log('Gallery selected image URI:', result.assets[0].uri);
-                setProfileImage(result.assets[0].uri);
-                setShowImageOptions(false);
-            }
-        } catch (error) {
-            console.error('Error picking image:', error);
-            Alert.alert('Error', 'Failed to select image. Please try again.');
-        }
-    };
-
 
     const saveProfileChanges = async () => {
         setIsSaving(true);
         setSaveError('');
         setSaveSuccess(false);
-        const requestPermission = async (type: 'camera' | 'mediaLibrary') => {
-            try {
-                if (type === 'camera') {
-                    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-                    return status === 'granted';
-                } else {
-                    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                    return status === 'granted';
-                }
-            } catch (error) {
-                console.error(`Error requesting ${type} permission:`, error);
-                return false;
-            }
-        };
+
         try {
             // Combine all data into one assessment object
             const combinedData = {
@@ -162,13 +80,15 @@ const Profile: React.FC = () => {
                 },
                 gender: gender,
                 location: location,
-
                 // Add a flag to indicate this is a profile update
                 isProfileUpdate: true
             };
 
             // Send all data to the assessments endpoint
-            const response = await api.post(API_ENDPOINTS.assessments.saveProgress, combinedData);
+            const response = await api.post(
+                API_ENDPOINTS.assessments.saveProgress,
+                combinedData
+            );
 
             // Check if successful
             if (response.data.success) {
@@ -191,11 +111,13 @@ const Profile: React.FC = () => {
             setIsSaving(false);
         }
     };
-    // Fetch user assessment data from backend
+
+    // Fetch countries from API
     useEffect(() => {
         const fetchCountries = async () => {
             setLoadingCountries(true);
             try {
+                // Use direct axios for external API calls, not our configured instance
                 const response = await axios.get('https://restcountries.com/v3.1/all?fields=name,flags');
                 const sortedCountries = response.data.sort((a: Country, b: Country) =>
                     a.name.common.localeCompare(b.name.common)
@@ -211,17 +133,18 @@ const Profile: React.FC = () => {
         fetchCountries();
     }, []);
 
+    // Fetch user data from backend
     useEffect(() => {
         if (!userToken) return;
 
         const fetchUserData = async () => {
             setIsLoading(true);
             try {
-                const response = await axios.get('http://10.0.2.2:5000/api/assessments/latest', {
-                    headers: {
-                        Authorization: `Bearer ${userToken}`
-                    }
-                });
+                // Don't add the authorization header manually here
+                // The api instance should already be configured with it
+                const response = await api.get(API_ENDPOINTS.assessments.latest);
+
+                console.log('User data response:', response.data);
 
                 if (response.data.success && response.data.assessment) {
                     const assessment = response.data.assessment;
@@ -234,9 +157,19 @@ const Profile: React.FC = () => {
                     if (assessment.weight && assessment.weight.value) {
                         setWeight(assessment.weight.value);
                     }
+
+                    // Update location if available
+                    if (assessment.location) {
+                        setLocation(assessment.location);
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching user data:', error);
+                // Add more detailed error logging
+                if (axios.isAxiosError(error)) {
+                    console.error('Status:', error.response?.status);
+                    console.error('Response data:', error.response?.data);
+                }
             } finally {
                 setIsLoading(false);
             }
@@ -249,69 +182,21 @@ const Profile: React.FC = () => {
         <SafeAreaView style={styles.container}>
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={24} color="white" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Profile Setup</Text>
-                    <View style={{ width: 24 }} />
-                </View>
+                <Header
+                    title="Profile Setup"
+                    onBackPress={() => navigation.goBack()}
+                    backgroundColor="#B5C99A"
+                />
 
                 {/* Profile Image */}
-                <View style={styles.profileImageContainer}>
-                    <Image
-                        source={{ uri: profileImage }}
-                        style={styles.profileImage}
-                        onError={() => {
-                            console.log('Image failed to load, using default');
-                            setProfileImage('https://images.unsplash.com/photo-1544005313-94ddf0286df2');
-                        }}
-                    />
-                    <TouchableOpacity
-                        style={styles.editImageButton}
-                        onPress={() => setShowImageOptions(true)}
-                    >
-                        <MaterialCommunityIcons name="pencil" size={18} color="white" />
-                    </TouchableOpacity>
-                </View>
-
-                {/* Image Options Modal */}
-                <Modal
-                    visible={showImageOptions}
-                    animationType="slide"
-                    transparent={true}
-                >
-                    <TouchableOpacity
-                        style={styles.modalOverlay}
-                        activeOpacity={1}
-                        onPress={() => setShowImageOptions(false)}
-                    >
-                        <View style={styles.imageOptionsContainer}>
-                            <View style={styles.imageOptionsHeader}>
-                                <Text style={styles.imageOptionsTitle}>Profile Picture</Text>
-                                <TouchableOpacity onPress={() => setShowImageOptions(false)}>
-                                    <Ionicons name="close" size={24} color="#5D4037" />
-                                </TouchableOpacity>
-                            </View>
-
-                            <TouchableOpacity
-                                style={styles.imageOption}
-                                onPress={takePhoto}
-                            >
-                                <Ionicons name="camera" size={24} color="#5D4037" />
-                                <Text style={styles.imageOptionText}>Take Photo</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={styles.imageOption}
-                                onPress={pickImage}
-                            >
-                                <Ionicons name="images" size={24} color="#5D4037" />
-                                <Text style={styles.imageOptionText}>Choose from Gallery</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </TouchableOpacity>
-                </Modal>
+                <ProfileImage
+                    imageUri={profileImage}
+                    onImageChange={setProfileImage}
+                    size={120}
+                    borderColor="white"
+                    borderWidth={4}
+                    editButtonColor="#5D4037"
+                />
 
                 {/* Form */}
                 <View style={styles.formContainer}>
@@ -323,49 +208,42 @@ const Profile: React.FC = () => {
                     ) : (
                         <>
                             {/* Full Name */}
-                            <Text style={styles.label}>Full Name</Text>
-                            <View style={styles.inputContainer}>
-                                <MaterialIcons name="person-outline" size={20} color="#7D6E83" />
-                                <TextInput
-                                    style={styles.input}
-                                    value={fullName}
-                                    onChangeText={setFullName}
-                                    placeholder="Enter your full name"
-                                />
-                            </View>
+                            <FormField
+                                label="Full Name"
+                                icon={<MaterialIcons name="person-outline" size={20} color="#7D6E83" />}
+                                value={fullName}
+                                onChangeText={setFullName}
+                                placeholder="Enter your full name"
+                            />
 
                             {/* Email */}
-                            <Text style={styles.label}>Email Address</Text>
-                            <View style={styles.inputContainer}>
-                                <MaterialCommunityIcons name="email-outline" size={20} color="#7D6E83" />
-                                <TextInput
-                                    style={styles.input}
-                                    value={email}
-                                    onChangeText={setEmail}
-                                    placeholder="Enter your email address"
-                                    keyboardType="email-address"
-                                />
-                            </View>
+                            <FormField
+                                label="Email Address"
+                                icon={<MaterialCommunityIcons name="email-outline" size={20} color="#7D6E83" />}
+                                value={email}
+                                onChangeText={setEmail}
+                                placeholder="Enter your email address"
+                                keyboardType="email-address"
+                            />
 
                             {/* Password */}
-                            <Text style={styles.label}>Password</Text>
-                            <View style={styles.inputContainer}>
-                                <MaterialIcons name="lock-outline" size={20} color="#7D6E83" />
-                                <TextInput
-                                    style={styles.input}
-                                    value={password}
-                                    onChangeText={setPassword}
-                                    placeholder="Enter your password"
-                                    secureTextEntry={!showPassword}
-                                />
-                                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                                    <Ionicons
-                                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                                        size={20}
-                                        color="#7D6E83"
-                                    />
-                                </TouchableOpacity>
-                            </View>
+                            <FormField
+                                label="Password"
+                                icon={<MaterialIcons name="lock-outline" size={20} color="#7D6E83" />}
+                                value={password}
+                                onChangeText={setPassword}
+                                placeholder="Enter your password"
+                                secureTextEntry={!showPassword}
+                                rightIcon={
+                                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                                        <Ionicons
+                                            name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                                            size={20}
+                                            color="#7D6E83"
+                                        />
+                                    </TouchableOpacity>
+                                }
+                            />
 
                             {/* Weight */}
                             <Text style={styles.label}>Weight</Text>
@@ -387,97 +265,48 @@ const Profile: React.FC = () => {
                             <Text style={styles.currentWeight}>{Math.round(weight)}kg</Text>
 
                             {/* Gender */}
-                            <Text style={styles.label}>Gender</Text>
-                            <TouchableOpacity style={styles.dropdownContainer}>
-                                <MaterialCommunityIcons name="gender-transgender" size={20} color="#7D6E83" />
-                                <Text style={styles.dropdownText}>{gender}</Text>
-                                <MaterialIcons name="keyboard-arrow-down" size={20} color="#7D6E83" />
-                            </TouchableOpacity>
+                            <FormField
+                                label="Gender"
+                                icon={<MaterialCommunityIcons name="gender-transgender" size={20} color="#7D6E83" />}
+                                value={gender}
+                                isDropdown
+                                onPress={() => {
+                                    Alert.alert(
+                                        'Select Gender',
+                                        'Choose your gender',
+                                        [
+                                            { text: 'Male', onPress: () => setGender('Male') },
+                                            { text: 'Female', onPress: () => setGender('Female') },
+                                            { text: 'Other', onPress: () => setGender('Other') },
+                                            { text: 'Cancel', style: 'cancel' }
+                                        ]
+                                    );
+                                }}
+                                rightIcon={<MaterialIcons name="keyboard-arrow-down" size={20} color="#7D6E83" />}
+                            />
 
-                            <>
-                                {/* Location */}
-                                <Text style={styles.label}>Location</Text>
-                                <TouchableOpacity
-                                    style={styles.dropdownContainer}
-                                    onPress={() => setShowLocationPicker(true)}
-                                >
-                                    <MaterialIcons name="location-on" size={20} color="#7D6E83" />
-                                    <Text style={styles.dropdownText}>{location}</Text>
-                                    <MaterialIcons name="keyboard-arrow-down" size={20} color="#7D6E83" />
-                                </TouchableOpacity>
+                            {/* Location */}
+                            <FormField
+                                label="Location"
+                                icon={<MaterialIcons name="location-on" size={20} color="#7D6E83" />}
+                                value={location}
+                                isDropdown
+                                onPress={() => setShowLocationPicker(true)}
+                                rightIcon={<MaterialIcons name="keyboard-arrow-down" size={20} color="#7D6E83" />}
+                            />
 
-                                {/* Country Selection Modal */}
-                                <Modal
-                                    visible={showLocationPicker}
-                                    animationType="slide"
-                                    transparent={true}
-                                >
-                                    <View style={styles.modalContainer}>
-                                        <View style={styles.modalContent}>
-                                            <View style={styles.modalHeader}>
-                                                <Text style={styles.modalTitle}>Select Your Country</Text>
-                                                <TouchableOpacity onPress={() => setShowLocationPicker(false)}>
-                                                    <Ionicons name="close" size={24} color="#5D4037" />
-                                                </TouchableOpacity>
-                                            </View>
-
-                                            <View style={styles.searchContainer}>
-                                                <Ionicons name="search" size={20} color="#7D6E83" />
-                                                <TextInput
-                                                    style={styles.searchInput}
-                                                    value={searchQuery}
-                                                    onChangeText={setSearchQuery}
-                                                    placeholder="Search countries..."
-                                                    autoCapitalize="none"
-                                                />
-                                                {searchQuery ? (
-                                                    <TouchableOpacity onPress={() => setSearchQuery('')}>
-                                                        <Ionicons name="close-circle" size={20} color="#7D6E83" />
-                                                    </TouchableOpacity>
-                                                ) : null}
-                                            </View>
-
-                                            {loadingCountries ? (
-                                                <ActivityIndicator size="large" color="#8DAA6D" style={{ marginTop: 20 }} />
-                                            ) : (
-                                                <FlatList
-                                                    data={countries.filter(country =>
-                                                        country.name.common.toLowerCase().includes(searchQuery.toLowerCase())
-                                                    )}
-                                                    keyExtractor={(item) => item.name.common}
-                                                    renderItem={({ item }) => (
-                                                        <TouchableOpacity
-                                                            style={styles.countryItem}
-                                                            onPress={() => {
-                                                                setLocation(item.name.common);
-                                                                setShowLocationPicker(false);
-                                                                setSearchQuery('');
-                                                            }}
-                                                        >
-                                                            <View style={styles.countryItemContent}>
-                                                                <Image
-                                                                    source={{ uri: item.flags.png }}
-                                                                    style={styles.countryFlag}
-                                                                />
-                                                                <Text style={[
-                                                                    styles.countryItemText,
-                                                                    location === item.name.common && styles.selectedCountryText
-                                                                ]}>
-                                                                    {item.name.common}
-                                                                </Text>
-                                                            </View>
-                                                            {location === item.name.common && (
-                                                                <Ionicons name="checkmark" size={20} color="#8DAA6D" />
-                                                            )}
-                                                        </TouchableOpacity>
-                                                    )}
-                                                    style={styles.countryList}
-                                                />
-                                            )}
-                                        </View>
-                                    </View>
-                                </Modal>
-                            </>
+                            {/* Location Picker Component */}
+                            <LocationPicker
+                                visible={showLocationPicker}
+                                countries={countries}
+                                selectedLocation={location}
+                                isLoading={loadingCountries}
+                                onClose={() => setShowLocationPicker(false)}
+                                onSelect={(selectedCountry) => {
+                                    setLocation(selectedCountry);
+                                    setShowLocationPicker(false);
+                                }}
+                            />
 
                             {/* Save Changes Button */}
                             <TouchableOpacity
@@ -498,12 +327,11 @@ const Profile: React.FC = () => {
                                 )}
                             </TouchableOpacity>
 
-                            {/* Error Message */}
+                            {/* Error and Success messages */}
                             {saveError ? (
                                 <Text style={styles.errorText}>{saveError}</Text>
                             ) : null}
 
-                            {/* Success Message */}
                             {saveSuccess ? (
                                 <View style={styles.successContainer}>
                                     <Ionicons name="checkmark-circle" size={24} color="#8DAA6D" />
@@ -517,56 +345,10 @@ const Profile: React.FC = () => {
         </SafeAreaView>
     );
 };
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#B5C99A', // Light green/olive background
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-    },
-    backButton: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: 'white',
-    },
-    profileImageContainer: {
-        alignItems: 'center',
-        marginVertical: 20,
-        position: 'relative',
-    },
-    profileImage: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        borderWidth: 4,
-        borderColor: 'white',
-    },
-    editImageButton: {
-        position: 'absolute',
-        bottom: 0,
-        right: '35%',
-        backgroundColor: '#5D4037',
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 3,
-        borderColor: 'white',
     },
     formContainer: {
         backgroundColor: '#F5F5F5',
@@ -592,23 +374,6 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         marginLeft: 4,
     },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'white',
-        borderRadius: 25,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: '#E0E0E0',
-    },
-    input: {
-        flex: 1,
-        marginLeft: 12,
-        fontSize: 16,
-        color: '#333',
-    },
     sliderContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -630,23 +395,6 @@ const styles = StyleSheet.create({
         color: '#8DAA6D',
         marginBottom: 16,
     },
-    dropdownContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'white',
-        borderRadius: 25,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: '#E0E0E0',
-    },
-    dropdownText: {
-        flex: 1,
-        marginLeft: 12,
-        fontSize: 16,
-        color: '#333',
-    },
     continueButton: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -661,74 +409,6 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: 'white',
         marginRight: 8,
-    },
-    modalContainer: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalContent: {
-        width: '90%',
-        backgroundColor: 'white',
-        borderRadius: 15,
-        maxHeight: '80%',
-        padding: 20,
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 15,
-    },
-    modalTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#5D4037',
-    },
-    searchContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F0F0F0',
-        borderRadius: 25,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        marginBottom: 15,
-    },
-    searchInput: {
-        flex: 1,
-        marginLeft: 10,
-        fontSize: 16,
-    },
-    countryList: {
-        maxHeight: 400,
-    },
-    countryItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: 12,
-        paddingHorizontal: 5,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
-    },
-    countryItemContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    countryFlag: {
-        width: 28,
-        height: 20,
-        marginRight: 12,
-        borderRadius: 2,
-    },
-    countryItemText: {
-        fontSize: 16,
-        color: '#333',
-    },
-    selectedCountryText: {
-        fontWeight: '600',
-        color: '#8DAA6D',
     },
     disabledButton: {
         opacity: 0.7,
@@ -754,42 +434,6 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         marginLeft: 8,
     },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'flex-end',
-    },
-    imageOptionsContainer: {
-        backgroundColor: 'white',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        padding: 20,
-    },
-    imageOptionsHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 20,
-        paddingBottom: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: '#E0E0E0',
-    },
-    imageOptionsTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#5D4037',
-    },
-    imageOption: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 15,
-    },
-    imageOptionText: {
-        fontSize: 16,
-        color: '#5D4037',
-        marginLeft: 15,
-    },
-
 });
 
 export default Profile;

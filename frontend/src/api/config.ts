@@ -2,9 +2,9 @@ import axios from 'axios'; // Use import instead of require
 import { Platform } from 'react-native';
 // Base API URLs for different environments
 export const API_URLS = {
-  local: "http://localhost:5000",
+  local: "http://192.168.1.15:5000",
   android: "http://10.0.2.2:5000", // Android emulator uses 10.0.2.2 to access localhost
-  ios: "http://localhost:5000",    // iOS simulator uses localhost directly
+  ios: "http://192.168.1.15:5000",    // iOS simulator uses localhost directly
   // Add production URL when ready
   production: "https://api.mindcare-ai.com",
 };
@@ -15,8 +15,6 @@ const CURRENT_ENV: "local" | "android" | "ios" | "production" =
 
 // Root API URL based on environment
 export const API_BASE_URL = API_URLS[CURRENT_ENV];
-
-
 
 // Create a single axios instance to use throughout the app
 export const api = axios.create({
@@ -46,3 +44,19 @@ api.interceptors.request.use(request => {
   console.log('Request headers:', request.headers);
   return request;
 });
+export const isTokenExpired = (token: string): boolean => {
+  try {
+    // Split the token and get the payload part
+    const base64Url = token.split('.')[1];
+    // Convert base64 to JSON
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(window.atob(base64));
+    
+    // Check if token has expired
+    const currentTime = Math.floor(Date.now() / 1000);
+    return payload.exp < currentTime;
+  } catch (error) {
+    console.error('Error checking token expiration:', error);
+    return true; // Assume expired if we can't check
+  }
+};

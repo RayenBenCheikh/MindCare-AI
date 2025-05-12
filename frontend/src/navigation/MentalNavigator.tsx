@@ -11,7 +11,7 @@ import HelpSelection from '../screens/Mental Health Assessment/HelpSelection';
 import HealthGoal from '../screens/Mental Health Assessment/HealthGoal';
 import MedicationSelection from '../screens/Mental Health Assessment/MedicationSelection';
 import MedicamentSelection from '../screens/Mental Health Assessment/MedicamentSelection';
-import Home from '../screens/home/Home';
+import Home from '../screens/Home/Home';
 
 const Stack = createNativeStackNavigator();
 export type RootStackParamList = {

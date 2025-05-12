@@ -25,7 +25,7 @@ const AuthProvider = ({ children }: Props) => {
     useEffect(() => {
         const loadData = async () => {
             try {
-                await AsyncStorage.clear();
+                // await AsyncStorage.clear();
                 const token = await AsyncStorage.getItem('@auth_token');
 
                 const welcomeSeen = await AsyncStorage.getItem('hasSeenWelcome');

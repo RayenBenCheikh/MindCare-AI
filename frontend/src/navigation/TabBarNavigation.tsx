@@ -4,10 +4,10 @@ import { createBottomTabNavigator, BottomTabBarProps } from '@react-navigation/b
 import { Ionicons } from '@expo/vector-icons';
 
 // Import screens
-import Home from '../screens/home/Home';
-import Profile from '../screens/home/Profile';
-import Chatbot from '../screens/home/Chatbot';
-import Statistic from '../screens/home/Statistic';
+import Home from '../screens/Home/Home';
+import Profile from '../screens/Home/Profile';
+import Chatbot from '../screens/Home/Chatbot';
+import Statistic from '../screens/Home/Statistic';
 import VitalSignsScreen from '../screens/Stress Managment/HealthScanScreenAI';
 
 const Tab = createBottomTabNavigator();

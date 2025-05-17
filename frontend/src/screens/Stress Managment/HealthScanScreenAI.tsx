@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import {
   View,
   Text,
@@ -8,15 +8,16 @@ import {
   SafeAreaView,
   Alert
 } from 'react-native';
-import { CameraView, CameraType, useCameraPermissions, Camera, CameraCapturedPicture } from 'expo-camera';
+import { CameraView, CameraType, useCameraPermissions, Camera } from 'expo-camera';
 import axios from 'axios';
+import { api, VITAL_SIGNS_URL } from '@/src/api/config';
+import { AuthContext } from '@/src/context/AuthContext';
+import { API_ENDPOINTS } from '@/src/constants/const';
 
-const API_URL = 'http://10.6.68.72:5000/api/analyze';
-
-// For testing purposes - this would typically come from your login process
-const DEMO_USER_ID = "67f53c51ae44af41697c7c2c";
+const API_URL = `${VITAL_SIGNS_URL}/api/analyze`;
 
 const VitalSignsScreen = () => {
+  const { userData, userToken } = useContext(AuthContext);
   const [hasPermission, setHasPermission] = useState<boolean | undefined>(undefined);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [heartRate, setHeartRate] = useState('--');
@@ -25,16 +26,44 @@ const VitalSignsScreen = () => {
   const [message, setMessage] = useState('Position your face in the frame');
   const [faceDetected, setFaceDetected] = useState(false);
   const cameraRef = useRef<CameraView>(null);
+  const [userId, setUserId] = useState<string>('anonymous_user');
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
-  const analysisInterval = useRef<NodeJS.Timeout | null>(null);
+  const [analysisComplete, setAnalysisComplete] = useState(false);
 
-  // Test server connection on component mount
+  // Get user ID from assessment
+  useEffect(() => {
+    const fetchAssessmentData = async () => {
+      if (userToken) {
+        try {
+          const response = await api.get(API_ENDPOINTS.assessments.latest);
+          console.log('Fetched assessment data:', response.data);
+
+          if (response.data?.assessment) {
+            if (response.data.assessment._id) {
+              console.log('Setting user ID from assessment.user:', response.data.assessment.user);
+              setUserId(response.data.assessment._id);
+            } else {
+              console.log('No user field found in assessment:', response.data.assessment);
+              setUserId(response.data.assessment._id);
+            }
+          } else {
+            console.log('No assessment found in response');
+          }
+        } catch (error) {
+          console.error('Error fetching assessment data:', error);
+        }
+      }
+    };
+
+    fetchAssessmentData();
+  }, [userToken]);
+
+  // Test server connection
   useEffect(() => {
     const checkServerConnection = async () => {
       try {
-        const response = await axios.get('http://10.6.68.72:5000/health');
-
-        if (response.data.status === 'ok') {
+        const response = await axios.get(`${VITAL_SIGNS_URL}/health`);
+        if (response.status === 200) {
           setConnectionStatus('connected');
         } else {
           setConnectionStatus('error');
@@ -58,138 +87,104 @@ const VitalSignsScreen = () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
       setHasPermission(status === 'granted');
     })();
-
-    return () => {
-      if (analysisInterval.current) {
-        clearInterval(analysisInterval.current);
-      }
-    };
   }, []);
 
   const startAnalysis = async () => {
     if (connectionStatus !== 'connected') {
-      Alert.alert('Server Connection Error', 'Cannot connect to the vital signs server. Please check your network connection and try again.');
+      Alert.alert('Server Connection Error', 'Cannot connect to the vital signs server.');
       return;
     }
 
-    setMessage('Calibrating... Stay still');
+    setMessage('Preparing camera...');
     setIsAnalyzing(true);
     setFaceDetected(false);
+    setAnalysisComplete(false);
 
     // Reset previous measurements
     setHeartRate('--');
     setSystolicBP('--');
     setDiastolicBP('--');
 
-    // Calibration period (3 seconds)
+    // Short delay to allow UI update before capture
     setTimeout(() => {
-      setMessage('Analyzing vital signs... Stay still');
-
-      // Start capturing frames every 2 seconds
-      analysisInterval.current = setInterval(captureAndAnalyze, 2000);
-
-      // Stop after 30 seconds
-      setTimeout(() => {
-        stopAnalysis();
-        setMessage('Analysis complete');
-      }, 30000);
-    }, 3000);
-  };
-
-  const stopAnalysis = () => {
-    if (analysisInterval.current) {
-      clearInterval(analysisInterval.current);
-      analysisInterval.current = null;
-    }
-    setIsAnalyzing(false);
+      setMessage('Hold still for capture...');
+      captureAndAnalyze();
+    }, 1000);
   };
 
   const captureAndAnalyze = async () => {
     if (!cameraRef.current) return;
 
     try {
-      // Take photo
+      setMessage('Capturing image...');
+
+      // Take a single photo with reduced quality
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.7,
+        quality: 1,
         base64: true,
         skipProcessing: true,
       });
 
-      // Check if photo was captured successfully
       if (!photo || !photo.base64) {
         console.error('Failed to capture photo or missing base64 data');
+        setMessage('Failed to capture image. Please try again.');
+        setIsAnalyzing(false);
         return;
       }
 
       console.log("Base64 image length:", photo.base64.length);
-      console.log("Base64 image starts with:", photo.base64.substring(0, 30));
+      console.log("Using user ID for analysis:", userId);
+
+      setMessage('Analyzing vital signs...');
 
       // Send to API
       const response = await axios.post(
         API_URL,
         {
           image: `data:image/jpeg;base64,${photo.base64}`,
-          saveData: false,
-          userId: DEMO_USER_ID
+          saveData: true,  // Set to true to save the data
+          saveImage: true,  // Request to save the image too
+          userId: userId  // Assessment ID
         },
         {
           headers: {
             'Content-Type': 'application/json',
           },
-          timeout: 10000 // 10 second timeout
+          timeout: 15000 // 15 second timeout
         }
       );
 
       // Process response
       if (response.data) {
-        // Check if face was detected
         if (response.data.error === 'No face detected') {
           setFaceDetected(false);
-          setMessage('No face detected. Please center your face');
+          setMessage('No face detected. Please center your face and try again.');
         } else {
           setFaceDetected(true);
 
-          // Update status message based on the status field
-          if (response.data.status === 'calculating') {
-            setMessage('Face detected - calculating vital signs...');
-          } else if (response.data.status === 'collecting_data') {
-            setMessage('Face detected - collecting more data...');
-          } else if (response.data.status === 'success') {
-            setMessage('Face detected - analyzing vital signs');
+          // Update measurements
+          if (response.data.heart_rate) {
+            setHeartRate(response.data.heart_rate.toString());
           }
 
-          // Update measurements with smoothing - safely handle null values
-          const newHeartRate = response.data.heart_rate;
-          const newSystolic = response.data.systolic_bp;
-          const newDiastolic = response.data.diastolic_bp;
-
-          // Only update if values are not null
-          if (newHeartRate !== null && newHeartRate !== undefined) {
-            setHeartRate(prev => {
-              if (prev === '--') return newHeartRate.toString();
-              return Math.round((parseInt(prev) * 0.7) + (newHeartRate * 0.3)).toString();
-            });
+          if (response.data.systolic_bp) {
+            setSystolicBP(response.data.systolic_bp.toString());
           }
 
-          if (newSystolic !== null && newSystolic !== undefined) {
-            setSystolicBP(prev => {
-              if (prev === '--') return newSystolic.toString();
-              return Math.round((parseInt(prev) * 0.7) + (newSystolic * 0.3)).toString();
-            });
+          if (response.data.diastolic_bp) {
+            setDiastolicBP(response.data.diastolic_bp.toString());
           }
 
-          if (newDiastolic !== null && newDiastolic !== undefined) {
-            setDiastolicBP(prev => {
-              if (prev === '--') return newDiastolic.toString();
-              return Math.round((parseInt(prev) * 0.7) + (newDiastolic * 0.3)).toString();
-            });
-          }
+          setMessage('Analysis complete! Results displayed above.');
+          setAnalysisComplete(true);
         }
       }
     } catch (error) {
       console.error('Analysis error:', error);
-      setMessage('Error connecting to server');
+      setMessage('Error analyzing image. Please try again.');
       setConnectionStatus('error');
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -239,65 +234,78 @@ const VitalSignsScreen = () => {
     <SafeAreaView style={styles.container}>
       {renderConnectionStatus()}
 
-      <CameraView
-        style={styles.camera}
-        facing={"front" as CameraType}
-        ref={cameraRef}
-      >
-        {/* Top measurements display */}
-        <View style={styles.measurementContainer}>
-          {/* Heart Rate */}
-          <View style={styles.vitalCard}>
-            <View style={[styles.iconCircle, { backgroundColor: '#AECF77' }]}>
-              <Text style={styles.iconText}>♥</Text>
+      <View style={styles.cameraContainer}>
+        <CameraView
+          style={styles.camera}
+          facing={"front" as CameraType}
+          ref={cameraRef}
+        />
+
+        {/* Overlay content positioned absolutely */}
+        <View style={StyleSheet.absoluteFill}>
+          {/* Top measurements display */}
+          <View style={styles.measurementContainer}>
+            {/* Heart Rate */}
+            <View style={styles.vitalCard}>
+              <View style={[styles.iconCircle, { backgroundColor: '#AECF77' }]}>
+                <Text style={styles.iconText}>♥</Text>
+              </View>
+              <Text style={styles.vitalValue}>{heartRate}</Text>
+              <Text style={styles.vitalUnit}>bpm</Text>
             </View>
-            <Text style={styles.vitalValue}>{heartRate}</Text>
-            <Text style={styles.vitalUnit}>bpm</Text>
-          </View>
 
-          {/* Blood Pressure */}
-          <View style={styles.vitalCard}>
-            <View style={[styles.iconCircle, { backgroundColor: '#A095DF' }]}>
-              <Text style={styles.iconText}>⟳</Text>
+            {/* Blood Pressure */}
+            <View style={styles.vitalCard}>
+              <View style={[styles.iconCircle, { backgroundColor: '#A095DF' }]}>
+                <Text style={styles.iconText}>⟳</Text>
+              </View>
+              <Text style={styles.vitalValue}>{systolicBP}/{diastolicBP}</Text>
+              <Text style={styles.vitalUnit}>mmHg</Text>
             </View>
-            <Text style={styles.vitalValue}>{systolicBP}/{diastolicBP}</Text>
-            <Text style={styles.vitalUnit}>mmHg</Text>
+          </View>
+
+          {/* Face guide overlay */}
+          <View style={styles.faceGuideContainer}>
+            <View style={[styles.faceGuide, faceDetected ? styles.faceGuideDetected : null]}>
+              <View style={styles.crosshairH} />
+              <View style={styles.crosshairV} />
+            </View>
+          </View>
+
+          {/* Status message */}
+          <View style={styles.statusContainer}>
+            <View style={styles.statusBox}>
+              {isAnalyzing && <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 10 }} />}
+              <Text style={styles.statusText}>{message}</Text>
+            </View>
+          </View>
+
+          {/* Bottom controls */}
+          <View style={styles.controlsContainer}>
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                analysisComplete ? styles.resetButton : styles.startButton,
+                isAnalyzing ? styles.disabledButton : null,
+                connectionStatus === 'error' ? styles.disabledButton : null
+              ]}
+              onPress={analysisComplete ? () => {
+                setAnalysisComplete(false);
+                setHeartRate('--');
+                setSystolicBP('--');
+                setDiastolicBP('--');
+                setMessage('Position your face in the frame');
+                setFaceDetected(false);
+              } : startAnalysis}
+              disabled={isAnalyzing || connectionStatus === 'error'}
+            >
+              <Text style={styles.buttonText}>
+                {analysisComplete ? 'Reset' : (isAnalyzing ? 'Analyzing...' : 'Analyze Now')}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
-
-        {/* Face guide overlay */}
-        <View style={styles.faceGuideContainer}>
-          <View style={[styles.faceGuide, faceDetected ? styles.faceGuideDetected : null]}>
-            <View style={styles.crosshairH} />
-            <View style={styles.crosshairV} />
-          </View>
-        </View>
-
-        {/* Status message */}
-        <View style={styles.statusContainer}>
-          <View style={styles.statusBox}>
-            {isAnalyzing && <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 10 }} />}
-            <Text style={styles.statusText}>{message}</Text>
-          </View>
-        </View>
-
-        {/* Bottom controls */}
-        <View style={styles.controlsContainer}>
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              isAnalyzing ? styles.stopButton : styles.startButton,
-              connectionStatus === 'error' ? styles.disabledButton : null
-            ]}
-            onPress={isAnalyzing ? stopAnalysis : startAnalysis}
-            disabled={connectionStatus === 'error'}
-          >
-            <Text style={styles.buttonText}>
-              {isAnalyzing ? 'Stop' : 'Start Analysis'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </CameraView>
+      </View>
 
       <View style={styles.disclaimerBar}>
         <Text style={styles.disclaimerText}>
@@ -307,15 +315,20 @@ const VitalSignsScreen = () => {
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
   },
+  cameraContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  resetButton: {
+    backgroundColor: '#4CAF50',
+  },
   camera: {
     flex: 1,
-    justifyContent: 'space-between',
   },
   measurementContainer: {
     flexDirection: 'row',

@@ -1,4 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
+// Import additional dependencies at the top
+import { useEffect, useRef, useState } from 'react';
+import {
+    View, Text, TextInput, TouchableOpacity, ScrollView,
+    StyleSheet, ActivityIndicator, SafeAreaView, KeyboardAvoidingView, Platform
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { API_BASE_URL } from '@/src/api/config';
+import axios from 'axios';
 
 interface ChatMessage {
     id: string;
@@ -17,13 +25,15 @@ const Chatbot: React.FC = () => {
         },
     ]);
     const [inputText, setInputText] = useState('');
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [isTyping, setIsTyping] = useState(false);
+    const scrollViewRef = useRef<ScrollView>(null);
 
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        // Scroll to bottom when messages change
+        scrollViewRef.current?.scrollToEnd({ animated: true });
     }, [messages]);
 
-    const handleSendMessage = () => {
+    const handleSendMessage = async () => {
         if (inputText.trim() === '') return;
 
         const userMessage: ChatMessage = {
@@ -36,89 +46,204 @@ const Chatbot: React.FC = () => {
         setMessages((prevMessages) => [...prevMessages, userMessage]);
         setInputText('');
 
-        // Simulate bot response (replace with actual API call in production)
-        setTimeout(() => {
+        // Show typing indicator
+        setIsTyping(true);
+
+        try {
+            // Get conversation history in correct format
+            const history = messages.map(msg => ({
+                role: msg.sender === 'user' ? 'user' : 'assistant',
+                content: msg.text
+            }));
+
+            // Add current message
+            history.push({
+                role: 'user',
+                content: userMessage.text
+            });
+
+            // Call your backend API
+            const response = await axios.post(`${API_BASE_URL}/api/chat`, {
+                message: userMessage.text,
+                history: history
+            });
+
+            // Process the response
             const botMessage: ChatMessage = {
                 id: (Date.now() + 1).toString(),
-                text: 'I understand your concern. How else can I assist you today?',
+                text: response.data.reply || "I'm sorry, I couldn't process that. Can you try again?",
                 sender: 'bot',
                 timestamp: new Date(),
             };
-            setMessages((prevMessages) => [...prevMessages, botMessage]);
-        }, 1000);
-    };
 
-    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSendMessage();
+            setMessages((prevMessages) => [...prevMessages, botMessage]);
+        } catch (error) {
+            console.error('Error getting chatbot response:', error);
+
+            // Add fallback response
+            const errorMessage: ChatMessage = {
+                id: (Date.now() + 1).toString(),
+                text: "I'm having trouble connecting right now. Please try again later.",
+                sender: 'bot',
+                timestamp: new Date(),
+            };
+
+            setMessages((prevMessages) => [...prevMessages, errorMessage]);
+        } finally {
+            setIsTyping(false);
         }
     };
 
     return (
-        <div className="flex flex-col h-[500px] w-full max-w-md mx-auto border rounded-lg shadow-md overflow-hidden bg-gray-50">
-            <div className="bg-blue-600 text-white p-4 text-center">
-                <h2 className="text-xl font-bold">MindCare Assistant</h2>
-            </div>
+        <SafeAreaView style={styles.container}>
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>MindCare Assistant</Text>
+            </View>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <ScrollView
+                ref={scrollViewRef}
+                style={styles.messagesContainer}
+                contentContainerStyle={styles.messagesList}
+            >
                 {messages.map((message) => (
-                    <div
+                    <View
                         key={message.id}
-                        className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                        style={[
+                            styles.messageBubble,
+                            message.sender === 'user'
+                                ? styles.userMessage
+                                : styles.botMessage
+                        ]}
                     >
-                        <div
-                            className={`max-w-[75%] rounded-lg p-3 ${message.sender === 'user'
-                                    ? 'bg-blue-500 text-white rounded-br-none'
-                                    : 'bg-white text-gray-800 shadow-sm rounded-bl-none'
-                                }`}
-                        >
-                            <p>{message.text}</p>
-                            <p className="text-xs opacity-70 text-right mt-1">
-                                {message.timestamp.toLocaleTimeString([], {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                })}
-                            </p>
-                        </div>
-                    </div>
+                        <Text style={styles.messageText}>{message.text}</Text>
+                        <Text style={styles.timestamp}>
+                            {message.timestamp.toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                            })}
+                        </Text>
+                    </View>
                 ))}
-                <div ref={messagesEndRef} />
-            </div>
 
-            <div className="border-t p-3 bg-white flex items-center">
-                <input
-                    type="text"
+                {isTyping && (
+                    <View style={[styles.messageBubble, styles.botMessage]}>
+                        <ActivityIndicator size="small" color="#666" />
+                    </View>
+                )}
+            </ScrollView>
+
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                keyboardVerticalOffset={100}
+                style={styles.inputContainer}
+            >
+                <TextInput
+                    style={styles.input}
                     value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    onKeyPress={handleKeyPress}
+                    onChangeText={setInputText}
                     placeholder="Type your message..."
-                    className="flex-1 border rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholderTextColor="#999"
+                    onSubmitEditing={handleSendMessage}
+                    returnKeyType="send"
                 />
-                <button
-                    onClick={handleSendMessage}
+                <TouchableOpacity
+                    style={[
+                        styles.sendButton,
+                        inputText.trim() === '' ? styles.disabledButton : {}
+                    ]}
+                    onPress={handleSendMessage}
                     disabled={inputText.trim() === ''}
-                    className={`ml-3 p-2 rounded-full ${inputText.trim() === '' ? 'bg-gray-300' : 'bg-blue-600 text-white hover:bg-blue-700'
-                        }`}
                 >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    >
-                        <line x1="22" y1="2" x2="11" y2="13" />
-                        <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                    </svg>
-                </button>
-            </div>
-        </div>
+                    <Ionicons
+                        name="send"
+                        size={24}
+                        color={inputText.trim() === '' ? "#CCC" : "#FFF"}
+                    />
+                </TouchableOpacity>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#F5F5F5',
+    },
+    header: {
+        backgroundColor: '#8DAA6D',
+        padding: 16,
+        alignItems: 'center',
+    },
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: 'white',
+    },
+    messagesContainer: {
+        flex: 1,
+        padding: 16,
+    },
+    messagesList: {
+        paddingBottom: 16,
+    },
+    messageBubble: {
+        maxWidth: '80%',
+        padding: 12,
+        borderRadius: 18,
+        marginBottom: 12,
+    },
+    userMessage: {
+        alignSelf: 'flex-end',
+        backgroundColor: '#8DAA6D',
+        borderBottomRightRadius: 4,
+    },
+    botMessage: {
+        alignSelf: 'flex-start',
+        backgroundColor: 'white',
+        borderBottomLeftRadius: 4,
+        shadowColor: "#000",
+        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 1 },
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    messageText: {
+        fontSize: 16,
+        color: '#333',
+    },
+    timestamp: {
+        fontSize: 12,
+        color: '#666',
+        alignSelf: 'flex-end',
+        marginTop: 4,
+    },
+    inputContainer: {
+        flexDirection: 'row',
+        padding: 12,
+        backgroundColor: 'white',
+        borderTopWidth: 1,
+        borderTopColor: '#EEE',
+    },
+    input: {
+        flex: 1,
+        backgroundColor: '#F5F5F5',
+        borderRadius: 24,
+        padding: 12,
+        marginRight: 8,
+        color: '#333',
+    },
+    sendButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#8DAA6D',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    disabledButton: {
+        backgroundColor: '#E0E0E0',
+    },
+});
 
 export default Chatbot;

@@ -1,13 +1,20 @@
 from flask import Flask, request, jsonify
 import numpy as np
-import cv2
-import base64
 import time
-from scipy.signal import butter, filtfilt
 import os
 import logging
 import json
+import sys
 from flask_cors import CORS
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+# Import our analysis functions
+from AI.vital_signs_analyzer import (
+    preprocess_image, 
+    extract_face_roi, 
+    analyze_skin_color_variations, 
+    estimate_bp,
+    create_diagnostic_image
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -25,6 +32,7 @@ class NumpyEncoder(json.JSONEncoder):
         return super(NumpyEncoder, self).default(obj)
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 # Set the custom encoder for Flask's jsonify
 app.json_encoder = NumpyEncoder
 # Enable CORS for all routes
@@ -34,6 +42,7 @@ CORS(app)
 MONGODB_URI = "mongodb://127.0.0.1:27017/mindcare"
 
 # Initialize face detector
+import cv2
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 # MongoDB connection (optional)
@@ -42,176 +51,93 @@ try:
     client = MongoClient(MONGODB_URI)
     db = client.get_database()
     vital_signs_collection = db.vitalSigns
+    assessments_collection = db.assessments
     logger.info("MongoDB connection established")
 except Exception as e:
     logger.error(f"MongoDB connection error: {str(e)}")
     vital_signs_collection = None
+    assessments_collection = None
 
-def preprocess_image(base64_image):
-    """Convert base64 image to numpy array"""
+# Keep your get_user_assessment function here
+def get_user_assessment(assessment_id):
+    """Retrieve an assessment by its ID"""
+    if assessments_collection is None:
+        return None
+        
     try:
-        # Check if the base64 string contains the header
-        if ',' in base64_image:
-            base64_image = base64_image.split(',')[1]
+        # Log the assessment ID we're searching for
+        logger.info(f"Looking up assessment with ID: {assessment_id}")
+        
+        # Convert string ID to ObjectId if needed
+        from bson.objectid import ObjectId
+        
+        # First try direct string ID match
+        assessment = assessments_collection.find_one({"_id": assessment_id})
+        
+        # If that doesn't work, try with ObjectId
+        if not assessment and len(assessment_id) == 24:
+            try:
+                obj_id = ObjectId(assessment_id)
+                assessment = assessments_collection.find_one({"_id": obj_id})
+                if assessment:
+                    logger.info(f"Found assessment using ObjectId")
+            except Exception as e:
+                logger.error(f"Error converting to ObjectId: {str(e)}")
+        
+        if assessment:
+            logger.info(f"Found assessment document: {assessment}")
             
-        img_data = base64.b64decode(base64_image)
-        nparr = np.frombuffer(img_data, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        return img
-    except Exception as e:
-        logger.error(f"Error preprocessing image: {str(e)}")
-        return None
-
-def extract_face_roi(image):
-    """Extract face region of interest"""
-    if image is None:
-        return None
-        
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    
-    # Use OpenCV for face detection
-    try:
-        faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-        
-        if len(faces) == 0:
+            # Extract values directly from the document structure
+            result = {}
+            
+            # Get age
+            if "age" in assessment and assessment["age"] is not None:
+                result["age"] = assessment["age"]
+                logger.info(f"Extracted age: {result['age']}")
+            
+            # Get gender
+            if "gender" in assessment and assessment["gender"] is not None:
+                result["gender"] = assessment["gender"]
+                logger.info(f"Extracted gender: {result['gender']}")
+            
+            # Get weight - handle nested structure
+            if "weight" in assessment and isinstance(assessment["weight"], dict) and "value" in assessment["weight"]:
+                result["weight"] = assessment["weight"]["value"]
+                logger.info(f"Extracted weight: {result['weight']}")
+            
+            # Get height - handle nested structure
+            if "height" in assessment and isinstance(assessment["height"], dict) and "value" in assessment["height"]:
+                result["height"] = assessment["height"]["value"]
+                logger.info(f"Extracted height: {result['height']}")
+            
+            logger.info(f"Returning assessment data: {result}")
+            return result
+        else:
+            logger.warning(f"No assessment found with ID: {assessment_id}")
             return None
-        
-        # Use the first detected face
-        x, y, w, h = faces[0]
-        face_roi = image[y:y+h, x:x+w]
-        
-        # Extract forehead region (top 1/3 of face)
-        forehead_height = h // 3
-        forehead_roi = image[y:y+forehead_height, x:x+w]
-        
-        # Also extract cheek regions
-        cheek_y = y + forehead_height
-        cheek_height = h // 3
-        left_cheek_x = x
-        left_cheek_w = w // 2
-        right_cheek_x = x + left_cheek_w
-        right_cheek_w = w - left_cheek_w
-        
-        left_cheek_roi = image[cheek_y:cheek_y+cheek_height, left_cheek_x:left_cheek_x+left_cheek_w]
-        right_cheek_roi = image[cheek_y:cheek_y+cheek_height, right_cheek_x:right_cheek_x+right_cheek_w]
-        
-        # Return all ROIs and face coordinates
-        face_info = {
-            'face': face_roi,
-            'forehead': forehead_roi,
-            'left_cheek': left_cheek_roi,
-            'right_cheek': right_cheek_roi,
-            'coordinates': (x, y, w, h)
-        }
-        
-        return face_info
     except Exception as e:
-        logger.error(f"Face detection error: {str(e)}")
+        logger.error(f"Error retrieving assessment: {str(e)}")
         return None
-
-def analyze_skin_color_variations(face_info):
-    """Analyze skin color variations to estimate heart rate"""
-    try:
-        # Extract regions
-        forehead = face_info['forehead']
-        left_cheek = face_info['left_cheek']
-        right_cheek = face_info['right_cheek']
-        
-        # Calculate average values for green channel in each region
-        # Green channel is most sensitive to blood flow changes
-        forehead_green = np.mean(forehead[:, :, 1])
-        left_cheek_green = np.mean(left_cheek[:, :, 1])
-        right_cheek_green = np.mean(right_cheek[:, :, 1])
-        
-        # Calculate standard deviation of pixel values
-        # Higher variation might indicate better blood flow / healthier skin
-        forehead_std = np.std(forehead[:, :, 1])
-        cheeks_std = (np.std(left_cheek[:, :, 1]) + np.std(right_cheek[:, :, 1])) / 2
-        
-        # Calculate red-to-green ratio (can indicate blood volume)
-        forehead_rg_ratio = np.mean(forehead[:, :, 2]) / np.mean(forehead[:, :, 1])
-        left_cheek_rg_ratio = np.mean(left_cheek[:, :, 2]) / np.mean(left_cheek[:, :, 1])
-        right_cheek_rg_ratio = np.mean(right_cheek[:, :, 2]) / np.mean(right_cheek[:, :, 1])
-        
-        # Average RG ratio
-        avg_rg_ratio = (forehead_rg_ratio + left_cheek_rg_ratio + right_cheek_rg_ratio) / 3
-        
-        # Calculate a base heart rate from these values
-        # This is a simplified estimation model - in practice, you'd want to use machine learning
-        # trained on actual heart rate data correlated with these features
-        
-        # Higher RG ratio typically corresponds to more blood (higher heart rates)
-        # Higher green standard deviation can indicate more blood flow variation
-        base_hr = 60 + (avg_rg_ratio * 20) + (forehead_std * 0.5) + (cheeks_std * 0.2)
-        
-        # Apply some constraints for plausibility
-        heart_rate = max(60, min(100, base_hr))
-        
-        # Calculate confidence based on image quality and variation
-        total_std = forehead_std + np.std(left_cheek[:, :, 1]) + np.std(right_cheek[:, :, 1])
-        confidence = min(100, max(0, total_std * 25))  # Scale to 0-100%
-        
-        return {
-            'heart_rate': int(heart_rate),
-            'confidence': int(confidence),
-            'metrics': {
-                'rg_ratio': float(avg_rg_ratio),
-                'forehead_std': float(forehead_std),
-                'cheeks_std': float(cheeks_std)
-            }
-        }
-    except Exception as e:
-        logger.error(f"Error analyzing skin color: {str(e)}")
-        return {
-            'heart_rate': 72,  # Fallback to average resting heart rate
-            'confidence': 30,  # Low confidence
-            'metrics': {}
-        }
-
-def estimate_bp(heart_rate, age=24, weight_kg=80, height_cm=180, is_male=True):
-    """Estimate blood pressure based on heart rate and demographic factors"""
-    try:
-        if heart_rate is None:
-            return None, None
-        
-        # Base estimation using heart rate
-        sys_base = 90 + (heart_rate * 0.33)
-        dia_base = 60 + (heart_rate * 0.15)
-        
-        # Adjust for age (blood pressure tends to increase with age)
-        age_factor = max(0, (age - 30) * 0.5)
-        sys_base += age_factor
-        dia_base += age_factor * 0.4
-        
-        # Adjust for BMI
-        bmi = weight_kg / ((height_cm / 100) ** 2)
-        if bmi > 25:  # Overweight adjustment
-            bmi_factor = (bmi - 25) * 0.5
-            sys_base += bmi_factor
-            dia_base += bmi_factor * 0.5
-        
-        # Gender adjustment
-        if not is_male:
-            sys_base -= 5
-            dia_base -= 3
-        
-        # Round and constrain to plausible ranges
-        systolic = max(90, min(160, round(sys_base)))
-        diastolic = max(60, min(100, round(dia_base)))
-        
-        return systolic, diastolic
-    except Exception as e:
-        logger.error(f"Error estimating blood pressure: {str(e)}")
-        return 120, 80
-
-def save_vital_signs(user_id, heart_rate, systolic_bp, diastolic_bp, confidence=None):
-    """Save vital signs data to MongoDB"""
-    if vital_signs_collection is None:
+def save_vital_signs_to_assessment(assessment_id, heart_rate, systolic_bp, diastolic_bp, image_base64=None, confidence=None):
+    """Save vital signs data to the assessment document"""
+    if assessments_collection is None:
         return False
         
     try:
-        record = {
-            "userId": user_id,
+        # Convert string ID to ObjectId if needed
+        from bson.objectid import ObjectId
+        
+        # Create object ID if it's a valid string ID
+        obj_id = None
+        if len(assessment_id) == 24:
+            try:
+                obj_id = ObjectId(assessment_id)
+            except Exception as e:
+                logger.error(f"Error converting to ObjectId: {str(e)}")
+                return False
+        
+        # Prepare vitals data
+        vitals_data = {
             "timestamp": time.time(),
             "date": time.strftime("%Y-%m-%d %H:%M:%S"),
             "heartRate": heart_rate,
@@ -220,12 +146,38 @@ def save_vital_signs(user_id, heart_rate, systolic_bp, diastolic_bp, confidence=
         }
         
         if confidence is not None:
-            record["confidence"] = confidence
+            vitals_data["confidence"] = confidence
             
-        vital_signs_collection.insert_one(record)
-        return True
+        # Prepare update document
+        update_doc = {
+            "$set": {
+                "vitalSigns": vitals_data
+            }
+        }
+        
+        # Add image if provided (be careful with large images)
+        if image_base64:
+            # Check if image is too large - MongoDB has 16MB document size limit
+            if len(image_base64) < 1024 * 1024 * 10:  # 10MB limit
+                update_doc["$set"]["vitalSignsImage"] = image_base64
+            else:
+                logger.warning("Image too large to store in MongoDB document")
+        
+        # Update the assessment document
+        result = assessments_collection.update_one(
+            {"_id": obj_id},
+            update_doc
+        )
+        
+        if result.modified_count > 0:
+            logger.info(f"Successfully updated assessment {assessment_id} with vital signs data")
+            return True
+        else:
+            logger.warning(f"Assessment {assessment_id} was not updated - document not found or no changes made")
+            return False
+            
     except Exception as e:
-        logger.error(f"Error saving to MongoDB: {str(e)}")
+        logger.error(f"Error saving vital signs to assessment: {str(e)}")
         return False
 
 @app.route('/api/analyze', methods=['POST', 'OPTIONS'])
@@ -235,23 +187,24 @@ def analyze_vital_signs():
         return '', 200
         
     try:
-        logger.info(f"Request Content-Type: {request.content_type}")
-        logger.info(f"Request is JSON: {request.is_json}")
-        
-        if not request.is_json:
-            logger.error(f"Request must be JSON. Content-Type: {request.content_type}")
-            return jsonify({'error': 'Request must be JSON'}), 400
-            
         data = request.get_json()
         logger.info(f"Received request with keys: {list(data.keys())}")
         
-        # Get user ID and optional demographic info
-        user_id = data.get('userId', 'anonymous_user')
-        age = data.get('age', 30)
-        weight_kg = data.get('weight_kg', 70)
-        height_cm = data.get('height_cm', 170)
-        is_male = data.get('is_male', True)
+        # Get the assessment ID
+        assessment_id = data.get('userId', None)
         
+        # Get demographic info from assessment if available
+        assessment_data = get_user_assessment(assessment_id) if assessment_id else None
+            
+        # Use assessment data if available, otherwise use provided data or defaults
+        age = assessment_data.get('age') if assessment_data else data.get('age', 30)
+        weight_kg = assessment_data.get('weight') if assessment_data else data.get('weight_kg', 70)
+        height_cm = assessment_data.get('height') if assessment_data else data.get('height_cm', 170)
+        is_male = assessment_data.get('gender') == 'male' if assessment_data else data.get('is_male', True)
+        
+        # Log the demographic data being used
+        logger.info(f"Using demographic data - Age: {age}, Weight: {weight_kg}kg, Height: {height_cm}cm, Gender: {'male' if is_male else 'female'}")
+ 
         if 'image' not in data:
             return jsonify({'error': 'No image provided'}), 400
         
@@ -264,8 +217,8 @@ def analyze_vital_signs():
         if image is None:
             return jsonify({'error': 'Invalid image data'}), 400
         
-        # Extract face regions
-        face_info = extract_face_roi(image)
+        # Extract face regions - pass in the face_cascade
+        face_info = extract_face_roi(image, face_cascade)
         if face_info is None:
             return jsonify({
                 'error': 'No face detected', 
@@ -279,14 +232,42 @@ def analyze_vital_signs():
         analysis_result = analyze_skin_color_variations(face_info)
         heart_rate = analysis_result['heart_rate']
         confidence = analysis_result['confidence']
+        heart_rate_range = analysis_result.get('heart_rate_range', [heart_rate-5, heart_rate+5])
+        
+        # Generate diagnostic image
+        diagnostic_image = create_diagnostic_image(image, face_info)
         
         # Estimate blood pressure
         sys_bp, dia_bp = estimate_bp(heart_rate, age, weight_kg, height_cm, is_male)
         
+        # Calculate error margins for BP based on confidence
+        error_factor = (100 - confidence) / 100 * 0.3
+        sys_error = max(5, int(sys_bp * error_factor))
+        dia_error = max(3, int(dia_bp * error_factor))
+        
         # Save data if requested
         should_save = data.get('saveData', False)
-        if should_save and vital_signs_collection is not None:
-            save_result = save_vital_signs(user_id, heart_rate, sys_bp, dia_bp, confidence)
+        if should_save and assessments_collection is not None:
+            # Truncate image data to avoid overly large documents
+            image_to_save = None
+            if data.get('saveImage', False):
+                # First check if base64 string includes the prefix
+                img_data = base64_image
+                if ',' in base64_image:
+                    img_data = base64_image.split(',')[1]
+                    
+                # Store only the first part of the image to keep doc size reasonable
+                # Will still be viewable but lower quality
+                image_to_save = img_data[:512000]  # Store ~500KB of image data
+                
+            save_result = save_vital_signs_to_assessment(
+                assessment_id, 
+                heart_rate, 
+                sys_bp, 
+                dia_bp, 
+                image_to_save,  
+                confidence
+            )
         else:
             save_result = False
         
@@ -295,8 +276,11 @@ def analyze_vital_signs():
         
         response = {
             'heart_rate': heart_rate,
+            'heart_rate_range': heart_rate_range,
             'systolic_bp': sys_bp,
+            'systolic_bp_range': [sys_bp - sys_error, sys_bp + sys_error],
             'diastolic_bp': dia_bp,
+            'diastolic_bp_range': [dia_bp - dia_error, dia_bp + dia_error],
             'confidence': confidence,
             'face_coordinates': {
                 'x': int(face_coords[0]),
@@ -304,12 +288,14 @@ def analyze_vital_signs():
                 'width': int(face_coords[2]),
                 'height': int(face_coords[3])
             },
+            'diagnostic_image': diagnostic_image,
+            'metrics': analysis_result.get('metrics', {}),
             'dataSaved': save_result,
             'status': 'success' if heart_rate else 'failed',
-            'message': f"Analysis complete. Confidence: {confidence}%"
+            'message': f"Analysis complete. HR: {heart_rate} bpm (±{analysis_result['metrics'].get('error_margin', 5)}), BP: {sys_bp}/{dia_bp} mmHg (±{sys_error}/±{dia_error}), Confidence: {confidence}%"
         }
         
-        logger.info(f"Analysis results: HR={heart_rate}, BP={sys_bp}/{dia_bp}, Confidence={confidence}%")
+        logger.info(f"Analysis results: HR={heart_rate} (±{analysis_result['metrics'].get('error_margin', 5)}), BP={sys_bp}/{dia_bp} (±{sys_error}/±{dia_error}), Confidence={confidence}%")
         return jsonify(response)
     except Exception as e:
         logger.error(f"Error in analyze_vital_signs: {str(e)}")
@@ -342,6 +328,70 @@ def index():
         },
         'version': '1.0.0'
     })
+@app.route('/api/debug/parameters', methods=['GET'])
+def debug_parameters():
+    """Endpoint to see the current parameters used in analysis"""
+    return jsonify({
+        "hr_calculation": {
+            "rg_ratio_multiplier": 15,
+            "std_factor_multiplier": 2,
+            "base_hr_offset": 60,
+            "max_normal_hr": 100,
+            "brightness_adjustment_max": 5,
+            "hr_min_constraint": 55,
+            "hr_max_constraint": 105
+        },
+        "confidence_calculation": {
+            "hr_normality_weight": 0.5,
+            "std_quality_weight": 0.3,
+            "image_quality_weight": 0.2,
+            "hr_normality_factor": "100 - min(100, abs(hr - 75) * 2)",
+            "std_quality_factor": "min(100, (forehead_std + cheeks_std) * 50)",
+            "image_quality_factor": "min(100, avg_skin_brightness / 2)"
+        },
+        "bp_calculation": {
+            "sys_base_formula": "95 + (heart_rate * 0.25)",
+            "dia_base_formula": "65 + (heart_rate * 0.1)",
+            "age_factor": "max(0, (age - 20) * 0.6)",
+            "gender_adjustment": "-4 (sys) and -3 (dia) for females"
+        }
+    })
+@app.route('/api/assessments/<assessment_id>/vitals', methods=['GET'])
+def get_assessment_vitals(assessment_id):
+    """Get vital signs data for a specific assessment"""
+    try:
+        if assessments_collection is None:
+            return jsonify({"error": "Database connection not available"}), 500
+            
+        # Convert to ObjectId
+        from bson.objectid import ObjectId
+        obj_id = ObjectId(assessment_id)
+        
+        # Find the assessment
+        assessment = assessments_collection.find_one(
+            {"_id": obj_id},
+            {"vitalSigns": 1, "vitalSignsImage": 1}
+        )
+        
+        if not assessment:
+            return jsonify({"error": "Assessment not found"}), 404
+            
+        if "vitalSigns" not in assessment:
+            return jsonify({"error": "No vital signs data found for this assessment"}), 404
+            
+        response = {
+            "vitalSigns": assessment["vitalSigns"]
+        }
+        
+        # Include image if available and requested
+        if "vitalSignsImage" in assessment and request.args.get('includeImage', 'false').lower() == 'true':
+            response["image"] = assessment["vitalSignsImage"]
+            
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"Error retrieving vital signs: {str(e)}")
+        return jsonify({"error": "Server error"}), 500
 
 if __name__ == '__main__':
     # Check if OpenCV face detector is available
@@ -349,4 +399,4 @@ if __name__ == '__main__':
         logger.error("OpenCV face detector not found!")
         
     # Start the Flask server
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=5001, debug=False)

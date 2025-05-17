@@ -17,13 +17,16 @@ import { API_ENDPOINTS } from '@/src/constants/const';
 import { useNavigation } from '@react-navigation/native';
 import { api, setAuthToken } from '@/src/api/config';
 import { isTokenExpired } from '@/src/api/config';
-
+import AIChatbot from '@/src/components/home/AIChatBot';
+import { HomeStackParamList } from '@/src/navigation/HomeNavigation';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+type NavigationProp = NativeStackNavigationProp<HomeStackParamList>;
 const Home = () => {
     const [currentDateTime, setCurrentDateTime] = useState('');
     const [backendAssessmentData, setBackendAssessmentData] = useState<AssessmentData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const { userData, userToken } = useContext(AuthContext);
-    const navigation = useNavigation();
+    const navigation = useNavigation<NavigationProp>();
     const { signOut } = useContext(AuthContext);
     // Extract the user's name or use a fallback
     const username = userData?.name || userData?.username || userData?.email?.split('@')[0] || "User";
@@ -88,14 +91,14 @@ const Home = () => {
 
     const handleChatPress = () => {
         // Navigate to chat screen
-        // navigation.navigate('Mental', { screen: 'Chat' });
+        navigation.navigate('Chatbot');
         console.log('Chat button pressed');
     };
 
     const handleSeeAllResources = () => {
         // Navigate to resources screen
         console.log('See all resources button pressed');
-        //navigation.navigate('Mental', { screen: 'Resources' });
+        navigation.navigate('Chatbot');
     };
 
     return (
@@ -162,10 +165,10 @@ const Home = () => {
                 />
 
                 {/* AI Therapy Chatbot Component */}
-                {/*<AIChatbot
-                onChatPress={handleChatPress}
-                onSettingsPress={() => { }}
-            />*/}
+                <AIChatbot
+                    onChatPress={handleChatPress}
+                    onSettingsPress={() => { }}
+                />
 
                 {/* Mindful Resources Component */}
                 <MindfulResources

@@ -117,11 +117,12 @@ const EmptyComponent = () => <View />;
 const styles = StyleSheet.create({
     tabBarContainer: {
         position: 'absolute',
-        bottom: 20,
+        bottom: 20, // <-- stick to the bottom
         left: 0,
         right: 0,
         alignItems: 'center',
         zIndex: 999,
+        backgroundColor: 'transparent', // ensure background is clear
     },
     pillTabBar: {
         flexDirection: 'row',
@@ -136,6 +137,7 @@ const styles = StyleSheet.create({
         shadowRadius: 10,
         width: '85%',
         alignItems: 'center',
+        marginBottom: 10, // add some space above the bottom if needed
     },
     tabItem: {
         flex: 1,

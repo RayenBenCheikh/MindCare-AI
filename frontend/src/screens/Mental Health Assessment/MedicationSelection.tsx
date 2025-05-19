@@ -13,11 +13,11 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/MentalNavigator';
 import BackButton from '@/src/components/BackButton';
 import { useAssessmentStore } from '@/src/store/Store';
-// Define icons for the options
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import Svg, { Path } from 'react-native-svg';
-import ContinueButton from '@/src/components/Continue';
 
+import ContinueButton from '@/src/components/Continue';
+import { api, API_BASE_URL } from '@/src/api/config';
+import { API_ENDPOINTS } from '@/src/constants/const';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 type MedicationOption = 'prescribed' | 'otc' | 'none' | 'no_answer' | null;
@@ -26,23 +26,30 @@ const MedicationSelection: React.FC = () => {
     const [selectedOption, setSelectedOption] = useState<MedicationOption>(null);
     const navigation = useNavigation<NavigationProp>();
     const setMedication = useAssessmentStore(state => state.setMedication);
-
+    const submitAssessment = useAssessmentStore(state => state.submitAssessment);
     const handleOptionSelect = (option: MedicationOption) => {
         setSelectedOption(option);
     };
 
-    const handleContinue = () => {
+    const handleContinue = async () => {
         if (selectedOption) {
-            // Save the selection to the store
             setMedication(selectedOption);
 
-            // Navigate based on selection
-            if (selectedOption === 'prescribed' || selectedOption === 'otc') {
-                // Navigate to medication selection for both prescribed meds and OTC supplements
-                navigation.navigate('MedicamentSelection');
-            } else {
-                // For 'none' or 'no_answer', go to the next screen
-                navigation.navigate('Home');
+            try {
+                // Save data to your backend
+
+                await submitAssessment();
+
+                // Navigate after successful save
+                if (selectedOption === 'prescribed' || selectedOption === 'otc') {
+                    navigation.navigate('MedicamentSelection');
+                } else {
+                    navigation.navigate('TabNavigator');
+                }
+            } catch (error) {
+                // Handle error (show message, etc.)
+                console.error('Failed to save assessment:', error);
+                // Optionally show an alert to the user
             }
         }
     };

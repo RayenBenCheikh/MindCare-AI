@@ -1,4 +1,3 @@
-// Import additional dependencies at the top
 import { useEffect, useRef, useState } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, ScrollView,
@@ -15,23 +14,133 @@ interface ChatMessage {
     timestamp: Date;
 }
 
+// Assessment questions from your Python model
+const ASSESSMENT_QUESTIONS = [
+    "How would you rate your mood today on a scale of 1-5?",
+    "Have you been enjoying activities that you usually find pleasurable?",
+    "How has your sleep been recently?",
+    "How would you describe your energy levels?",
+    "How is your appetite lately?",
+    "Have you been able to concentrate on tasks?",
+    "Do you often feel overwhelmed?",
+    "How would you describe your outlook on the future?",
+    "Do you feel supported by friends and family?",
+    "Have you had thoughts that life isn't worth living?"
+];
+
 const Chatbot: React.FC = () => {
     const [messages, setMessages] = useState<ChatMessage[]>([
         {
             id: '1',
-            text: 'Hello! I am MindCare AI assistant. How can I help you today?',
+            text: 'Hello! I am MindCare AI assistant. How can I help you today? Type "start assessment" to begin a mental health evaluation.',
             sender: 'bot',
             timestamp: new Date(),
         },
     ]);
     const [inputText, setInputText] = useState('');
     const [isTyping, setIsTyping] = useState(false);
+    const [inAssessment, setInAssessment] = useState(false);
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [assessmentResponses, setAssessmentResponses] = useState<string[]>([]);
     const scrollViewRef = useRef<ScrollView>(null);
 
     useEffect(() => {
         // Scroll to bottom when messages change
         scrollViewRef.current?.scrollToEnd({ animated: true });
     }, [messages]);
+
+    const startAssessment = () => {
+        setInAssessment(true);
+        setCurrentQuestionIndex(0);
+        setAssessmentResponses([]);
+
+        // Add first question
+        const botMessage: ChatMessage = {
+            id: Date.now().toString(),
+            text: "I'll ask you 10 questions to understand how you're feeling. Please answer honestly to help me provide better support.\n\n" +
+                ASSESSMENT_QUESTIONS[0],
+            sender: 'bot',
+            timestamp: new Date(),
+        };
+
+        setMessages(prev => [...prev, botMessage]);
+    };
+
+    const processAssessmentResponse = async (response: string) => {
+        // Store the response
+        const newResponses = [...assessmentResponses, response];
+        setAssessmentResponses(newResponses);
+
+        // Move to next question
+        const nextIndex = currentQuestionIndex + 1;
+        setCurrentQuestionIndex(nextIndex);
+
+        // If there are more questions, ask the next one
+        if (nextIndex < ASSESSMENT_QUESTIONS.length) {
+            const nextQuestion: ChatMessage = {
+                id: Date.now().toString(),
+                text: ASSESSMENT_QUESTIONS[nextIndex],
+                sender: 'bot',
+                timestamp: new Date(),
+            };
+
+            setTimeout(() => {
+                setMessages(prev => [...prev, nextQuestion]);
+                setIsTyping(false);
+            }, 1000);
+        } else {
+            // Assessment complete, send all responses for analysis
+            setIsTyping(true);
+
+            try {
+                const response = await axios.post(`${API_BASE_URL}/api/assessment`, {
+                    responses: newResponses
+                });
+
+                // Display results
+                const resultMessage: ChatMessage = {
+                    id: Date.now().toString(),
+                    text: response.data.message || "Assessment complete. Thank you for your responses.",
+                    sender: 'bot',
+                    timestamp: new Date(),
+                };
+
+                setMessages(prev => [...prev, resultMessage]);
+
+                // If solutions provided, display them
+                if (response.data.solutions) {
+                    const solutionsMessage: ChatMessage = {
+                        id: (Date.now() + 1).toString(),
+                        text: response.data.solutions,
+                        sender: 'bot',
+                        timestamp: new Date(),
+                    };
+
+                    setTimeout(() => {
+                        setMessages(prev => [...prev, solutionsMessage]);
+                    }, 1000);
+                }
+
+                // Reset assessment state
+                setInAssessment(false);
+
+            } catch (error) {
+                console.error('Error analyzing assessment:', error);
+
+                const errorMessage: ChatMessage = {
+                    id: Date.now().toString(),
+                    text: "I'm sorry, I couldn't analyze your responses right now. Please try again later.",
+                    sender: 'bot',
+                    timestamp: new Date(),
+                };
+
+                setMessages(prev => [...prev, errorMessage]);
+                setInAssessment(false);
+            } finally {
+                setIsTyping(false);
+            }
+        }
+    };
 
     const handleSendMessage = async () => {
         if (inputText.trim() === '') return;
@@ -44,11 +153,26 @@ const Chatbot: React.FC = () => {
         };
 
         setMessages((prevMessages) => [...prevMessages, userMessage]);
+        const currentInput = inputText;
         setInputText('');
 
         // Show typing indicator
         setIsTyping(true);
 
+        // Check if starting assessment
+        if (currentInput.toLowerCase().includes('start assessment') && !inAssessment) {
+            startAssessment();
+            setIsTyping(false);
+            return;
+        }
+
+        // If in assessment mode, handle differently
+        if (inAssessment) {
+            processAssessmentResponse(currentInput);
+            return;
+        }
+
+        // Normal chat flow
         try {
             // Get conversation history in correct format
             const history = messages.map(msg => ({
@@ -59,12 +183,12 @@ const Chatbot: React.FC = () => {
             // Add current message
             history.push({
                 role: 'user',
-                content: userMessage.text
+                content: currentInput
             });
 
             // Call your backend API
             const response = await axios.post(`${API_BASE_URL}/api/chat`, {
-                message: userMessage.text,
+                message: currentInput,
                 history: history
             });
 
@@ -94,6 +218,7 @@ const Chatbot: React.FC = () => {
         }
     };
 
+    // The rest of your component remains the same
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
@@ -141,7 +266,7 @@ const Chatbot: React.FC = () => {
                     style={styles.input}
                     value={inputText}
                     onChangeText={setInputText}
-                    placeholder="Type your message..."
+                    placeholder={inAssessment ? "Type your answer..." : "Type your message..."}
                     placeholderTextColor="#999"
                     onSubmitEditing={handleSendMessage}
                     returnKeyType="send"
@@ -222,7 +347,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         padding: 12,
         backgroundColor: 'white',
-        borderTopWidth: 1,
+        borderTopWidth: 0,
         borderTopColor: '#EEE',
     },
     input: {

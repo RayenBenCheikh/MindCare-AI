@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Dimensions, StatusBar } from 'react-native';
 import { createBottomTabNavigator, BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -9,13 +9,16 @@ import Profile from '../screens/Home/Profile';
 import Chatbot from '../screens/Home/Chatbot';
 import Statistic from '../screens/Home/Statistic';
 import VitalSignsScreen from '../screens/Stress Managment/HealthScanScreenAI';
+import { colors } from '../theme';
 
 const Tab = createBottomTabNavigator();
 
 // Custom Tab Bar Component
 function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     return (
+
         <View style={styles.tabBarContainer}>
+            <StatusBar backgroundColor={colors.marron} barStyle="light-content" />
             {/* Floating Action Button */}
             <View style={styles.floatingButtonWrapper}>
                 <TouchableOpacity

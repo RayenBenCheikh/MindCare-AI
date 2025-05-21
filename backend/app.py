@@ -6,6 +6,7 @@ import logging
 import json
 import sys
 from flask_cors import CORS
+from Chatbot import chatbot_bp
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 # Import our analysis functions
 from AI.vital_signs_analyzer import (
@@ -397,6 +398,6 @@ if __name__ == '__main__':
     # Check if OpenCV face detector is available
     if not os.path.exists(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'):
         logger.error("OpenCV face detector not found!")
-        
+    app.register_blueprint(chatbot_bp, url_prefix='/api')    
     # Start the Flask server
     app.run(host='0.0.0.0', port=5001, debug=False)

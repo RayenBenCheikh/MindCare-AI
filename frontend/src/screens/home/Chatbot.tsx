@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, ScrollView,
-    StyleSheet, ActivityIndicator, SafeAreaView, KeyboardAvoidingView, Platform
+    StyleSheet, ActivityIndicator, SafeAreaView, KeyboardAvoidingView, Platform,
+    Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { API_BASE_URL } from '@/src/api/config';
 import axios from 'axios';
-
+import { colors } from '@/src/theme';
+import { api, VITAL_SIGNS_URL, } from '@/src/api/config';
+let messageCounter = 0;
+// Get screen dimensions
+const { height: screenHeight } = Dimensions.get('window');
 interface ChatMessage {
     id: string;
     text: string;
@@ -16,7 +20,7 @@ interface ChatMessage {
 
 // Assessment questions from your Python model
 const ASSESSMENT_QUESTIONS = [
-    "How would you rate your mood today on a scale of 1-5?",
+    "How would you rate your mood today?",
     "Have you been enjoying activities that you usually find pleasurable?",
     "How has your sleep been recently?",
     "How would you describe your energy levels?",
@@ -28,10 +32,28 @@ const ASSESSMENT_QUESTIONS = [
     "Have you had thoughts that life isn't worth living?"
 ];
 
+// Assessment options matching the Python backend
+const ASSESSMENT_OPTIONS = [
+    ["1 - Very bad", "2 - Bad", "3 - Neutral", "4 - Good", "5 - Very good"],
+    ["Yes", "No"],
+    ["Very poor", "Poor", "Average", "Good", "Very good"],
+    ["Very low", "Low", "Moderate", "High", "Very high"],
+    ["Very poor", "Poor", "Average", "Good", "Very good"],
+    ["Not at all", "Rarely", "Sometimes", "Often", "Always"],
+    ["Never", "Rarely", "Sometimes", "Often", "Always"],
+    ["Very negative", "Negative", "Neutral", "Positive", "Very positive"],
+    ["Not at all", "A little", "Somewhat", "Mostly", "Completely"],
+    ["Never", "Rarely", "Sometimes", "Often", "Always"]
+];
+// Create a helper function to generate unique IDs
+const generateUniqueId = () => {
+    messageCounter += 1;
+    return `msg_${Date.now()}_${messageCounter}`;
+};
 const Chatbot: React.FC = () => {
     const [messages, setMessages] = useState<ChatMessage[]>([
         {
-            id: '1',
+            id: generateUniqueId(),
             text: 'Hello! I am MindCare AI assistant. How can I help you today? Type "start assessment" to begin a mental health evaluation.',
             sender: 'bot',
             timestamp: new Date(),
@@ -54,11 +76,14 @@ const Chatbot: React.FC = () => {
         setCurrentQuestionIndex(0);
         setAssessmentResponses([]);
 
+        // Show available options for first question
+        const options = ASSESSMENT_OPTIONS[0].map((opt, i) => `${i + 1}. ${opt}`).join('\n');
+
         // Add first question
         const botMessage: ChatMessage = {
-            id: Date.now().toString(),
+            id: generateUniqueId(),
             text: "I'll ask you 10 questions to understand how you're feeling. Please answer honestly to help me provide better support.\n\n" +
-                ASSESSMENT_QUESTIONS[0],
+                ASSESSMENT_QUESTIONS[0] + "\n" + options,
             sender: 'bot',
             timestamp: new Date(),
         };
@@ -66,9 +91,22 @@ const Chatbot: React.FC = () => {
         setMessages(prev => [...prev, botMessage]);
     };
 
+
     const processAssessmentResponse = async (response: string) => {
+        // Try to map numerical responses (1-5) to the actual option text
+        let processedResponse = response;
+
+        // If it's just a number, convert it to the corresponding option
+        if (/^[1-5]$/.test(response)) {
+            const optionIndex = parseInt(response) - 1;
+            const options = ASSESSMENT_OPTIONS[currentQuestionIndex];
+            if (optionIndex >= 0 && optionIndex < options.length) {
+                processedResponse = options[optionIndex];
+            }
+        }
+
         // Store the response
-        const newResponses = [...assessmentResponses, response];
+        const newResponses = [...assessmentResponses, processedResponse];
         setAssessmentResponses(newResponses);
 
         // Move to next question
@@ -77,9 +115,12 @@ const Chatbot: React.FC = () => {
 
         // If there are more questions, ask the next one
         if (nextIndex < ASSESSMENT_QUESTIONS.length) {
+            // Show available options for next question
+            const options = ASSESSMENT_OPTIONS[nextIndex].map((opt, i) => `${i + 1}. ${opt}`).join('\n');
+
             const nextQuestion: ChatMessage = {
-                id: Date.now().toString(),
-                text: ASSESSMENT_QUESTIONS[nextIndex],
+                id: generateUniqueId(),
+                text: ASSESSMENT_QUESTIONS[nextIndex] + "\n" + options,
                 sender: 'bot',
                 timestamp: new Date(),
             };
@@ -93,13 +134,13 @@ const Chatbot: React.FC = () => {
             setIsTyping(true);
 
             try {
-                const response = await axios.post(`${API_BASE_URL}/api/assessment`, {
+                const response = await axios.post(`${VITAL_SIGNS_URL}/api/assessment`, {
                     responses: newResponses
                 });
 
                 // Display results
                 const resultMessage: ChatMessage = {
-                    id: Date.now().toString(),
+                    id: generateUniqueId(),
                     text: response.data.message || "Assessment complete. Thank you for your responses.",
                     sender: 'bot',
                     timestamp: new Date(),
@@ -110,7 +151,7 @@ const Chatbot: React.FC = () => {
                 // If solutions provided, display them
                 if (response.data.solutions) {
                     const solutionsMessage: ChatMessage = {
-                        id: (Date.now() + 1).toString(),
+                        id: generateUniqueId(),
                         text: response.data.solutions,
                         sender: 'bot',
                         timestamp: new Date(),
@@ -121,6 +162,25 @@ const Chatbot: React.FC = () => {
                     }, 1000);
                 }
 
+                // If high stress level with suicidal thoughts, add emergency message
+                if (response.data.severity >= 4 && newResponses[9].includes("Sometimes") ||
+                    newResponses[9].includes("Often") || newResponses[9].includes("Always")) {
+
+                    const emergencyMessage: ChatMessage = {
+                        id: generateUniqueId(),
+                        text: "IMPORTANT: If you're having thoughts that life isn't worth living, please reach out for help. " +
+                            "Crisis resources: National Suicide Prevention Lifeline: 1-800-273-8255 " +
+                            "Or text HOME to 741741 to reach the Crisis Text Line. " +
+                            "Your life matters, and support is available.",
+                        sender: 'bot',
+                        timestamp: new Date(),
+                    };
+
+                    setTimeout(() => {
+                        setMessages(prev => [...prev, emergencyMessage]);
+                    }, 2000);
+                }
+
                 // Reset assessment state
                 setInAssessment(false);
 
@@ -128,7 +188,7 @@ const Chatbot: React.FC = () => {
                 console.error('Error analyzing assessment:', error);
 
                 const errorMessage: ChatMessage = {
-                    id: Date.now().toString(),
+                    id: generateUniqueId(),
                     text: "I'm sorry, I couldn't analyze your responses right now. Please try again later.",
                     sender: 'bot',
                     timestamp: new Date(),
@@ -146,7 +206,7 @@ const Chatbot: React.FC = () => {
         if (inputText.trim() === '') return;
 
         const userMessage: ChatMessage = {
-            id: Date.now().toString(),
+            id: generateUniqueId(),
             text: inputText,
             sender: 'user',
             timestamp: new Date(),
@@ -187,14 +247,14 @@ const Chatbot: React.FC = () => {
             });
 
             // Call your backend API
-            const response = await axios.post(`${API_BASE_URL}/api/chat`, {
+            const response = await axios.post(`${VITAL_SIGNS_URL}/api/chat`, {
                 message: currentInput,
                 history: history
             });
 
             // Process the response
             const botMessage: ChatMessage = {
-                id: (Date.now() + 1).toString(),
+                id: generateUniqueId(),
                 text: response.data.reply || "I'm sorry, I couldn't process that. Can you try again?",
                 sender: 'bot',
                 timestamp: new Date(),
@@ -206,7 +266,7 @@ const Chatbot: React.FC = () => {
 
             // Add fallback response
             const errorMessage: ChatMessage = {
-                id: (Date.now() + 1).toString(),
+                id: generateUniqueId(),
                 text: "I'm having trouble connecting right now. Please try again later.",
                 sender: 'bot',
                 timestamp: new Date(),
@@ -218,7 +278,6 @@ const Chatbot: React.FC = () => {
         }
     };
 
-    // The rest of your component remains the same
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
@@ -228,7 +287,8 @@ const Chatbot: React.FC = () => {
             <ScrollView
                 ref={scrollViewRef}
                 style={styles.messagesContainer}
-                contentContainerStyle={styles.messagesList}
+                contentContainerStyle={{ paddingBottom: 160 }} // Increase padding to ensure content doesn't hide behind input
+                showsVerticalScrollIndicator={true} // Make sure scrollbar is visible
             >
                 {messages.map((message) => (
                     <View
@@ -259,14 +319,14 @@ const Chatbot: React.FC = () => {
 
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
-                keyboardVerticalOffset={100}
+                keyboardVerticalOffset={120} // Increase offset to avoid keyboard covering input
                 style={styles.inputContainer}
             >
                 <TextInput
                     style={styles.input}
                     value={inputText}
                     onChangeText={setInputText}
-                    placeholder={inAssessment ? "Type your answer..." : "Type your message..."}
+                    placeholder={inAssessment ? "Type your answer (1-5)..." : "Type your message..."}
                     placeholderTextColor="#999"
                     onSubmitEditing={handleSendMessage}
                     returnKeyType="send"
@@ -286,6 +346,9 @@ const Chatbot: React.FC = () => {
                     />
                 </TouchableOpacity>
             </KeyboardAvoidingView>
+
+            {/* This spacer gives room for the tab bar */}
+            <View style={styles.tabBarSpacer} />
         </SafeAreaView>
     );
 };
@@ -293,10 +356,10 @@ const Chatbot: React.FC = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.black,
     },
     header: {
-        backgroundColor: '#8DAA6D',
+        backgroundColor: colors.marron,
         padding: 16,
         alignItems: 'center',
     },
@@ -308,9 +371,7 @@ const styles = StyleSheet.create({
     messagesContainer: {
         flex: 1,
         padding: 16,
-    },
-    messagesList: {
-        paddingBottom: 16,
+        marginBottom: 100, // Add margin to make space for input box
     },
     messageBubble: {
         maxWidth: '80%',
@@ -347,8 +408,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         padding: 12,
         backgroundColor: 'white',
-        borderTopWidth: 0,
+        borderTopWidth: 1,
         borderTopColor: '#EEE',
+        position: 'absolute',
+        bottom: 90, // Adjust position to be slightly higher
+        left: 0,
+        right: 0,
+        zIndex: 100,
+        elevation: 5, // Add elevation for Android
+        shadowColor: '#000', // Add shadow for iOS
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
     },
     input: {
         flex: 1,
@@ -368,6 +439,9 @@ const styles = StyleSheet.create({
     },
     disabledButton: {
         backgroundColor: '#E0E0E0',
+    },
+    tabBarSpacer: {
+        height: 85, // Height for the tab bar space
     },
 });
 

@@ -4,16 +4,19 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    Dimensions
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { HomeStackParamList } from '@/src/navigation/HomeNavigation';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 interface AIChatbotProps {
     onChatPress: () => void;
     onSettingsPress: () => void;
 }
-
+type NavigationProp = NativeStackNavigationProp<HomeStackParamList>;
 const AIChatbot = ({ onChatPress, onSettingsPress }: AIChatbotProps) => {
+    const navigation = useNavigation<NavigationProp>();
     return (
         <>
             <View style={styles.sectionHeader}>
@@ -44,7 +47,7 @@ const AIChatbot = ({ onChatPress, onSettingsPress }: AIChatbotProps) => {
                 <View style={styles.chatbotActions}>
                     <TouchableOpacity
                         style={[styles.actionButton, { backgroundColor: '#8DAA6D' }]}
-                        onPress={onChatPress}
+                        onPress={() => navigation.navigate('Chatbot')}
                     >
                         <Ionicons name="add" size={24} color="#FFFFFF" />
                     </TouchableOpacity>

@@ -4,7 +4,7 @@ import { createBottomTabNavigator, BottomTabBarProps } from '@react-navigation/b
 import { Ionicons } from '@expo/vector-icons';
 
 // Import screens
-import Home from '../screens/Home/Home';
+import HomeNavigator from './HomeNavigation';
 import Profile from '../screens/Home/Profile';
 import Chatbot from '../screens/Home/Chatbot';
 import Statistic from '../screens/Home/Statistic';
@@ -97,7 +97,7 @@ const TabNavigator = () => {
                 tabBarShowLabel: false,
             }}
         >
-            <Tab.Screen name="Home" component={Home} />
+            <Tab.Screen name="Home" component={HomeNavigator} />
             <Tab.Screen name="ChatBot" component={Chatbot} />
             {/* Empty screen for the center button */}
             <Tab.Screen
@@ -112,14 +112,10 @@ const TabNavigator = () => {
         </Tab.Navigator>
     );
 };
-
-// Empty component for the middle tab
-const EmptyComponent = () => <View />;
-
 // Styles from your Home component
 const styles = StyleSheet.create({
     tabBarContainer: {
-        position: 'absolute',
+        position: 'static',
         bottom: 20, // <-- stick to the bottom
         left: 0,
         right: 0,

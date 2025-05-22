@@ -1,75 +1,56 @@
-import React, { useEffect, useState, ReactNode } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useState, useEffect, useCallback } from 'react';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Alert } from 'react-native';
+import { setAuthToken, authEvents, isTokenExpired } from "../api/config";
 import { AuthContext } from './AuthContext';
-import { setAuthToken } from '../api/config';
 
-type Props = {
-    children: ReactNode;
-};
-
-const AuthProvider = ({ children }: Props) => {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [userToken, setUserToken] = useState<string | null>(null);
+    const [userData, setUserData] = useState(null);
     const [hasSeenWelcome, setHasSeenWelcome] = useState(false);
-    const [userData, setUserData] = useState<any | null>(null);
-    useEffect(() => {
-        // Set the token whenever it changes
-        if (userToken) {
-            console.log('Setting auth token from context');
-            setAuthToken(userToken);
-        } else {
-            setAuthToken(null);
-        }
-    }, [userToken]);
-    // Load data when component mounts
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                // await AsyncStorage.clear();
-                const token = await AsyncStorage.getItem('@auth_token');
-
-                const welcomeSeen = await AsyncStorage.getItem('hasSeenWelcome');
-                const userDataString = await AsyncStorage.getItem('@user_data');
-                setUserToken(token);
-                setHasSeenWelcome(welcomeSeen === 'true');
-
-                if (userDataString) {
-                    setUserData(JSON.parse(userDataString));
-                }
-            } catch (e) {
-                console.error('Error loading auth data:', e);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        loadData();
-    }, []);
 
     // Sign in function
     const signIn = async (token: string, user: any) => {
         try {
-            await AsyncStorage.setItem('@auth_token', token);
-            await AsyncStorage.setItem('@user_data', JSON.stringify(user)); // Store user data
+            console.log("Signing in with token and user data:", {
+                tokenLength: token.length,
+                userData: user
+            });
+
+            // Store token
+            await AsyncStorage.setItem("userToken", token);
+
+            // Store user data
+            await AsyncStorage.setItem("userData", JSON.stringify(user));
+
+            // Update state
             setUserToken(token);
-            setUserData(user); // Set user data in state
+            setUserData(user);
+
+            // Set auth token in API
+            setAuthToken(token);
         } catch (e) {
-            console.log('Error during sign in:', e);
+            console.error("Error during sign in:", e);
         }
     };
 
     // Sign out function
-    const signOut = async () => {
+    const signOut = useCallback(async () => {
         try {
-            // Use consistent key names
-            await AsyncStorage.removeItem('@auth_token');
-            await AsyncStorage.removeItem('@user_data');
+            await AsyncStorage.removeItem("userToken");
+            await AsyncStorage.removeItem("userData");
+
+            // Clear state
             setUserToken(null);
-            setUserData(null); // Also clear user data from state
+            setUserData(null);
+
+            // Clear API auth header
+            setAuthToken(null);
         } catch (e) {
-            console.error('Error removing auth data:', e);
+            console.error("Error during sign out:", e);
         }
-    };
+    }, []);
 
     // Complete welcome function
     const completeWelcome = async () => {
@@ -81,20 +62,79 @@ const AuthProvider = ({ children }: Props) => {
         }
     };
 
-    // Create context value object
-    const contextValue = {
-        isLoading,
-        userToken,
-        hasSeenWelcome,
-        signIn,
-        signOut,
-        completeWelcome,
-        userData,
+    // Load initial auth state
+    useEffect(() => {
+        const bootstrapAsync = async () => {
+            try {
+                const token = await AsyncStorage.getItem("userToken");
+                const userDataString = await AsyncStorage.getItem("userData");
+                const welcomeComplete = await AsyncStorage.getItem('hasSeenWelcome');
 
-    };
+                // Check if token exists and is valid
+                if (token) {
+                    if (isTokenExpired(token)) {
+                        console.log("Stored token is expired, clearing auth data");
+                        await AsyncStorage.removeItem("userToken");
+                        await AsyncStorage.removeItem("userData");
+                    } else {
+                        setUserToken(token);
+                        setAuthToken(token);
+
+                        if (userDataString) {
+                            setUserData(JSON.parse(userDataString));
+                        }
+                    }
+                }
+
+                setHasSeenWelcome(welcomeComplete === 'true');
+            } catch (e) {
+                console.error("Error loading auth state:", e);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        bootstrapAsync();
+    }, []);
+
+    // Listen for auth events
+    useEffect(() => {
+        const handleAuthError = (error: string | { message?: string } | unknown) => {
+            console.log("Auth error event received:", error);
+
+            // Show alert to user
+            Alert.alert(
+                "Session Expired",
+                typeof error === 'string'
+                    ? error
+                    : typeof error === 'object' && error !== null && 'message' in error
+                        ? String(error.message)
+                        : "Your session has expired. Please sign in again.",
+                [{ text: "OK", onPress: () => signOut() }]
+            );
+        };
+
+        // Add listener
+        authEvents.addListener("auth-error", handleAuthError);
+
+        // Cleanup
+        return () => {
+            authEvents.removeListener("auth-error", handleAuthError);
+        };
+    }, [signOut]);
 
     return (
-        <AuthContext.Provider value={contextValue}>
+        <AuthContext.Provider
+            value={{
+                isLoading,
+                userToken,
+                userData,
+                hasSeenWelcome,
+                signIn,
+                signOut,
+                completeWelcome,
+            }}
+        >
             {children}
         </AuthContext.Provider>
     );

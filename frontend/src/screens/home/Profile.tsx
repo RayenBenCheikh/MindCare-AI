@@ -36,7 +36,7 @@ const Profile: React.FC = () => {
     const navigation = useNavigation();
 
     // Get user data from auth context
-    const { userData, userToken } = useContext(AuthContext);
+    const { userData, userToken, signOut } = useContext(AuthContext);
     const assessmentData = useAssessmentStore(state => state.assessmentData);
 
     // States
@@ -140,8 +140,6 @@ const Profile: React.FC = () => {
         const fetchUserData = async () => {
             setIsLoading(true);
             try {
-                // Don't add the authorization header manually here
-                // The api instance should already be configured with it
                 const response = await api.get(API_ENDPOINTS.assessments.latest);
 
                 console.log('User data response:', response.data);
@@ -165,9 +163,14 @@ const Profile: React.FC = () => {
                 }
             } catch (error) {
                 console.error('Error fetching user data:', error);
-                // Add more detailed error logging
-                if (axios.isAxiosError(error)) {
-                    console.error('Status:', error.response?.status);
+                if (axios.isAxiosError(error) && error.response?.status === 401) {
+                    console.log('Token expired, signing out...');
+                    Alert.alert(
+                        'Session Expired',
+                        'Your session has expired. Please sign in again.',
+                        [{ text: 'OK', onPress: () => signOut() }]
+                    );
+                } else if (axios.isAxiosError(error)) {
                     console.error('Response data:', error.response?.data);
                 }
             } finally {
@@ -176,8 +179,21 @@ const Profile: React.FC = () => {
         };
 
         fetchUserData();
-    }, [userToken]);
-
+    }, [userToken, signOut]);
+    const handleSignOut = () => {
+        Alert.alert(
+            'Sign Out',
+            'Are you sure you want to sign out?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Sign Out',
+                    onPress: signOut,
+                    style: 'destructive'
+                }
+            ]
+        );
+    };
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -326,7 +342,14 @@ const Profile: React.FC = () => {
                                     </>
                                 )}
                             </TouchableOpacity>
-
+                            {/* Sign Out Button */}
+                            <TouchableOpacity
+                                style={[styles.signOutButton]}
+                                onPress={handleSignOut}
+                            >
+                                <Ionicons name="log-out-outline" size={20} color="white" />
+                                <Text style={styles.signOutButtonText}>Sign Out</Text>
+                            </TouchableOpacity>
                             {/* Error and Success messages */}
                             {saveError ? (
                                 <Text style={styles.errorText}>{saveError}</Text>
@@ -432,6 +455,21 @@ const styles = StyleSheet.create({
         color: '#8DAA6D',
         fontSize: 14,
         fontWeight: '600',
+        marginLeft: 8,
+    },
+    signOutButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#E74C3C',
+        borderRadius: 25,
+        paddingVertical: 16,
+        marginTop: 16,
+    },
+    signOutButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: 'white',
         marginLeft: 8,
     },
 });

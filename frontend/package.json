@@ -26,6 +26,7 @@
     "axios": "^1.9.0",
     "babel-preset-expo": "~13.0.0",
     "date-fns": "^4.1.0",
+    "events": "^3.3.0",
     "expo": "^53.0.9",
     "expo-blur": "~14.1.4",
     "expo-camera": "~16.1.6",

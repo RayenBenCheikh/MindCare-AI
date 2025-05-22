@@ -8,11 +8,13 @@ const router = express.Router();
 router.post('/', auth, async (req, res) => {
     try {
         console.log('Received assessment data:', req.body);
-        console.log('User ID from auth:', req.user.id); // This user comes from auth middleware
+        console.log('User ID from auth:', req.user.id);
 
         // Create assessment data object including user ID
         const assessmentData = {
-            user: req.user.id, // Always set from auth middleware
+            user: req.user.id, // Keep this for database relations
+            // Remove the _id field assignment
+            description: req.body.description || "Mental health assessment",
             healthGoal: req.body.healthGoal,
             gender: req.body.gender,
             age: req.body.age,
@@ -24,9 +26,9 @@ router.post('/', auth, async (req, res) => {
             medication: req.body.medication,
             prescribedMedications: req.body.prescribedMedications,
             completedAt: req.body.completedAt || new Date().toISOString(),
-            isSubmitted: true
+            isSubmitted: true,
+            mentalHealthAssessment: req.body.mentalHealthAssessment
         };
-
         // Create and save assessment
         const assessment = new Assessment(assessmentData);
 
@@ -61,37 +63,49 @@ router.post("/submit", auth, async (req, res) => {
             mood,
             sleepQuality,
             professionalHelp,
-            completedAt
+            completedAt,
+            description,
+            // Additional fields from mental health assessment
+            mentalHealthResponses,
+            mentalHealthStressLevel
         } = req.body;
 
         // Check if user already has a submitted assessment
         const existingAssessment = await Assessment.findOne({
             user: req.user.id,
             isSubmitted: true
-        });
+        }).sort({ createdAt: -1 }); // Get the most recent one
 
         // Create new assessment or update existing
         let assessment;
         if (existingAssessment) {
+            console.log('Updating existing assessment:', existingAssessment._id);
+
+            // Update fields only if they are provided
+            const updateData = {};
+            if (description) updateData.description = description;
+            if (healthGoal) updateData.healthGoal = healthGoal;
+            if (gender) updateData.gender = gender;
+            if (age) updateData.age = age;
+            if (weight) updateData.weight = weight;
+            if (height) updateData.height = height;
+            if (mood) updateData.mood = mood;
+            if (sleepQuality) updateData.sleepQuality = sleepQuality;
+            if (professionalHelp) updateData.professionalHelp = professionalHelp;
+            if (completedAt) updateData.completedAt = completedAt;
+            updateData.isSubmitted = true;
+
+            // Update the assessment
             assessment = await Assessment.findByIdAndUpdate(
                 existingAssessment._id,
-                {
-                    healthGoal,
-                    gender,
-                    age,
-                    weight,
-                    height,
-                    mood,
-                    sleepQuality,
-                    professionalHelp,
-                    completedAt,
-                    isSubmitted: true
-                },
+                updateData,
                 { new: true }
             );
         } else {
+            // Create new assessment
             assessment = new Assessment({
                 user: req.user.id,
+                description,
                 healthGoal,
                 gender,
                 age,
@@ -100,6 +114,8 @@ router.post("/submit", auth, async (req, res) => {
                 mood,
                 sleepQuality,
                 professionalHelp,
+                mentalHealthResponses,
+                mentalHealthStressLevel,
                 completedAt,
                 isSubmitted: true
             });

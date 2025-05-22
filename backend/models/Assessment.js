@@ -5,8 +5,10 @@ const AssessmentSchema = new mongoose.Schema(
         user: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
-            required: false // Make optional for non-authenticated users
+            required: false
         },
+
+        description: String,
         healthGoal: {
             id: String,
             text: String
@@ -31,6 +33,13 @@ const AssessmentSchema = new mongoose.Schema(
             label: String,
             hours: String
         },
+        mentalHealthAssessment: {
+            responses: [String],
+            stressLevel: Number,
+            analysis: String,
+            recommendations: String,
+            date: Date
+        },
         professionalHelp: String,
         medication: String,
         prescribedMedications: [
@@ -43,7 +52,7 @@ const AssessmentSchema = new mongoose.Schema(
         isSubmitted: {
             type: Boolean,
             default: false
-        }
+        },
     },
     {
         timestamps: true

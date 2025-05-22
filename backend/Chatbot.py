@@ -1,8 +1,9 @@
 from flask import Blueprint, request, jsonify
 import requests
-import random
 import logging
-
+from pymongo import MongoClient
+from bson.objectid import ObjectId
+import datetime
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -53,6 +54,16 @@ assessment_questions = [
 
 # Create a blueprint for chat routes
 chatbot_bp = Blueprint('chatbot', __name__)
+# MongoDB connection
+MONGODB_URI = "mongodb://127.0.0.1:27017/mindcare"
+try:
+    client = MongoClient(MONGODB_URI)
+    db = client.get_database()
+    assessments_collection = db.assessments
+    logger.info("MongoDB connection established in Chatbot blueprint")
+except Exception as e:
+    logger.error(f"MongoDB connection error in Chatbot blueprint: {str(e)}")
+    assessments_collection = None
 
 @chatbot_bp.route('/chat', methods=['POST'])
 def chat():
@@ -93,7 +104,82 @@ def assessment():
         'message': f"Based on your responses, your stress level is {stress_level}/5.",
         'solutions': advice
     })
-
+@chatbot_bp.route('/assessments/save', methods=['POST'])
+def save_assessment():
+    """Save an assessment to the database"""
+    if not request.is_json:
+        return jsonify({'error': 'Request must be JSON'}), 400
+        
+    # Get the data from request
+    data = request.json
+    logger.info(f"Received assessment data: {data}")
+    
+    # Check for required fields
+    required_fields = ['userId', 'stressLevel', 'responses']
+    for field in required_fields:
+        if field not in data:
+            logger.error(f"Missing required field: {field}")
+            return jsonify({'error': f'Missing required field: {field}'}), 400
+    
+    try:
+        # Extract user ID from the auth token
+        auth_header = request.headers.get('Authorization', '')
+        logger.info(f"Auth header: {auth_header[:15]}...")
+        
+        if auth_header.startswith('Bearer '):
+            token = auth_header[7:]  # Remove 'Bearer ' prefix
+            
+            try:
+                # For now, just trust the token and user ID
+                # In a production app, you'd verify the token
+                # payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+                # token_user_id = payload.get('id')
+                
+                # Just use the user ID from request for now
+                token_user_id = data['userId']
+                
+            except Exception as e:
+                logger.error(f"Token validation error: {e}")
+                return jsonify({'error': 'Invalid authentication token'}), 401
+        else:
+            logger.error("No Bearer token in Authorization header")
+            return jsonify({'error': 'Authorization header must start with Bearer'}), 401
+        
+        if assessments_collection is None:
+            logger.error("Database connection not available")
+            return jsonify({'error': 'Database connection not available'}), 500
+        
+        # Prepare the document to insert
+        assessment_doc = {
+            'userId': data['userId'],
+            'date': data.get('date', datetime.datetime.now().isoformat()),
+            'responses': data['responses'],
+            'stressLevel': data['stressLevel'],
+            'mood': data.get('mood', ''),
+            'analysis': data.get('analysis', ''),
+            'recommendations': data.get('solutions', '')
+        }
+        
+        logger.info(f"Saving assessment document: {assessment_doc}")
+        
+        # Insert into database
+        result = assessments_collection.insert_one(assessment_doc)
+        
+        # Check if insert was successful
+        if result.inserted_id:
+            logger.info(f"Assessment saved with ID: {result.inserted_id}")
+            return jsonify({
+                'success': True,
+                'message': 'Assessment saved successfully',
+                'assessmentId': str(result.inserted_id)
+            })
+        else:
+            logger.error("Failed to save assessment - no inserted_id returned")
+            return jsonify({'error': 'Failed to save assessment'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error saving assessment: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 def get_chat_response(message, history):
     """Process a chat message using Ollama API"""
     api_url = "http://127.0.0.1:11434/api/generate"

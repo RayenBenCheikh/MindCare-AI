@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import numpy as np
 import time
+import cv2
 import os
 import logging
 import json
@@ -36,14 +37,15 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 # Set the custom encoder for Flask's jsonify
 app.json_encoder = NumpyEncoder
-# Enable CORS for all routes
-CORS(app)
-
+# Enable CORS for all routes with proper configuration
+CORS(app, resources={r"/*": {"origins": "*"}})
+# Register the chatbot blueprint
+app.register_blueprint(chatbot_bp, url_prefix='/api')
 # MongoDB connection info
 MONGODB_URI = "mongodb://127.0.0.1:27017/mindcare"
 
 # Initialize face detector
-import cv2
+
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 # MongoDB connection (optional)
@@ -309,14 +311,14 @@ def analyze_vital_signs():
             'status': 'error'
         }), 500
 
-@app.route('/health', methods=['GET', 'OPTIONS'])
+# Add a health check endpoint
+@app.route('/health', methods=['GET'])
 def health_check():
-    """Simple health check endpoint"""
-    # Handle preflight CORS requests
-    if request.method == 'OPTIONS':
-        return '', 200
-        
-    return jsonify({'status': 'ok'})
+    """Health check endpoint"""
+    return jsonify({
+        'status': 'ok',
+        'mongo_connected': assessments_collection is not None
+    })
 
 @app.route('/', methods=['GET'])
 def index():
@@ -398,6 +400,5 @@ if __name__ == '__main__':
     # Check if OpenCV face detector is available
     if not os.path.exists(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'):
         logger.error("OpenCV face detector not found!")
-    app.register_blueprint(chatbot_bp, url_prefix='/api')    
     # Start the Flask server
     app.run(host='0.0.0.0', port=5001, debug=False)

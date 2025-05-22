@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, ScrollView,
     StyleSheet, ActivityIndicator, SafeAreaView, KeyboardAvoidingView, Platform,
@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { colors } from '@/src/theme';
 import { api, VITAL_SIGNS_URL, } from '@/src/api/config';
+import { AuthContext } from '@/src/context/AuthContext';
 let messageCounter = 0;
 // Get screen dimensions
 const { height: screenHeight } = Dimensions.get('window');
@@ -51,6 +52,7 @@ const generateUniqueId = () => {
     return `msg_${Date.now()}_${messageCounter}`;
 };
 const Chatbot: React.FC = () => {
+    const { userToken, userData } = useContext(AuthContext);
     const [messages, setMessages] = useState<ChatMessage[]>([
         {
             id: generateUniqueId(),
@@ -65,7 +67,99 @@ const Chatbot: React.FC = () => {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [assessmentResponses, setAssessmentResponses] = useState<string[]>([]);
     const scrollViewRef = useRef<ScrollView>(null);
+    const [isSavingAssessment, setIsSavingAssessment] = useState(false);
+    const saveAssessmentToDatabase = async (assessmentData: any) => {
+        try {
+            setIsSavingAssessment(true);
 
+            // Check if user data exists and has an ID
+            if (!userData || !userData.id) {
+                console.error('Cannot save assessment: No user ID available', userData);
+                const errorMessage: ChatMessage = {
+                    id: generateUniqueId(),
+                    text: "I couldn't save your assessment because your user information isn't available.",
+                    sender: 'bot',
+                    timestamp: new Date(),
+                };
+                setMessages(prev => [...prev, errorMessage]);
+                return;
+            }
+
+            console.log('User data available, with ID:', userData.id);
+            console.log('Saving assessment data:', assessmentData);
+
+            // Create a description that includes assessment details
+            const assessmentDate = new Date().toLocaleDateString();
+            const stressLevel = assessmentData.severity;
+
+            // Use the submit endpoint which updates existing assessment if present
+            const formattedAssessment = {
+                mood: {
+                    id: assessmentData.mood,
+                    label: assessmentData.mood === "depression" ? "Depressed" : "Positive"
+                },
+                completedAt: new Date().toISOString(),
+                isSubmitted: true,
+                description: `Mental health assessment from ${assessmentDate} - Stress level: ${stressLevel}/5`,
+                // Store relevant mental health data in appropriate fields
+                stressLevel: {
+                    id: "mentalhealth",
+                    text: `Stress level ${stressLevel}/5 assessment`
+                },
+                // Add responses to existing fields where appropriate
+                professionalHelp: assessmentData.severity >= 4 ? "recommended" : "optional",
+                // We avoid creating new field structures
+            };
+
+            console.log('Sending properly formatted assessment:', formattedAssessment);
+
+            // Use the submit endpoint which will update existing assessment
+            const saveResponse = await api.post(
+                '/api/assessments/submit',
+                formattedAssessment,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${userToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            console.log('Assessment saved successfully:', saveResponse.data);
+            const savedMessage: ChatMessage = {
+                id: generateUniqueId(),
+                text: `Your assessment has been updated with your mental health status.`,
+                sender: 'bot',
+                timestamp: new Date(),
+            };
+
+            setTimeout(() => {
+                setMessages(prev => [...prev, savedMessage]);
+            }, 500);
+
+        } catch (error) {
+            console.error('Error saving assessment:', error);
+
+            // More detailed logging
+            if (axios.isAxiosError(error)) {
+                console.error('Request URL:', error.config?.url);
+                console.error('Request data:', error.config?.data ? JSON.stringify(error.config.data) : null);
+                console.error('Response status:', error.response?.status);
+                console.error('Response data:', error.response?.data);
+            }
+
+            const errorMessage: ChatMessage = {
+                id: generateUniqueId(),
+                text: "I couldn't save your assessment to your health record. Your results are still valid and you can try again later.",
+                sender: 'bot',
+                timestamp: new Date(),
+            };
+
+            setMessages(prev => [...prev, errorMessage]);
+        } finally {
+            setIsSavingAssessment(false);
+        }
+    };
     useEffect(() => {
         // Scroll to bottom when messages change
         scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -156,6 +250,18 @@ const Chatbot: React.FC = () => {
                         sender: 'bot',
                         timestamp: new Date(),
                     };
+                    // Save assessment results to database with user info
+                    if (userData && userToken) {
+                        const assessmentData = {
+                            responses: newResponses,
+                            severity: response.data.severity,
+                            mood: response.data.mood,
+                            message: response.data.message,
+                            solutions: response.data.solutions
+                        };
+
+                        saveAssessmentToDatabase(assessmentData);
+                    }
 
                     setTimeout(() => {
                         setMessages(prev => [...prev, solutionsMessage]);
@@ -168,9 +274,7 @@ const Chatbot: React.FC = () => {
 
                     const emergencyMessage: ChatMessage = {
                         id: generateUniqueId(),
-                        text: "IMPORTANT: If you're having thoughts that life isn't worth living, please reach out for help. " +
-                            "Crisis resources: National Suicide Prevention Lifeline: 1-800-273-8255 " +
-                            "Or text HOME to 741741 to reach the Crisis Text Line. " +
+                        text:
                             "Your life matters, and support is available.",
                         sender: 'bot',
                         timestamp: new Date(),
@@ -287,8 +391,8 @@ const Chatbot: React.FC = () => {
             <ScrollView
                 ref={scrollViewRef}
                 style={styles.messagesContainer}
-                contentContainerStyle={{ paddingBottom: 160 }} // Increase padding to ensure content doesn't hide behind input
-                showsVerticalScrollIndicator={true} // Make sure scrollbar is visible
+                contentContainerStyle={{ paddingBottom: 180 }} // Increased for combined input+tabbar
+                showsVerticalScrollIndicator={true}
             >
                 {messages.map((message) => (
                     <View
@@ -317,41 +421,46 @@ const Chatbot: React.FC = () => {
                 )}
             </ScrollView>
 
-            <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                keyboardVerticalOffset={120} // Increase offset to avoid keyboard covering input
-                style={styles.inputContainer}
-            >
-                <TextInput
-                    style={styles.input}
-                    value={inputText}
-                    onChangeText={setInputText}
-                    placeholder={inAssessment ? "Type your answer (1-5)..." : "Type your message..."}
-                    placeholderTextColor="#999"
-                    onSubmitEditing={handleSendMessage}
-                    returnKeyType="send"
-                />
-                <TouchableOpacity
-                    style={[
-                        styles.sendButton,
-                        inputText.trim() === '' ? styles.disabledButton : {}
-                    ]}
-                    onPress={handleSendMessage}
-                    disabled={inputText.trim() === ''}
+            {/* Footer container that includes input field + tab bar spacing */}
+            <View style={styles.footerContainer}>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    keyboardVerticalOffset={120}
+                    style={styles.keyboardAvoidContainer}
                 >
-                    <Ionicons
-                        name="send"
-                        size={24}
-                        color={inputText.trim() === '' ? "#CCC" : "#FFF"}
-                    />
-                </TouchableOpacity>
-            </KeyboardAvoidingView>
+                    <View style={styles.inputContainer}>
+                        <TextInput
+                            style={styles.input}
+                            value={inputText}
+                            onChangeText={setInputText}
+                            placeholder={inAssessment ? "Type your answer (1-5)..." : "Type your message..."}
+                            placeholderTextColor="#999"
+                            onSubmitEditing={handleSendMessage}
+                            returnKeyType="send"
+                        />
+                        <TouchableOpacity
+                            style={[
+                                styles.sendButton,
+                                inputText.trim() === '' ? styles.disabledButton : {}
+                            ]}
+                            onPress={handleSendMessage}
+                            disabled={inputText.trim() === ''}
+                        >
+                            <Ionicons
+                                name="send"
+                                size={24}
+                                color={inputText.trim() === '' ? "#CCC" : "#FFF"}
+                            />
+                        </TouchableOpacity>
+                    </View>
+                </KeyboardAvoidingView>
 
-            {/* This spacer gives room for the tab bar */}
-            <View style={styles.tabBarSpacer} />
+                {/* Space for the tab bar that will render underneath */}
+                <View style={styles.tabBarSpace} />
+            </View>
         </SafeAreaView>
     );
-};
+}
 
 const styles = StyleSheet.create({
     container: {
@@ -371,7 +480,6 @@ const styles = StyleSheet.create({
     messagesContainer: {
         flex: 1,
         padding: 16,
-        marginBottom: 100, // Add margin to make space for input box
     },
     messageBubble: {
         maxWidth: '80%',
@@ -404,19 +512,25 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-end',
         marginTop: 4,
     },
+    footerContainer: {
+        width: '100%',
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        backgroundColor: 'transparent',
+    },
+    keyboardAvoidContainer: {
+        width: '100%',
+    },
     inputContainer: {
         flexDirection: 'row',
         padding: 12,
         backgroundColor: 'white',
         borderTopWidth: 1,
         borderTopColor: '#EEE',
-        position: 'absolute',
-        bottom: 90, // Adjust position to be slightly higher
-        left: 0,
-        right: 0,
         zIndex: 100,
-        elevation: 5, // Add elevation for Android
-        shadowColor: '#000', // Add shadow for iOS
+        elevation: 5,
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: -2 },
         shadowOpacity: 0.1,
         shadowRadius: 3,
@@ -440,9 +554,8 @@ const styles = StyleSheet.create({
     disabledButton: {
         backgroundColor: '#E0E0E0',
     },
-    tabBarSpacer: {
-        height: 85, // Height for the tab bar space
+    tabBarSpace: {
+        // Height of your tab bar
     },
 });
-
 export default Chatbot;

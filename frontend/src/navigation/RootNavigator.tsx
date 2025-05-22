@@ -17,6 +17,12 @@ const RootNavigator = () => {
     const [hasAssessment, setHasAssessment] = useState<boolean | null>(null);
 
     useEffect(() => {
+        // Reset assessment state when token changes
+        if (!userToken) {
+            setAssessmentLoaded(true);
+            setHasAssessment(null);
+            return;
+        }
         const checkAssessment = async () => {
             if (userToken) {
                 try {

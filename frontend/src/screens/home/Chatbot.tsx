@@ -11,6 +11,7 @@ import { api, VITAL_SIGNS_URL, } from '@/src/api/config';
 import { AuthContext } from '@/src/context/AuthContext';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { HomeStackParamList } from '@/src/navigation/HomeNavigation';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 let messageCounter = 0;
 // Get screen dimensions
 interface ChatMessage {
@@ -57,7 +58,24 @@ const Chatbot: React.FC = () => {
     const route = useRoute<RouteProp<HomeStackParamList, 'Chatbot'>>();
     const conversationId = route.params?.conversationId;
     const [currentConversation, setCurrentConversation] = useState<any>(null);
+    const [currentLLM, setCurrentLLM] = useState('gemma3:4b');
     useEffect(() => {
+        const loadPreferredModel = async () => {
+            try {
+                const savedModel = await AsyncStorage.getItem('preferredLLM');
+                if (savedModel) {
+                    setCurrentLLM(savedModel);
+                    console.log(`Using LLM model: ${savedModel}`);
+                }
+            } catch (error) {
+                console.error('Error loading LLM preference:', error);
+            }
+        };
+
+        loadPreferredModel();
+    }, []);
+    useEffect(() => {
+
         if (conversationId) {
             loadConversationMessages(conversationId);
         }
@@ -98,6 +116,7 @@ const Chatbot: React.FC = () => {
             setIsTyping(false);
         }
     };
+
     const [messages, setMessages] = useState<ChatMessage[]>([
         {
             id: generateUniqueId(),
@@ -317,7 +336,8 @@ const Chatbot: React.FC = () => {
 
             try {
                 const response = await axios.post(`${VITAL_SIGNS_URL}/api/assessment`, {
-                    responses: newResponses
+                    responses: newResponses,
+                    model: currentLLM
                 });
 
                 // Display results (REMOVE THE DUPLICATE WAITING MESSAGE HERE)
@@ -441,7 +461,8 @@ const Chatbot: React.FC = () => {
             // Call your backend API
             const response = await axios.post(`${VITAL_SIGNS_URL}/api/chat`, {
                 message: currentInput,
-                history: history
+                history: history,
+                model: currentLLM
             });
 
             // Process the response

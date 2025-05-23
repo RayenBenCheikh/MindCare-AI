@@ -14,12 +14,21 @@ import { colors } from '@/src/theme';
 import { AuthContext } from '@/src/context/AuthContext';
 
 const LLM_OPTIONS = [
-    { id: 'gpt4', name: 'GPT-4', description: 'Latest model with advanced reasoning' },
-    { id: 'llama2', name: 'Llama2', description: 'Open-source alternative with good performance' },
-    { id: 'gpt35', name: 'GPT-3.5', description: 'Faster with lower token usage' },
-    { id: 'babyagi', name: 'BabyAGI', description: 'Specialized for task planning and execution' },
-    { id: 'palm3', name: 'PaLM3', description: 'Google\'s language model for diverse tasks' },
-    { id: 'privateGPT', name: 'PrivateGPT', description: 'Enhanced privacy, runs locally' },
+    {
+        id: 'gemma',
+        name: 'gemma3:4b',
+        description: 'Google\'s lightweight model optimized for helpful dialogues and coding assistance'
+    },
+    {
+        id: 'llama2',
+        name: 'Llama2',
+        description: 'Meta\'s open-source model with strong reasoning and instruction following'
+    },
+    {
+        id: 'qwen3',
+        name: 'qwen3:1.7b',
+        description: 'Alibaba\'s compact model with excellent efficiency and multilingual support'
+    },
 ];
 
 const LLMSettings = () => {
@@ -78,8 +87,6 @@ const LLMSettings = () => {
             </View>
 
             <ScrollView style={styles.content}>
-                <Text style={styles.subtitle}>Select up to 3</Text>
-
                 <View style={styles.modelsContainer}>
                     {LLM_OPTIONS.map((model) => (
                         <TouchableOpacity
@@ -153,12 +160,6 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         padding: 20,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#666',
-        marginBottom: 16,
-        textAlign: 'right',
     },
     modelsContainer: {
         marginBottom: 20,

@@ -70,9 +70,10 @@ def chat():
     data = request.json
     message = data.get('message', '')
     history = data.get('history', [])
+    model = data.get('model', 'gemma3:4b')  # Get user-selected model or default
     
-    # Process the chat message using your existing logic
-    response = get_chat_response(message, history)
+    # Process the chat message using the specified model
+    response = get_chat_response(message, history, model)
     
     return jsonify({
         'reply': response
@@ -82,18 +83,19 @@ def chat():
 def assessment():
     data = request.json
     responses = data.get('responses', [])
+    model = data.get('model', 'gemma3:4b')  # Get user-selected model or default
     
     if not responses or len(responses) != 10:
         return jsonify({
             'error': 'Invalid assessment data. Expected 10 responses.'
         }), 400
     
-    # Use your assessment logic from the notebook
-    stress_level = get_stress_level_with_ollama_api(responses)
+    # Use your assessment logic from the notebook with selected model
+    stress_level = get_stress_level_with_ollama_api(responses, model)
     
-    # Get personalized advice
-    advice = get_personalized_advice_with_ollama(responses, stress_level)
-    
+    # FIX: Pass the model parameter to the advice function
+    advice = get_personalized_advice_with_ollama(responses, stress_level, model)
+  
     # Determine mood and severity
     mood = "depression" if stress_level >= 3 else "positive"
     severity = stress_level
@@ -180,15 +182,18 @@ def save_assessment():
     except Exception as e:
         logger.error(f"Error saving assessment: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
-def get_chat_response(message, history):
-    """Process a chat message using Ollama API"""
+def get_chat_response(message, history, selected_model):
+    """Process a chat message using Ollama API with user-selected model"""
     api_url = "http://127.0.0.1:11434/api/generate"
     
     # Prepare the prompt with conversation history
     prompt = "You are MindCare AI, a compassionate mental health assistant. "
     prompt += "Be helpful, supportive, and provide actionable advice. "
-    prompt += "Keep responses concise and supportive.\n\n"
-    
+    prompt += "Keep responses concise and supportive. "
+    prompt += "IMPORTANT: Provide direct answers without showing your reasoning or thinking process. "
+    prompt += "Don't explain how you arrived at answers or say phrases like 'let me think' or 'I would approach this by'. "
+    prompt += "Just give straightforward, helpful responses.\n\n"
+  
     # Add conversation history
     for msg in history[-5:]:  # Limit to last 5 messages to keep context manageable
         role = msg.get('role', '')
@@ -199,8 +204,29 @@ def get_chat_response(message, history):
     # Add the current message
     prompt += f"\nUser: {message}\nMindCare AI:"
     
-    # Try different models in order of preference
-    for model_name in ["gemma3:4b", "qwen3:1.7b", "mistral:7b", "llama2:7b"]:
+    # Map frontend model IDs to actual model names
+    model_mapping = {
+        'gemma': 'gemma3:4b',
+        'llama2': 'llama2:7b',
+        'qwen3': 'qwen3:1.7b'
+    }
+    
+    # Get the actual model name from mapping or use selected_model as is
+    model_to_use = model_mapping.get(selected_model, selected_model)
+    
+    # Try the selected model first
+    models_to_try = [model_to_use]
+    
+    # Add fallback models in case the selected one fails
+    fallback_models = ["gemma3:4b", "qwen3:1.7b", "mistral:7b", "llama2:7b"]
+    for model in fallback_models:
+        if model != model_to_use:
+            models_to_try.append(model)
+    
+    logger.info(f"Trying to generate chat response with preferred model: {model_to_use}")
+    
+    # Try models in order (preferred first, then fallbacks)
+    for model_name in models_to_try:
         try:
             logger.info(f"Generating chat response with model: {model_name}")
             
@@ -232,7 +258,6 @@ def get_chat_response(message, history):
     
     # Return fallback response if all models fail
     return "I'm sorry, I'm having trouble processing your request at the moment. Could you try again later or ask a different question?"
-
 def assess_stress_level_manually(responses):
     """Fallback function to estimate stress level based on rule-based approach"""
     # Count negative indicators
@@ -284,15 +309,35 @@ def assess_stress_level_manually(responses):
         return 2
     else:
         return 1
-def get_stress_level_with_ollama_api(responses):
-    """Uses the Ollama API directly instead of subprocess"""
+def get_stress_level_with_ollama_api(responses, selected_model='gemma3:4b'):
+    """Uses the Ollama API with the user-selected model"""
     api_url = "http://127.0.0.1:11434/api/generate"
     
+    # Map frontend model IDs to actual model names
+    model_mapping = {
+        'gemma': 'gemma3:4b',
+        'llama2': 'llama2:7b',
+        'qwen3': 'qwen3:1.7b'
+    }
+    
+    # Get the actual model name from mapping or use selected_model as is
+    model_to_use = model_mapping.get(selected_model, selected_model)
+    
+    # Try the selected model first
+    models_to_try = [model_to_use]
+    
+    # Add fallback models in case the selected one fails
+    fallback_models = ["gemma3:4b", "qwen3:1.7b", "mistral:7b", "llama2:7b"]
+    for model in fallback_models:
+        if model != model_to_use:
+            models_to_try.append(model)
+            
     # Prepare the prompt
     prompt = (
         "Given the following answers to a mental health assessment, "
         "estimate the user's overall stress level on a scale from 1 (very low) to 5 (very high). "
-        "Only return the number (1-5) as your answer.\n\n"
+        "Only return the number (1-5) as your answer. Do not explain your reasoning. "
+        "Just provide a single digit from 1 to 5.\n\n"
         "Answers:\n"
     )
     for i, (q, a) in enumerate(zip(assessment_questions, responses)):
@@ -300,7 +345,7 @@ def get_stress_level_with_ollama_api(responses):
     prompt += "\nStress level (1-5):"
 
     # Try different models in order of preference
-    for model_name in ["gemma3:4b", "qwen3:1.7b", "mistral:7b", "llama2:7b"]:
+    for model_name in models_to_try:
         try:
             logger.info(f"Trying stress assessment with model: {model_name}")
             
@@ -343,7 +388,7 @@ def get_stress_level_with_ollama_api(responses):
     logger.warning("Using rule-based assessment as fallback.")
     return assess_stress_level_manually(responses)
 
-def get_personalized_advice_with_ollama(responses, stress_level):
+def get_personalized_advice_with_ollama(responses, stress_level, selected_model='gemma3:4b'):
     """Get personalized advice from Ollama based on user's specific responses"""
     api_url = "http://127.0.0.1:11434/api/generate"
     
@@ -386,10 +431,29 @@ Their concerning responses include:
 Please provide personalized, actionable advice to help them manage their stress and improve their mental wellbeing.
 Give 3-5 specific suggestions that address their particular concerns.
 For very high stress levels (4-5), recommend professional help but also provide immediate coping strategies.
-Keep your response caring, positive and supportive. Use about 150-200 words."""
 
+IMPORTANT: Respond directly without showing your thought process. Don't use phrases like "Let me analyze" or "Based on your responses".
+Just provide the advice in a caring, positive, and supportive tone. Use about 150-200 words."""
+    model_mapping = {
+        'gemma': 'gemma3:4b',
+        'llama2': 'llama2:7b',
+        'qwen3': 'qwen3:1.7b'
+    }
+    model_to_use = model_mapping.get(selected_model, selected_model)
+    
+    # Try the selected model first
+    models_to_try = [model_to_use]
+    
+    # Add fallback models in case the selected one fails
+    fallback_models = ["gemma3:4b", "qwen3:1.7b", "mistral:7b", "llama2:7b"]
+ 
     # Try different models in order of preference
-    for model_name in ["gemma3:4b", "qwen3:1.7b", "mistral:7b", "llama2:7b"]:
+    for model in fallback_models:
+        if model != model_to_use:
+            models_to_try.append(model)
+    
+    # Try different models in order of preference
+    for model_name in models_to_try:
         try:
             logger.info(f"Getting advice using model: {model_name}")
             

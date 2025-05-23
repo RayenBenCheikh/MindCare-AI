@@ -17,9 +17,10 @@ import { API_ENDPOINTS } from '@/src/constants/const';
 import { useNavigation } from '@react-navigation/native';
 import { api, setAuthToken } from '@/src/api/config';
 import { isTokenExpired } from '@/src/api/config';
-import AIChatbot from '@/src/components/home/AIChatBot';
+
 import { HomeStackParamList } from '@/src/navigation/HomeNavigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import AIChatbot from '@/src/components/home/chat/AIChatBot';
 type NavigationProp = NativeStackNavigationProp<HomeStackParamList>;
 const Home = () => {
     const [currentDateTime, setCurrentDateTime] = useState('');
@@ -90,15 +91,21 @@ const Home = () => {
     }, [userToken]);
 
     const handleChatPress = () => {
-        // Navigate to chat screen
-        navigation.navigate('Chatbot');
+        // Navigate to chat screen with proper typing
+        navigation.navigate({
+            name: 'Chatbot',
+            params: {}  // Empty params object since conversationId is optional
+        });
         console.log('Chat button pressed');
     };
 
     const handleSeeAllResources = () => {
-        // Navigate to resources screen
+        // Navigate to resources screen with proper typing
         console.log('See all resources button pressed');
-        navigation.navigate('Chatbot');
+        navigation.navigate({
+            name: 'Chatbot',
+            params: {}
+        });
     };
 
     return (

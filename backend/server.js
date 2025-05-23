@@ -4,8 +4,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import multer from "multer";
 import { cleanEnv, str, port } from "envalid";
-
-// Import routes with .js extensions (required for ES modules)
+import chatbotRoutes from './routes/ChatbotRoutes.js';
 import userRoutes from "./routes/userRoutes.js";
 import medicationRoutes from './routes/MedicationRoutes.js';
 import assessmentRoutes from './routes/AssessmentRoutes.js';
@@ -68,7 +67,7 @@ app.post('/api/upload-profile-image', upload.single('image'), async (req, res) =
 app.use("/api/auth", userRoutes);
 app.use('/api/assessments', assessmentRoutes);
 app.use('/api/medications', medicationRoutes);
-
+app.use('/api/chatbot', chatbotRoutes);
 // MongoDB connection and server start
 mongoose
   .connect(env.MONGO_URI, {

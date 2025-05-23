@@ -15,13 +15,16 @@ interface AIChatbotProps {
     onSettingsPress: () => void;
 }
 type NavigationProp = NativeStackNavigationProp<HomeStackParamList>;
-const AIChatbot = ({ onChatPress, onSettingsPress }: AIChatbotProps) => {
+const AIChatbot = ({ }: AIChatbotProps) => {
     const navigation = useNavigation<NavigationProp>();
+    const handleSettingsPress = () => {
+        navigation.navigate('settings');
+    };
     return (
         <>
             <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>AI Therapy Chatbot</Text>
-                <TouchableOpacity onPress={onSettingsPress}>
+                <TouchableOpacity onPress={handleSettingsPress}>
                     <Ionicons name="settings-outline" size={24} color="#5D4037" />
                 </TouchableOpacity>
             </View>
@@ -47,15 +50,16 @@ const AIChatbot = ({ onChatPress, onSettingsPress }: AIChatbotProps) => {
                 <View style={styles.chatbotActions}>
                     <TouchableOpacity
                         style={[styles.actionButton, { backgroundColor: '#8DAA6D' }]}
-                        onPress={() => navigation.navigate('Chatbot')}
+                        onPress={() => navigation.navigate('Chatbot' as never)}
                     >
                         <Ionicons name="add" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.actionButton, { backgroundColor: '#E18942' }]}
-                        onPress={onSettingsPress}
+                        onPress={() => navigation.navigate('conversation')}
                     >
                         <Ionicons name="settings-sharp" size={22} color="#FFFFFF" />
+
                     </TouchableOpacity>
                 </View>
             </View>

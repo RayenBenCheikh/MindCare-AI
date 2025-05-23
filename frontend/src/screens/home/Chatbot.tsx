@@ -9,9 +9,10 @@ import axios from 'axios';
 import { colors } from '@/src/theme';
 import { api, VITAL_SIGNS_URL, } from '@/src/api/config';
 import { AuthContext } from '@/src/context/AuthContext';
+import { useRoute, RouteProp } from '@react-navigation/native';
+import { HomeStackParamList } from '@/src/navigation/HomeNavigation';
 let messageCounter = 0;
 // Get screen dimensions
-const { height: screenHeight } = Dimensions.get('window');
 interface ChatMessage {
     id: string;
     text: string;
@@ -53,6 +54,50 @@ const generateUniqueId = () => {
 };
 const Chatbot: React.FC = () => {
     const { userToken, userData } = useContext(AuthContext);
+    const route = useRoute<RouteProp<HomeStackParamList, 'Chatbot'>>();
+    const conversationId = route.params?.conversationId;
+    const [currentConversation, setCurrentConversation] = useState<any>(null);
+    useEffect(() => {
+        if (conversationId) {
+            loadConversationMessages(conversationId);
+        }
+    }, [conversationId]);
+
+    // Add function to load conversation messages
+    const loadConversationMessages = async (id: string) => {
+        try {
+            setIsTyping(true); // Show loading state
+            const response = await api.get(`/api/chatbot/${id}`);
+
+            if (response.data.success && response.data.conversation) {
+                setCurrentConversation(response.data.conversation);
+
+                // Convert conversation messages to ChatMessage format
+                if (response.data.conversation.messages && response.data.conversation.messages.length > 0) {
+                    const formattedMessages = response.data.conversation.messages.map((msg: any) => ({
+                        id: msg._id || generateUniqueId(),
+                        text: msg.text,
+                        sender: msg.sender,
+                        timestamp: new Date(msg.timestamp)
+                    }));
+
+                    setMessages(formattedMessages);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading conversation:', error);
+            // Show error message
+            const errorMessage: ChatMessage = {
+                id: generateUniqueId(),
+                text: "I couldn't load your previous conversation. Let's start a new one.",
+                sender: 'bot',
+                timestamp: new Date(),
+            };
+            setMessages([errorMessage]);
+        } finally {
+            setIsTyping(false);
+        }
+    };
     const [messages, setMessages] = useState<ChatMessage[]>([
         {
             id: generateUniqueId(),
@@ -104,7 +149,7 @@ const Chatbot: React.FC = () => {
                 // Store relevant mental health data in appropriate fields
                 stressLevel: {
                     id: "mentalhealth",
-                    text: `Stress level ${stressLevel}/5 assessment`
+                    text: `Stress level ${stressLevel}`
                 },
                 // Add responses to existing fields where appropriate
                 professionalHelp: assessmentData.severity >= 4 ? "recommended" : "optional",
@@ -132,9 +177,23 @@ const Chatbot: React.FC = () => {
                 sender: 'bot',
                 timestamp: new Date(),
             };
+            try {
+                const saveResultsResponse = await api.post('/api/chatbot/assessment-results', {
+                    responses: assessmentData.responses,
+                    analysis: assessmentData.message,
+                    recommendations: assessmentData.solutions,
+                    stressLevel: assessmentData.severity,
+                    mood: assessmentData.mood
+                });
+
+                console.log('Assessment results saved separately:', saveResultsResponse.data);
+            } catch (error) {
+                console.error('Error saving assessment results:', error);
+            }
 
             setTimeout(() => {
                 setMessages(prev => [...prev, savedMessage]);
+                saveChatMessage(savedMessage);
             }, 500);
 
         } catch (error) {
@@ -170,21 +229,40 @@ const Chatbot: React.FC = () => {
         setCurrentQuestionIndex(0);
         setAssessmentResponses([]);
 
-        // Show available options for first question
+        // Show available options for first question with clear numbering
         const options = ASSESSMENT_OPTIONS[0].map((opt, i) => `${i + 1}. ${opt}`).join('\n');
 
-        // Add first question
+        // Add first question with clear instructions
         const botMessage: ChatMessage = {
             id: generateUniqueId(),
-            text: "I'll ask you 10 questions to understand how you're feeling. Please answer honestly to help me provide better support.\n\n" +
+            text: "I'll ask you 10 questions to understand how you're feeling. Please answer by entering a number between 1-5.\n\n" +
                 ASSESSMENT_QUESTIONS[0] + "\n" + options,
             sender: 'bot',
             timestamp: new Date(),
         };
 
         setMessages(prev => [...prev, botMessage]);
+        saveChatMessage(botMessage);
     };
+    const saveChatMessage = async (message: ChatMessage) => {
+        if (!userData || !userData.id || !userToken) return;
 
+        try {
+            // If we have a conversation ID, include it
+            const payload = {
+                userId: userData.id,
+                text: message.text,
+                sender: message.sender,
+                timestamp: message.timestamp,
+                conversationId: conversationId // Will be undefined for new conversations
+            };
+
+            await api.post('/api/chatbot/messages', payload);
+            console.log('Chat message saved to conversation');
+        } catch (error) {
+            console.error('Error saving chat message:', error);
+        }
+    };
 
     const processAssessmentResponse = async (response: string) => {
         // Try to map numerical responses (1-5) to the actual option text
@@ -221,18 +299,28 @@ const Chatbot: React.FC = () => {
 
             setTimeout(() => {
                 setMessages(prev => [...prev, nextQuestion]);
+                saveChatMessage(nextQuestion); // Add this line
                 setIsTyping(false);
             }, 1000);
         } else {
             // Assessment complete, send all responses for analysis
             setIsTyping(true);
+            const waitingMessage: ChatMessage = {
+                id: generateUniqueId(),
+                text: "Please wait while I analyze your responses... This may take a moment.",
+                sender: 'bot',
+                timestamp: new Date(),
+            };
+
+            setMessages(prev => [...prev, waitingMessage]);
+            saveChatMessage(waitingMessage);
 
             try {
                 const response = await axios.post(`${VITAL_SIGNS_URL}/api/assessment`, {
                     responses: newResponses
                 });
 
-                // Display results
+                // Display results (REMOVE THE DUPLICATE WAITING MESSAGE HERE)
                 const resultMessage: ChatMessage = {
                     id: generateUniqueId(),
                     text: response.data.message || "Assessment complete. Thank you for your responses.",
@@ -241,7 +329,7 @@ const Chatbot: React.FC = () => {
                 };
 
                 setMessages(prev => [...prev, resultMessage]);
-
+                saveChatMessage(resultMessage);
                 // If solutions provided, display them
                 if (response.data.solutions) {
                     const solutionsMessage: ChatMessage = {
@@ -265,6 +353,7 @@ const Chatbot: React.FC = () => {
 
                     setTimeout(() => {
                         setMessages(prev => [...prev, solutionsMessage]);
+                        saveChatMessage(solutionsMessage);
                     }, 1000);
                 }
 
@@ -282,6 +371,7 @@ const Chatbot: React.FC = () => {
 
                     setTimeout(() => {
                         setMessages(prev => [...prev, emergencyMessage]);
+                        saveChatMessage(emergencyMessage);
                     }, 2000);
                 }
 
@@ -317,13 +407,11 @@ const Chatbot: React.FC = () => {
         };
 
         setMessages((prevMessages) => [...prevMessages, userMessage]);
+
         const currentInput = inputText;
         setInputText('');
-
-        // Show typing indicator
+        saveChatMessage(userMessage);
         setIsTyping(true);
-
-        // Check if starting assessment
         if (currentInput.toLowerCase().includes('start assessment') && !inAssessment) {
             startAssessment();
             setIsTyping(false);
@@ -365,6 +453,7 @@ const Chatbot: React.FC = () => {
             };
 
             setMessages((prevMessages) => [...prevMessages, botMessage]);
+            saveChatMessage(botMessage);
         } catch (error) {
             console.error('Error getting chatbot response:', error);
 
@@ -429,14 +518,50 @@ const Chatbot: React.FC = () => {
                     style={styles.keyboardAvoidContainer}
                 >
                     <View style={styles.inputContainer}>
+                        {inAssessment && (
+                            <View style={styles.numberButtonsContainer}>
+                                {[1, 2, 3, 4, 5].map((num) => (
+                                    <TouchableOpacity
+                                        key={`num-${num}`}
+                                        style={styles.numberButton}
+                                        onPress={() => {
+                                            setInputText(num.toString());
+                                            // Auto-submit after a brief delay for better UX
+                                            setTimeout(() => {
+                                                handleSendMessage();
+                                            }, 300);
+                                        }}
+                                    >
+                                        <Text style={styles.numberButtonText}>{num}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        )}
                         <TextInput
                             style={styles.input}
                             value={inputText}
-                            onChangeText={setInputText}
-                            placeholder={inAssessment ? "Type your answer (1-5)..." : "Type your message..."}
+                            onChangeText={(text) => {
+                                // For assessment, only allow numbers 1-5
+                                if (inAssessment) {
+                                    // Filter to only allow digits 1-5
+                                    const filtered = text.replace(/[^1-5]/g, '');
+
+                                    // Only take the first digit if multiple are entered
+                                    if (filtered.length > 1) {
+                                        setInputText(filtered.charAt(0));
+                                    } else {
+                                        setInputText(filtered);
+                                    }
+                                } else {
+                                    setInputText(text);
+                                }
+                            }}
+                            placeholder={inAssessment ? "Enter a number (1-5)..." : "Type your message..."}
                             placeholderTextColor="#999"
                             onSubmitEditing={handleSendMessage}
                             returnKeyType="send"
+                            keyboardType={inAssessment ? "number-pad" : "default"} // Use number pad for assessment
+                            maxLength={inAssessment ? 1 : undefined} // Limit to single digit during assessment
                         />
                         <TouchableOpacity
                             style={[
@@ -555,7 +680,28 @@ const styles = StyleSheet.create({
         backgroundColor: '#E0E0E0',
     },
     tabBarSpace: {
-        // Height of your tab bar
+    },
+    numberButtonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        padding: 10,
+        backgroundColor: '#F5F5F5',
+        borderBottomWidth: 1,
+        borderBottomColor: '#EEE',
+    },
+    numberButton: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: '#8DAA6D',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginHorizontal: 5,
+    },
+    numberButtonText: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: 'white',
     },
 });
 export default Chatbot;

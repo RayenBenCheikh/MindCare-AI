@@ -20,8 +20,8 @@ const LLM_OPTIONS = [
         description: 'Google\'s lightweight model optimized for helpful dialogues and coding assistance'
     },
     {
-        id: 'llama2',
-        name: 'Llama2',
+        id: 'llama3.1',
+        name: 'Llama3.1:8b',
         description: 'Meta\'s open-source model with strong reasoning and instruction following'
     },
     {

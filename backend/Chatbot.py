@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 assessment_questions = [
     {
         "question": "How would you rate your mood today?",
-        "options": ["1 - Very bad", "2 - Bad", "3 - Neutral", "4 - Good", "5 - Very good"]
+        "options": [" Very bad", " Bad", " Neutral", " Good", " Very good"]
     },
     {
         "question": "Have you been enjoying activities you usually find pleasurable?",
@@ -207,8 +207,9 @@ def get_chat_response(message, history, selected_model):
     # Map frontend model IDs to actual model names
     model_mapping = {
         'gemma': 'gemma3:4b',
-        'llama2': 'llama2:7b',
-        'qwen3': 'qwen3:1.7b'
+        'llama3.1': 'llama3.1:8b',
+        'qwen3': 'qwen3:1.7b',
+        'deepseek' :'deepseek-r1:7b'
     }
     
     # Get the actual model name from mapping or use selected_model as is
@@ -218,7 +219,7 @@ def get_chat_response(message, history, selected_model):
     models_to_try = [model_to_use]
     
     # Add fallback models in case the selected one fails
-    fallback_models = ["gemma3:4b", "qwen3:1.7b", "mistral:7b", "llama2:7b"]
+    fallback_models = ["gemma3:4b", "qwen3:1.7b", "llama3.1:8b"]
     for model in fallback_models:
         if model != model_to_use:
             models_to_try.append(model)
@@ -258,15 +259,24 @@ def get_chat_response(message, history, selected_model):
     
     # Return fallback response if all models fail
     return "I'm sorry, I'm having trouble processing your request at the moment. Could you try again later or ask a different question?"
+assessment_questions = [
+    {
+        "question": "How would you describe your mood?",
+        "options": ["1 - I Feel Terrible", "2 - I Feel Down", "3 - I Feel Neutral", "4 - I Feel Good", "5 - I Feel Great"]
+    },
+    # ... rest of your questions remain the same
+]
+
 def assess_stress_level_manually(responses):
     """Fallback function to estimate stress level based on rule-based approach"""
-    # Count negative indicators
     negative_count = 0
     
-    # Check mood (first question)
-    if "1 -" in responses[0] or "2 -" in responses[0]:
-        negative_count += 2
-    elif "3 -" in responses[0]:
+    # Check mood (first question) - UPDATED to match frontend
+    if "1 -" in responses[0] or "I Feel Terrible" in responses[0]:  # Very bad
+        negative_count += 4
+    elif "2 -" in responses[0] or "I Feel Down" in responses[0]:  # Bad
+        negative_count += 3
+    elif "3 -" in responses[0] or "I Feel Neutral" in responses[0]:  # Neutral
         negative_count += 1
         
     # Check enjoyment (second question)
@@ -284,110 +294,134 @@ def assess_stress_level_manually(responses):
             
     # Check overwhelmed (question 7)
     if responses[6] in ["Often", "Always"]:
-        negative_count += 1
+        negative_count += 2
             
     # Check outlook (question 8)
     if responses[7] in ["Very negative", "Negative"]:
-        negative_count += 1
+        negative_count += 2
             
     # Check support (question 9)
     if responses[8] in ["Not at all", "A little"]:
         negative_count += 1
             
-    # Check thoughts (question 10)
+    # Check thoughts (question 10) - CRITICAL
     if responses[9] in ["Sometimes", "Often", "Always"]:
-        negative_count += 2
+        negative_count += 3
             
-    # Convert to stress level
-    if negative_count >= 9:
+    # Convert to stress level (4+ = depression)
+    if negative_count >= 13:
         return 5
+    elif negative_count >= 10:
+        return 4  # Depression threshold
     elif negative_count >= 7:
-        return 4
-    elif negative_count >= 5:
         return 3
-    elif negative_count >= 3:
+    elif negative_count >= 4:
         return 2
     else:
         return 1
 def get_stress_level_with_ollama_api(responses, selected_model='gemma3:4b'):
-    """Uses the Ollama API with the user-selected model"""
-    api_url = "http://127.0.0.1:11434/api/generate"
+    """Enhanced function to get stress level using Ollama API with better prompting"""
     
     # Map frontend model IDs to actual model names
     model_mapping = {
         'gemma': 'gemma3:4b',
-        'llama2': 'llama2:7b',
-        'qwen3': 'qwen3:1.7b'
+        'llama3.1': 'llama3.1:8b',
+        'qwen3': 'qwen3:1.7b',
+        'deepseek': 'deepseek-r1:7b'
     }
     
-    # Get the actual model name from mapping or use selected_model as is
+    # Get the actual model name
     model_to_use = model_mapping.get(selected_model, selected_model)
     
-    # Try the selected model first
-    models_to_try = [model_to_use]
-    
-    # Add fallback models in case the selected one fails
-    fallback_models = ["gemma3:4b", "qwen3:1.7b", "mistral:7b", "llama2:7b"]
-    for model in fallback_models:
-        if model != model_to_use:
-            models_to_try.append(model)
-            
-    # Prepare the prompt
-    prompt = (
-        "Given the following answers to a mental health assessment, "
-        "estimate the user's overall stress level on a scale from 1 (very low) to 5 (very high). "
-        "Only return the number (1-5) as your answer. Do not explain your reasoning. "
-        "Just provide a single digit from 1 to 5.\n\n"
-        "Answers:\n"
-    )
-    for i, (q, a) in enumerate(zip(assessment_questions, responses)):
-        prompt += f"{i+1}. {q['question']} Answer: {a}\n"
-    prompt += "\nStress level (1-5):"
+    # FIXED: Much simpler and more direct prompt
+    prompt = f"""You are a mental health assessment AI. Analyze these responses and return ONLY a number from 1 to 5.
 
-    # Try different models in order of preference
+RESPONSES:
+1. Mood: {responses[0]}
+2. Enjoying activities: {responses[1]}
+3. Sleep: {responses[2]}
+4. Energy: {responses[3]}
+5. Appetite: {responses[4]}
+6. Concentration: {responses[5]}
+7. Overwhelmed: {responses[6]}
+8. Outlook: {responses[7]}
+9. Support: {responses[8]}
+10. Harmful thoughts: {responses[9]}
+
+RULES:
+- "I Feel Terrible" or "I Feel Down" = Level 4 or 5
+- Multiple "Very poor" or "Poor" responses = Higher level
+- Any harmful thoughts = Minimum Level 4
+- "Often/Always" overwhelmed = Higher level
+
+Return ONLY the stress level number (1, 2, 3, 4, or 5). No explanation."""
+
+    # List of models to try (preferred first, then fallbacks)
+    models_to_try = [model_to_use, 'gemma3:4b', 'qwen3:1.7b', 'llama3.1:8b']
+    # Remove duplicates while preserving order
+    models_to_try = list(dict.fromkeys(models_to_try))
+    
     for model_name in models_to_try:
         try:
             logger.info(f"Trying stress assessment with model: {model_name}")
             
-            # Prepare the API request
-            payload = {
-                "model": model_name,
-                "prompt": prompt,
-                "stream": False,
-                "temperature": 0.1  # Low temperature for more deterministic output
-            }
+            response = requests.post(
+                'http://localhost:11434/api/generate',
+                json={
+                    'model': model_name,
+                    'prompt': prompt,
+                    'stream': False,
+                    'options': {
+                        'temperature': 0.0,    # Zero temperature for deterministic results
+                        'top_p': 0.1,          # Very focused responses
+                        'num_predict': 1,      # Only generate 1 token
+                        'stop': ['\n', '.', ' ', ',', ':', ';']  # Stop at any punctuation or space
+                    }
+                },
+                timeout=30
+            )
             
-            # Make the API request
-            response = requests.post(api_url, json=payload, timeout=30)
-            
-            # Check if request was successful
             if response.status_code == 200:
                 result = response.json()
-                output = result.get("response", "").strip()
-                logger.info(f"Model response: {output}")
+                stress_text = result.get('response', '').strip()
                 
-                # Extract the first digit 1-5 from the output
-                for c in output:
-                    if c in "12345":
-                        return int(c)
+                logger.info(f"Raw LLM response from {model_name}: '{stress_text}'")
                 
-                # If we got output but no valid number, try next model
-                logger.warning("No valid stress level found in response.")
+                # Enhanced parsing - extract only the first digit
+                import re
+                
+                # Look for the first digit 1-5 in the response
+                first_digit = re.search(r'[1-5]', stress_text)
+                
+                if first_digit:
+                    stress_level = int(first_digit.group())
+                    logger.info(f"Successfully parsed stress level: {stress_level} from '{stress_text}'")
+                    
+                    # Quick sanity check - if result seems reasonable, return it
+                    manual_level = assess_stress_level_manually(responses)
+                    if abs(stress_level - manual_level) <= 2:  # Allow reasonable difference
+                        return stress_level
+                    else:
+                        logger.warning(f"LLM result {stress_level} differs from manual {manual_level}, trying next model")
+                        continue
+                else:
+                    logger.warning(f"Could not parse any digit from: '{stress_text}'")
+                    
             else:
-                logger.error(f"API request failed with status code: {response.status_code}")
+                logger.error(f"API Error {response.status_code}: {response.text}")
                 
         except requests.exceptions.Timeout:
-            logger.error(f"Request to model {model_name} timed out.")
+            logger.error(f"Timeout with model {model_name}")
         except requests.exceptions.ConnectionError:
-            logger.error(f"Connection error. Is Ollama running at {api_url}?")
-            break  # Break the loop if Ollama is not running
+            logger.error(f"Connection error with model {model_name}")
         except Exception as e:
-            logger.error(f"Error with {model_name}: {e}")
+            logger.error(f"Unexpected error with {model_name}: {e}")
     
-    # If all models failed, use rule-based approach
-    logger.warning("Using rule-based assessment as fallback.")
-    return assess_stress_level_manually(responses)
-
+    # If all LLM attempts fail, use the manual assessment
+    logger.info("All LLM models failed, using manual assessment")
+    manual_result = assess_stress_level_manually(responses)
+    logger.info(f"Manual assessment result: {manual_result}")
+    return manual_result
 def get_personalized_advice_with_ollama(responses, stress_level, selected_model='gemma3:4b'):
     """Get personalized advice from Ollama based on user's specific responses"""
     api_url = "http://127.0.0.1:11434/api/generate"
@@ -436,8 +470,9 @@ IMPORTANT: Respond directly without showing your thought process. Don't use phra
 Just provide the advice in a caring, positive, and supportive tone. Use about 150-200 words."""
     model_mapping = {
         'gemma': 'gemma3:4b',
-        'llama2': 'llama2:7b',
-        'qwen3': 'qwen3:1.7b'
+        'llama3.1': 'llama3.1:8b',
+        'qwen3': 'qwen3:1.7b',
+        'deepseek' :'deepseek-r1:7b'
     }
     model_to_use = model_mapping.get(selected_model, selected_model)
     

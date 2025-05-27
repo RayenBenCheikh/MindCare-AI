@@ -69,7 +69,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 const token = await AsyncStorage.getItem("userToken");
                 const userDataString = await AsyncStorage.getItem("userData");
                 const welcomeComplete = await AsyncStorage.getItem('hasSeenWelcome');
-
                 // Check if token exists and is valid
                 if (token) {
                     if (isTokenExpired(token)) {
@@ -85,7 +84,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         }
                     }
                 }
-
+                // await AsyncStorage.clear(); // Clear any existing data
                 setHasSeenWelcome(welcomeComplete === 'true');
             } catch (e) {
                 console.error("Error loading auth state:", e);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
     View,
     Text,
@@ -8,22 +8,68 @@ import {
     Image,
     Dimensions
 } from 'react-native';
+import { AuthContext } from '@/src/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
-
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { HomeStackParamList } from '@/src/navigation/HomeNavigation';
+import { useNavigation } from '@react-navigation/native';
+type NavigationProp = NativeStackNavigationProp<HomeStackParamList>;
 const { width } = Dimensions.get('window');
-
 interface MindfulResourcesProps {
-    onSeeAllPress: () => void;
+
 }
 
-const MindfulResources = ({ onSeeAllPress }: MindfulResourcesProps) => {
+const MindfulResources = ({ }: MindfulResourcesProps) => {
     const [activeResourceIndex, setActiveResourceIndex] = useState(0);
+    const navigation = useNavigation<NavigationProp>();
+    const { userToken, userData } = useContext(AuthContext);
+    const resources = [
+        {
+            id: '1',
+            title: 'Will meditation help you get out from the rat race?',
+            category: 'Mental Health',
+            coverImage: 'https://images.unsplash.com/photo-1454944338482-a69bb95894af',
+            views: 5241,
+            likes: 987,
+            comments: 22,
+            author: userData?.name || 'Unknown Author' // Use connected user info
+        },
+        {
+            id: '2',
+            title: 'Finding peace in the chaos of modern life',
+            category: 'Mindfulness',
+            coverImage: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773',
+            views: 3450,
+            likes: 762,
+            comments: 18,
+            author: userData?.name || 'Unknown Author'
+        }
+    ];
+
+    const handleSeeAllPress = () => {
+        if (userToken) {
+            navigation.navigate('ArticleSelection');
+        } else {
+            // Handle case where user is not authenticated
+            console.log('User not authenticated, redirect to sign in');
+        }
+    };
+
+    const handleResourcePress = (resourceId: string) => {
+        if (userToken) {
+            navigation.navigate('ArticleDetail'); // Add articleId parameter
+        } else {
+            console.log('User not authenticated, redirect to sign in');
+        }
+    };
+
+
 
     return (
         <>
             <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Mindful Resources</Text>
-                <TouchableOpacity onPress={onSeeAllPress}>
+                <TouchableOpacity onPress={handleSeeAllPress}>
                     <Text style={styles.seeAllLink}>See All</Text>
                 </TouchableOpacity>
             </View>
@@ -39,38 +85,42 @@ const MindfulResources = ({ onSeeAllPress }: MindfulResourcesProps) => {
                 }}
                 scrollEventThrottle={16}
             >
-                {[1, 2].map((num) => (
-                    <View key={num} style={styles.resourceCard}>
+                {resources.map((resource, index) => (
+                    <TouchableOpacity
+                        key={resource.id}
+                        style={styles.resourceCard}
+                        onPress={() => handleResourcePress(resource.id)}
+                    >
                         <Image
-                            source={{ uri: 'https://images.unsplash.com/photo-1454944338482-a69bb95894af' }}
+                            source={{ uri: resource.coverImage }}
                             style={styles.resourceImage}
                         />
                         <View style={styles.resourceContent}>
-                            <Text style={styles.resourceCategory}>Mental Health</Text>
+                            <Text style={styles.resourceCategory}>{resource.category}</Text>
                             <Text style={styles.resourceTitle}>
-                                Will meditation help you get out from the rat race?
+                                {resource.title}
                             </Text>
                             <View style={styles.resourceStats}>
                                 <View style={styles.statItem}>
                                     <Ionicons name="eye-outline" size={14} color="#8B7B73" />
-                                    <Text style={styles.statText}>5,241</Text>
+                                    <Text style={styles.statText}>{resource.views.toLocaleString()}</Text>
                                 </View>
                                 <View style={styles.statItem}>
                                     <Ionicons name="heart-outline" size={14} color="#8B7B73" />
-                                    <Text style={styles.statText}>987</Text>
+                                    <Text style={styles.statText}>{resource.likes.toLocaleString()}</Text>
                                 </View>
                                 <View style={styles.statItem}>
                                     <Ionicons name="chatbubble-outline" size={14} color="#8B7B73" />
-                                    <Text style={styles.statText}>22</Text>
+                                    <Text style={styles.statText}>{resource.comments}</Text>
                                 </View>
                             </View>
                         </View>
-                    </View>
+                    </TouchableOpacity>
                 ))}
             </ScrollView>
 
             <View style={styles.resourcePaginationContainer}>
-                {[0, 1, 2, 3].map((index) => (
+                {resources.map((_, index) => (
                     <View
                         key={index}
                         style={[

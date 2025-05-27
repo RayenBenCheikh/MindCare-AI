@@ -5,6 +5,7 @@ import cv2
 import os
 import logging
 import json
+import requests
 import sys
 from flask_cors import CORS
 from Chatbot import chatbot_bp

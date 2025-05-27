@@ -8,16 +8,16 @@ export const authEvents = new EventEmitter();
 
 // API URLs remain the same
 export const API_URLS = {
-  local: "http://192.168.1.4:5000",
+  local: "http://10.6.68.72:5000",
   android: "http://10.0.2.2:5000",
-  ios: "http://192.168.1.4:5000",
+  ios: "http://10.6.68.72:5000",
   production: "https://api.mindcare-ai.com",
 };
 
 export const VITAL_SIGNS_URLS = {
-  local: "http://192.168.1.4:5001",
+  local: "http://10.6.68.72:5001",
   android: "http://10.0.2.2:5001",
-  ios: "http://192.168.1.4:5001",
+  ios: "http://10.6.68.72:5001",
   production: "https://vitals.mindcare-ai.com",
 };
 

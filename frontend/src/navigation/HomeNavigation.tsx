@@ -4,11 +4,15 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Chatbot from "../screens/Home/Chatbot";
 import Conversations from "../components/home/chat/Conversation";
 import LLMSettings from "../components/home/chat/LLMSettings";
+import ArticleSelection from "../screens/Article/ArticleSelection";
+import ArticleDetail from "../screens/Article/ArticleDetail";
 export type HomeStackParamList = {
     home: undefined;
     Chatbot: { conversationId?: string };
     conversation: undefined;
     settings: undefined;
+    ArticleSelection: undefined;
+    ArticleDetail: undefined;
 }
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -36,6 +40,16 @@ const HomeNavigator = () => {
                 name="settings"
                 component={LLMSettings}
                 options={{ headerShown: false }} />
+            <Stack.Screen
+                name="ArticleSelection"
+                component={ArticleSelection}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="ArticleDetail"
+                component={ArticleDetail}
+                options={{ headerShown: false }}
+            />
         </Stack.Navigator>
     );
 }

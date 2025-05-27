@@ -179,7 +179,6 @@ const Home = () => {
 
                 {/* Mindful Resources Component */}
                 <MindfulResources
-                    onSeeAllPress={handleSeeAllResources}
                 />
 
                 {/* Bottom spacing */}

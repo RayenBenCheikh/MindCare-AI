@@ -29,6 +29,11 @@ const LLM_OPTIONS = [
         name: 'qwen3:1.7b',
         description: 'Alibaba\'s compact model with excellent efficiency and multilingual support'
     },
+    {
+        id: 'deepseek',
+        name: 'deepseek-r1:7b',
+        description: 'DeepSeek\'s model designed for high-quality responses and fast inference'
+    }
 ];
 
 const LLMSettings = () => {

@@ -20,6 +20,7 @@ import axios from 'axios';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '@/src/navigation/HomeNavigation';
 import { AuthContext } from '@/src/context/AuthContext';
+import CourseAPI, { Course } from '@/src/service/CourseAPI';
 
 type NavigationProp = NativeStackNavigationProp<HomeStackParamList, 'ArticleDetail'>;
 
@@ -33,7 +34,7 @@ interface Resource {
     id: string;
     title: string;
     description: string;
-    type: 'meditation' | 'sleep' | 'music' | 'article';
+    type: 'meditation' | 'sleep' | 'music' | 'article' | 'course';
     category: string;
     coverImage: string;
     duration?: number; // in minutes
@@ -399,22 +400,57 @@ const ArticleSelection: React.FC = () => {
             allResources.push(...wellnessContent);
             console.log(`Added ${wellnessContent.length} curated wellness articles`);
 
-            // 3. COMBINE AND SORT ALL CONTENT
+            // 3. FETCH COURSES (if courses tab is active)
+            if (activeTab === 'courses' || activeTab === 'resources') {
+                try {
+                    console.log('Fetching courses...');
+                    const courses = await CourseAPI.fetchAllCourses();
+
+                    // Convert courses to resources format
+                    const courseResources: Resource[] = courses.map(course => ({
+                        id: course.id,
+                        title: course.title,
+                        description: course.description,
+                        type: 'course' as const,
+                        category: course.category,
+                        coverImage: course.thumbnail,
+                        duration: course.duration * 60, // Convert hours to minutes
+                        author: {
+                            name: course.instructor,
+                            image: 'https://randomuser.me/api/portraits/men/32.jpg'
+                        },
+                        isPremium: course.isPremium,
+                        likes: Math.floor(course.enrollments / 10),
+                        views: course.enrollments,
+                        rating: course.rating,
+                        url: course.videoUrl
+                    }));
+
+                    allResources.push(...courseResources);
+                    setCourses(courseResources);
+                    console.log(`Loaded ${courses.length} courses`);
+                } catch (courseError) {
+                    console.error('Course API failed:', courseError);
+                }
+            }
+
+            // 4. COMBINE AND SORT ALL CONTENT
             if (allResources.length > 0) {
                 // Shuffle content to mix news and wellness articles
                 const shuffledResources = shuffleArray(allResources);
 
                 const articlesData = shuffledResources.filter(item => item.type === 'article');
+                const coursesData = shuffledResources.filter(item => item.type === 'course');
                 const featured = shuffledResources.find(item => item.category === 'meditation') || shuffledResources[0];
 
                 setResources(shuffledResources);
                 setArticles(articlesData);
-                setCourses([]); // You can add meditation courses later
+                setCourses(coursesData);
                 setFeaturedResource(featured);
 
-                console.log(`Successfully loaded ${allResources.length} total articles (News + Wellness)`);
+                console.log(`Successfully loaded ${allResources.length} total resources (Articles + Courses + Wellness)`);
             } else {
-                console.log('No articles loaded, using mock data');
+                console.log('No resources loaded, using mock data');
                 loadMockData();
             }
 
@@ -425,13 +461,17 @@ const ArticleSelection: React.FC = () => {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [userToken, userData]);
+    }, [userToken, userData, activeTab]);
 
     // Handle resource press
     const handleResourcePress = (resource: Resource) => {
         if (resource.url && resource.id.startsWith('news_')) {
             // External news article - open in browser
             console.log('Opening external article:', resource.url);
+            Linking.openURL(resource.url);
+        } else if (resource.url && resource.id.startsWith('youtube_')) {
+            // YouTube course - open in browser
+            console.log('Opening YouTube course:', resource.url);
             Linking.openURL(resource.url);
         } else {
             // Local wellness content - navigate to detail page with articleId
@@ -523,6 +563,13 @@ const ArticleSelection: React.FC = () => {
                         <Text style={styles.premiumText}>PRO</Text>
                     </View>
                 )}
+
+                {/* Show course/article type badge */}
+                <View style={styles.typeBadge}>
+                    <Text style={styles.typeText}>
+                        {item.type === 'course' ? 'COURSE' : 'ARTICLE'}
+                    </Text>
+                </View>
             </View>
         </TouchableOpacity>
     );
@@ -788,6 +835,7 @@ const styles = StyleSheet.create({
     resourceInfo: {
         flex: 1,
         padding: 12,
+        position: 'relative',
     },
     resourceTitle: {
         fontSize: 16,
@@ -831,6 +879,20 @@ const styles = StyleSheet.create({
     },
     premiumText: {
         fontSize: 10,
+        fontWeight: 'bold',
+        color: '#FFF',
+    },
+    typeBadge: {
+        position: 'absolute',
+        top: 8,
+        right: 70,
+        backgroundColor: '#6A8D73',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 6,
+    },
+    typeText: {
+        fontSize: 9,
         fontWeight: 'bold',
         color: '#FFF',
     },

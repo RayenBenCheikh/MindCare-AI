@@ -17,7 +17,7 @@ import { API_ENDPOINTS } from '@/src/constants/const';
 import { useNavigation } from '@react-navigation/native';
 import { api, setAuthToken } from '@/src/api/config';
 import { isTokenExpired } from '@/src/api/config';
-
+import MindfulMusic from '@/src/components/home/MindfulMusic';
 import { HomeStackParamList } from '@/src/navigation/HomeNavigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AIChatbot from '@/src/components/home/chat/AIChatBot';
@@ -180,6 +180,7 @@ const Home = () => {
                 {/* Mindful Resources Component */}
                 <MindfulResources
                 />
+                <MindfulMusic />
 
                 {/* Bottom spacing */}
                 <View style={{ height: 100 }} />

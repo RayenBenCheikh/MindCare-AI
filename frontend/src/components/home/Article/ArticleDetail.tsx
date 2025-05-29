@@ -22,6 +22,7 @@ interface ArticleDetailProps {
     route: {
         params: {
             articleId: string;
+            articleUrl?: string;
         }
     }
 }
@@ -51,8 +52,12 @@ interface ArticleDetail {
 
 const ArticleDetail: React.FC = () => {
     const route = useRoute();
-    const { articleId } = route.params as { articleId: string };
+    const { articleId, articleUrl } = route.params as {
+        articleId: string;
+        articleUrl?: string;
+    };
     const navigation = useNavigation();
+
 
     // Get authenticated user data
     const { userToken, userData } = useContext(AuthContext);
@@ -398,11 +403,10 @@ const ArticleDetail: React.FC = () => {
             setLoading(true);
             setError(null);
 
-            // Check if it's an external news article
-            if (articleId.startsWith('news_')) {
+            // Check if it's an external news article with URL
+            if (articleId.startsWith('news_') && articleUrl) {
                 // For external articles, we might not have full content
-                // In a real app, you might want to fetch from your backend
-                // For now, show an error or redirect to external URL
+                // Show an error or redirect to external URL
                 setError('This article is available on an external website');
                 setLoading(false);
                 return;
@@ -421,7 +425,7 @@ const ArticleDetail: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [articleId, userToken, userData]);
+    }, [articleId, articleUrl, userToken, userData]);
 
     // Share the article
     const handleShare = async () => {
@@ -456,17 +460,27 @@ const ArticleDetail: React.FC = () => {
         fetchArticleDetail();
     }, [fetchArticleDetail]);
 
-    if (!userToken) {
+    if (error || !article) {
         return (
             <View style={styles.errorContainer}>
-                <Icon name="account-alert" size={64} color="#F28482" />
-                <Text style={styles.errorText}>Please sign in to view articles</Text>
+                <Icon name="alert-circle-outline" size={64} color="#F28482" />
+                <Text style={styles.errorText}>{error || 'Article not found'}</Text>
                 <TouchableOpacity
                     style={styles.retryButton}
-                    onPress={() => navigation.goBack()}
+                    onPress={fetchArticleDetail}
                 >
-                    <Text style={styles.retryButtonText}>Go Back</Text>
+                    <Text style={styles.retryButtonText}>Try Again</Text>
                 </TouchableOpacity>
+                {articleId.startsWith('news_') && articleUrl && (
+                    <TouchableOpacity
+                        style={[styles.retryButton, { backgroundColor: '#007AFF', marginTop: 12 }]}
+                        onPress={() => {
+                            Linking.openURL(articleUrl);
+                        }}
+                    >
+                        <Text style={styles.retryButtonText}>Read on Original Site</Text>
+                    </TouchableOpacity>
+                )}
             </View>
         );
     }

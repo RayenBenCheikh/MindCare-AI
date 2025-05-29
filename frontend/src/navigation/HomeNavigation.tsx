@@ -4,15 +4,20 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Chatbot from "../screens/Home/Chatbot";
 import Conversations from "../components/home/chat/Conversation";
 import LLMSettings from "../components/home/chat/LLMSettings";
-import ArticleSelection from "../screens/Article/ArticleSelection";
-import ArticleDetail from "../screens/Article/ArticleDetail";
+import ArticleSelection from "../components/home/Article/ArticleSelection";
+import ArticleDetail from "../components/home/Article/ArticleDetail";
+import MusicSelection from "../components/home/Music/MusicSelection";
 export type HomeStackParamList = {
     home: undefined;
     Chatbot: { conversationId?: string };
     conversation: undefined;
     settings: undefined;
     ArticleSelection: undefined;
-    ArticleDetail: undefined;
+    ArticleDetail: {
+        articleId: string;
+        articleUrl?: string; // Optional for external articles
+    };
+    MusicSelection: undefined;
 }
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -49,6 +54,14 @@ const HomeNavigator = () => {
                 name="ArticleDetail"
                 component={ArticleDetail}
                 options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="MusicSelection"
+                component={MusicSelection}
+                options={{
+                    headerShown: false,
+                    title: 'Music Library'
+                }}
             />
         </Stack.Navigator>
     );

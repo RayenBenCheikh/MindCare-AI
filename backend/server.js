@@ -8,7 +8,7 @@ import chatbotRoutes from './routes/ChatbotRoutes.js';
 import userRoutes from "./routes/userRoutes.js";
 import medicationRoutes from './routes/MedicationRoutes.js';
 import assessmentRoutes from './routes/AssessmentRoutes.js';
-
+import musicRoutes from './routes/MusicRoutes.js';
 // Initialize app and config
 const app = express();
 dotenv.config();
@@ -68,6 +68,7 @@ app.use("/api/auth", userRoutes);
 app.use('/api/assessments', assessmentRoutes);
 app.use('/api/medications', medicationRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/music', musicRoutes);
 // MongoDB connection and server start
 mongoose
   .connect(env.MONGO_URI, {

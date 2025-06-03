@@ -9,18 +9,27 @@ import {
     TextInput,
     ActivityIndicator,
     RefreshControl,
-    Linking,
-    Alert
+    Alert,
+
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '@/src/context/AuthContext';
-import SpotifyAPI, { MusicTrack } from '@/src/service/SpotifyApi';
+import LocalMusicAPI, { MusicTrack } from '@/src/service/MusicApi';
 import MusicPlayer from './CustomAudio';
 import Modal from 'react-native-modal'; // You may need to install this: npm install react-native-modal
-
+import { API_BASE_URL } from '@/src/api/config';
+interface MusicSelectionProps {
+    route?: {
+        params?: {
+            selectedTrack?: MusicTrack;
+            autoPlay?: boolean;
+            existingTracks?: MusicTrack[];
+        };
+    };
+}
 const MUSIC_CATEGORIES = [
     { id: 'all', name: 'All', color: '#8DAA6D', icon: 'musical-notes-outline' },
     { id: 'meditation', name: 'Meditation', color: '#8DAA6D', icon: 'flower-outline' },
@@ -31,7 +40,7 @@ const MUSIC_CATEGORIES = [
     { id: 'stress', name: 'Stress', color: '#BD8C61', icon: 'pulse-outline' },
 ];
 
-const MusicSelection: React.FC = () => {
+const MusicSelection: React.FC<MusicSelectionProps> = ({ route }) => {
     const { userToken } = useContext(AuthContext);
     const [musicTracks, setMusicTracks] = useState<MusicTrack[]>([]);
     const [filteredTracks, setFilteredTracks] = useState<MusicTrack[]>([]);
@@ -40,10 +49,16 @@ const MusicSelection: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedTrack, setSelectedTrack] = useState<MusicTrack | null>(null);
     const [isPlayerVisible, setIsPlayerVisible] = useState(false);
-
+    const [showMusicPlayer, setShowMusicPlayer] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
-    const [activeTab, setActiveTab] = useState<'all' | 'tracks' | 'playlists'>('all');
+    const [activeTab, setActiveTab] = useState<'all' | 'tracks'>('all');
     const navigation = useNavigation();
+
+    // Check for passed data
+    const passedTracks = route?.params?.existingTracks;
+    const passedSelectedTrack = route?.params?.selectedTrack;
+    const shouldAutoPlay = route?.params?.autoPlay;
+
 
     // Helper functions
     const formatDuration = (seconds: number): string => {
@@ -64,69 +79,64 @@ const MusicSelection: React.FC = () => {
 
     // Fetch music function
     const fetchMusic = useCallback(async () => {
-        if (!userToken) {
-            setLoading(false);
-            return;
-        }
-
         try {
             setLoading(true);
-            console.log('MusicSelection: Fetching all music tracks...');
+            console.log('MusicSelection: Fetching music from local database...');
 
-            // Fetch from Spotify only
-            const tracks = await SpotifyAPI.fetchWellnessMusic();
+            // If we have passed tracks, use them instead of fetching
+            if (passedTracks && passedTracks.length > 0) {
+                console.log(`MusicSelection: Using passed tracks (${passedTracks.length} tracks)`);
+                setMusicTracks(passedTracks);
+                return;
+            }
+
+            // Otherwise fetch from API
+            const tracks = await LocalMusicAPI.fetchWellnessMusic();
             setMusicTracks(tracks);
             console.log(`MusicSelection: Loaded ${tracks.length} total tracks`);
 
         } catch (error) {
             console.error('MusicSelection: Error fetching music:', error);
             setMusicTracks([]);
-            Alert.alert('Error', 'Failed to load music. Please try again.');
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [userToken]);
+    }, [userToken, passedTracks]);
 
-    // Filter music based on search and category
-    const filterMusic = useCallback(() => {
-        let filtered = musicTracks;
-
-        // Filter by search query
-        if (searchQuery.trim()) {
-            filtered = filtered.filter(track =>
-                track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                track.artist.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                track.album.toLowerCase().includes(searchQuery.toLowerCase())
-            );
+    // Handle auto-play when component mounts
+    useEffect(() => {
+        if (passedSelectedTrack && shouldAutoPlay) {
+            console.log('MusicSelection: Auto-playing passed track:', passedSelectedTrack.title);
+            setSelectedTrack(passedSelectedTrack);
+            setIsPlayerVisible(true);
         }
+    }, [passedSelectedTrack, shouldAutoPlay]);
+
+    useEffect(() => {
+        let filtered = musicTracks;
 
         // Filter by category
         if (selectedCategory !== 'all') {
             filtered = filtered.filter(track => track.category === selectedCategory);
         }
 
-        // Filter by type (tab)
-        if (activeTab !== 'all') {
-            filtered = filtered.filter(track => {
-                if (activeTab === 'tracks') return track.type === 'track';
-                if (activeTab === 'playlists') return track.type === 'playlist';
-                return true;
-            });
+        // Filter by search query
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(track =>
+                track.title.toLowerCase().includes(query) ||
+                track.artist.toLowerCase().includes(query) ||
+                track.album.toLowerCase().includes(query)
+            );
         }
 
+        console.log(`🎵 MusicSelection: Filtered ${filtered.length} tracks from ${musicTracks.length} total`);
+        console.log('🎵 Selected category:', selectedCategory);
+        console.log('🎵 Search query:', searchQuery);
+
         setFilteredTracks(filtered);
-    }, [musicTracks, searchQuery, selectedCategory, activeTab]);
-
-    // Apply filters when dependencies change
-    useEffect(() => {
-        filterMusic();
-    }, [filterMusic]);
-
-    // Load music when component mounts
-    useEffect(() => {
-        fetchMusic();
-    }, [fetchMusic]);
+    }, [musicTracks, selectedCategory, searchQuery]);
 
     // Refresh when screen comes into focus
     useFocusEffect(
@@ -139,14 +149,28 @@ const MusicSelection: React.FC = () => {
 
     // Handle music press
     const handleMusicPress = (track: MusicTrack) => {
-        console.log('Selected track:', track.title);
-        setSelectedTrack(track);
-        setIsPlayerVisible(true);
+        if (userToken) {
+            console.log('🎵 Playing track:', track.title);
+
+            // Create the track with streaming URL
+            const trackWithStreamUrl = {
+                ...track,
+                previewUrl: `${API_BASE_URL}/api/music/stream/${track.id}`
+            };
+
+            setSelectedTrack(trackWithStreamUrl);
+            setShowMusicPlayer(true);
+        } else {
+            console.log('User not authenticated, redirect to sign in');
+            Alert.alert('Authentication Required', 'Please sign in to play music.');
+        }
     };
+
 
     // Add this function to close the player
     const handleClosePlayer = () => {
-        setIsPlayerVisible(false);
+        setShowMusicPlayer(false);
+        setSelectedTrack(null);
     };
 
     // Handle refresh
@@ -181,15 +205,9 @@ const MusicSelection: React.FC = () => {
             <View style={styles.musicInfo}>
                 <View style={styles.musicHeader}>
                     <Text style={styles.musicTitle} numberOfLines={2}>{item.title}</Text>
-                    <View style={[
-                        styles.typeBadge,
-                        { backgroundColor: item.type === 'playlist' ? '#1DB954' : '#FF6B6B' }
-                    ]}>
-                        <Text style={styles.typeText}>
-                            {item.type === 'playlist' ? 'PLAYLIST' : 'TRACK'}
-                        </Text>
+                    <View style={[styles.typeBadge, { backgroundColor: '#FF6B6B' }]}>
+                        <Text style={styles.typeText}>TRACK</Text>
                     </View>
-
                 </View>
 
                 <Text style={styles.musicArtist} numberOfLines={1}>{item.artist}</Text>
@@ -250,22 +268,12 @@ const MusicSelection: React.FC = () => {
                     All ({musicTracks.length})
                 </Text>
             </TouchableOpacity>
-
             <TouchableOpacity
                 style={[styles.tab, activeTab === 'tracks' && styles.activeTab]}
                 onPress={() => setActiveTab('tracks')}
             >
                 <Text style={[styles.tabText, activeTab === 'tracks' && styles.activeTabText]}>
-                    Tracks ({musicTracks.filter(t => t.type === 'track').length})
-                </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                style={[styles.tab, activeTab === 'playlists' && styles.activeTab]}
-                onPress={() => setActiveTab('playlists')}
-            >
-                <Text style={[styles.tabText, activeTab === 'playlists' && styles.activeTabText]}>
-                    Playlists ({musicTracks.filter(t => t.type === 'playlist').length})
+                    Tracks ({musicTracks.length})
                 </Text>
             </TouchableOpacity>
         </View>
@@ -389,15 +397,12 @@ const MusicSelection: React.FC = () => {
                 </View>
             )}
             <Modal
-                isVisible={isPlayerVisible}
-                onBackdropPress={handleClosePlayer}
-                onBackButtonPress={handleClosePlayer}
-                swipeDirection={['down']}
-                onSwipeComplete={handleClosePlayer}
-                style={styles.playerModal}
-                backdropOpacity={0.5}
+                isVisible={showMusicPlayer}
                 animationIn="slideInUp"
                 animationOut="slideOutDown"
+                onBackdropPress={handleClosePlayer}
+                onSwipeComplete={handleClosePlayer}
+                swipeDirection="down"
             >
                 {selectedTrack && (
                     <MusicPlayer

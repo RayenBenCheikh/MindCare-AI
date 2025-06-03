@@ -16,7 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '@/src/navigation/HomeNavigation';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import SpotifyAPI, { MusicTrack } from '@/src/service/SpotifyApi';
+import LocalMusicAPI, { MusicTrack } from '@/src/service/MusicApi';
+import { API_BASE_URL } from '@/src/api/config';
 
 type NavigationProp = NativeStackNavigationProp<HomeStackParamList>;
 const { width } = Dimensions.get('window');
@@ -69,44 +70,66 @@ const MindfulMusic = ({ }: MindfulMusicProps) => {
     };
 
     // Fetch music tracks function
-    const fetchMusicTracks = useCallback(async () => {
-        if (!userToken) {
-            setLoading(false);
-            return;
-        }
-
+    const fetchMusic = useCallback(async () => {
         try {
             setLoading(true);
-            console.log('MusicSelection: Fetching all music tracks...');
+            console.log('🎵 MindfulMusic: Starting fetch process...');
+            console.log('🎵 API Base URL:', API_BASE_URL);
 
-            // Fetch from Spotify only
-            const tracks = await SpotifyAPI.fetchWellnessMusic();
+            // First test if backend is reachable
+            console.log('🎵 Testing backend connection...');
+            const isConnected = await LocalMusicAPI.testConnection();
+
+            if (!isConnected) {
+                console.error('🎵 Backend connection failed');
+                Alert.alert(
+                    'Connection Error',
+                    'Cannot connect to the music service. Please check your network connection and try again.'
+                );
+                setMusicTracks([]);
+                return;
+            }
+
+            console.log('🎵 Backend connection successful, fetching music...');
+
+            // Fetch from your local database
+            const tracks = await LocalMusicAPI.fetchWellnessMusic();
+            console.log('🎵 MindfulMusic: Raw response:', tracks);
+            console.log('🎵 MindfulMusic: Response type:', typeof tracks);
+            console.log('🎵 MindfulMusic: Is array:', Array.isArray(tracks));
+
+            if (!tracks || !Array.isArray(tracks)) {
+                console.error('🎵 Invalid response format');
+                setMusicTracks([]);
+                return;
+            }
+
             setMusicTracks(tracks);
-            console.log(`MusicSelection: Loaded ${tracks.length} total tracks`);
+            console.log(`🎵 MindfulMusic: Successfully set ${tracks.length} tracks in state`);
+
+            if (tracks.length === 0) {
+                console.warn('🎵 No tracks returned from API');
+            }
 
         } catch (error) {
-            console.error('MusicSelection: Error fetching music:', error);
+            console.error('❌ MindfulMusic: Error fetching music:', error);
+            console.error('❌ Error details:', error instanceof Error ? error.message : String(error));
             setMusicTracks([]);
-            Alert.alert('Error', 'Failed to load music. Please try again.');
+
+            Alert.alert(
+                'Error',
+                'Failed to load music. Please try again later.'
+            );
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
     }, [userToken]);
 
-    // Load music tracks when component mounts
+    // Add useEffect to fetch music when component mounts
     useEffect(() => {
-        fetchMusicTracks();
-    }, [fetchMusicTracks]);
-
-    // Refresh when screen comes into focus
-    useFocusEffect(
-        useCallback(() => {
-            if (userToken) {
-                fetchMusicTracks();
-            }
-        }, [fetchMusicTracks, userToken])
-    );
+        fetchMusic();
+    }, [fetchMusic]);
 
     const handleSeeAllPress = () => {
         if (userToken) {
@@ -118,14 +141,17 @@ const MindfulMusic = ({ }: MindfulMusicProps) => {
 
     const handleMusicPress = (track: MusicTrack) => {
         if (userToken) {
-            // Open Spotify URL
-            Linking.openURL(track.spotifyUrl).catch(err => {
-                console.error('Error opening Spotify URL:', err);
-                // Fallback to web URL if app is not installed
-                Linking.openURL(`https://open.spotify.com/track/${track.id}`);
+            console.log('🎵 Playing track:', track.title);
+
+            // Pass the current music tracks to avoid re-fetching
+            navigation.navigate('MusicSelection' as any, {
+                selectedTrack: track,
+                autoPlay: true,
+                existingTracks: musicTracks // Pass existing tracks
             });
         } else {
             console.log('User not authenticated, redirect to sign in');
+            Alert.alert('Authentication Required', 'Please sign in to play music.');
         }
     };
 
@@ -223,7 +249,7 @@ const MindfulMusic = ({ }: MindfulMusicProps) => {
 
                             {/* Spotify logo */}
                             <View style={styles.spotifyBadge}>
-                                <Text style={styles.spotifyText}>🎵 Spotify</Text>
+                                <Text style={styles.spotifyText}>🎵 Jamendo</Text>
                             </View>
                         </View>
                     </TouchableOpacity>

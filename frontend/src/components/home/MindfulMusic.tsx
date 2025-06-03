@@ -8,7 +8,8 @@ import {
     Image,
     Dimensions,
     ActivityIndicator,
-    Linking
+    Linking,
+    Alert
 } from 'react-native';
 import { AuthContext } from '@/src/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,7 +29,7 @@ const MindfulMusic = ({ }: MindfulMusicProps) => {
     const [loading, setLoading] = useState(true);
     const navigation = useNavigation<NavigationProp>();
     const { userToken, userData } = useContext(AuthContext);
-
+    const [refreshing, setRefreshing] = useState(false);
     // Helper function to format duration
     const formatDuration = (seconds: number): string => {
         const minutes = Math.floor(seconds / 60);
@@ -76,30 +77,20 @@ const MindfulMusic = ({ }: MindfulMusicProps) => {
 
         try {
             setLoading(true);
-            console.log('MindfulMusic: Starting to fetch music tracks...');
+            console.log('MusicSelection: Fetching all music tracks...');
 
-            // Fetch wellness music from Spotify API
+            // Fetch from Spotify only
             const tracks = await SpotifyAPI.fetchWellnessMusic();
-
-            // Limit to 6 tracks for home page display
-            const limitedTracks = tracks.slice(0, 6);
-
-            setMusicTracks(limitedTracks);
-            console.log(`MindfulMusic: Successfully loaded ${limitedTracks.length} music tracks`);
+            setMusicTracks(tracks);
+            console.log(`MusicSelection: Loaded ${tracks.length} total tracks`);
 
         } catch (error) {
-            console.error('MindfulMusic: Error fetching music tracks:', error);
-            // Fallback to curated music only
-            try {
-                const curatedTracks = SpotifyAPI.generateCuratedMusic();
-                setMusicTracks(curatedTracks.slice(0, 6));
-                console.log('MindfulMusic: Loaded curated music as fallback');
-            } catch (fallbackError) {
-                console.error('MindfulMusic: Even curated music failed:', fallbackError);
-                setMusicTracks([]);
-            }
+            console.error('MusicSelection: Error fetching music:', error);
+            setMusicTracks([]);
+            Alert.alert('Error', 'Failed to load music. Please try again.');
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     }, [userToken]);
 

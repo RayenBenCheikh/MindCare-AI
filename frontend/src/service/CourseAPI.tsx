@@ -20,7 +20,6 @@ interface Course {
 class CourseAPI {
     private static readonly UDEMY_CLIENT_ID = 'your_udemy_client_id';
     private static readonly UDEMY_CLIENT_SECRET = 'your_udemy_client_secret';
-    private static readonly YOUTUBE_API_KEY = 'AIzaSyC7eJ5j3zOoKmoI6txIYNDuwCaLlg2LX04';
 
     // 1. UDEMY COURSES
     static async fetchUdemyCourses(category: string): Promise<Course[]> {
@@ -61,52 +60,9 @@ class CourseAPI {
     }
 
     // 2. YOUTUBE COURSES
-    static async fetchYouTubeCourses(category: string): Promise<Course[]> {
-        try {
-            const searchQueries = {
-                stress: 'stress management course meditation',
-                anxiety: 'anxiety relief techniques mindfulness',
-                sleep: 'sleep hygiene course insomnia help',
-                focus: 'focus concentration training mindfulness',
-                meditation: 'meditation course beginners mindfulness'
-            };
-
-            const query = searchQueries[category as keyof typeof searchQueries] || `${category} wellness course`;
-
-            const response = await axios.get('https://www.googleapis.com/youtube/v3/search', {
-                params: {
-                    key: this.YOUTUBE_API_KEY,
-                    q: query,
-                    part: 'snippet',
-                    type: 'video',
-                    duration: 'long', // Only long videos (courses)
-                    order: 'relevance',
-                    maxResults: 15,
-                    videoDuration: 'long'
-                }
-            });
-
-            return response.data.items.map((video: any) => ({
-                id: `youtube_${video.id.videoId}`,
-                title: video.snippet.title,
-                description: video.snippet.description,
-                instructor: video.snippet.channelTitle,
-                duration: 1, // Will need to fetch from video details
-                category: this.categorizeContent(video.snippet.title),
-                level: 'beginner',
-                price: 0,
-                rating: 4.0 + Math.random(),
-                enrollments: Math.floor(Math.random() * 10000),
-                thumbnail: video.snippet.thumbnails.high.url,
-                videoUrl: `https://www.youtube.com/watch?v=${video.id.videoId}`,
-                isPremium: false,
-                skills: []
-            }));
-        } catch (error) {
-            console.error('YouTube API Error:', error);
-            return [];
-        }
-    }
+    // static async fetchYouTubeCourses(category: string): Promise<Course[]> {
+    //     // ...all code inside...
+    // }
 
     // 3. CURATED WELLNESS COURSES
     static generateWellnessCourses(): Course[] {
@@ -204,9 +160,7 @@ class CourseAPI {
                     // const udemyCourses = await this.fetchUdemyCourses(category);
                     // allCourses.push(...udemyCourses);
 
-                    // Fetch YouTube courses
-                    const youtubeCourses = await this.fetchYouTubeCourses(category);
-                    allCourses.push(...youtubeCourses.slice(0, 3)); // Limit per category
+                    // YouTube API call removed
                 } catch (error) {
                     console.error(`Error fetching ${category} courses:`, error);
                 }

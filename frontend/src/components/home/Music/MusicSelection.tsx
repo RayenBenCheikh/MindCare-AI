@@ -73,23 +73,15 @@ const MusicSelection: React.FC = () => {
             setLoading(true);
             console.log('MusicSelection: Fetching all music tracks...');
 
-            // Fetch more comprehensive music collection
+            // Fetch from Spotify only
             const tracks = await SpotifyAPI.fetchWellnessMusic();
             setMusicTracks(tracks);
             console.log(`MusicSelection: Loaded ${tracks.length} total tracks`);
 
         } catch (error) {
             console.error('MusicSelection: Error fetching music:', error);
-            // Fallback to curated content
-            try {
-                const curatedTracks = SpotifyAPI.generateCuratedMusic();
-                setMusicTracks(curatedTracks);
-                console.log('MusicSelection: Using curated music as fallback');
-            } catch (fallbackError) {
-                console.error('MusicSelection: Fallback failed:', fallbackError);
-                setMusicTracks([]);
-                Alert.alert('Error', 'Failed to load music. Please try again.');
-            }
+            setMusicTracks([]);
+            Alert.alert('Error', 'Failed to load music. Please try again.');
         } finally {
             setLoading(false);
             setRefreshing(false);

@@ -1,6 +1,7 @@
 import { colors, images } from '@/src/theme';
 import React, { useContext } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { Svg, Path } from 'react-native-svg';
 
 import { AuthContext } from '@/src/context/AuthContext';
 import { commonWelcomeStyles } from '@/src/theme/style';
@@ -47,7 +48,17 @@ const WelcomeScreen6 = () => {
 
         {/* Navigation Button */}
         <View style={styles.buttonContainer}>
-          <NextButton onPress={handleComplete} />
+          <TouchableOpacity 
+            style={styles.navButton} 
+            onPress={async () => {
+              await completeWelcome();
+              navigation.navigate('SignIn');
+            }}
+          >
+            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <Path d="M9 6 L15 12 L9 18" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
+          </TouchableOpacity>
         </View>
       </View>
     </View>

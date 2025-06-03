@@ -3,7 +3,6 @@ import {
     View,
     Text,
     StyleSheet,
-    ScrollView,
     TouchableOpacity,
     Image,
     TextInput,
@@ -20,7 +19,7 @@ import axios from 'axios';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '@/src/navigation/HomeNavigation';
 import { AuthContext } from '@/src/context/AuthContext';
-import CourseAPI, { Course } from '@/src/service/CourseAPI';
+import CourseAPI from '@/src/service/CourseAPI';
 
 type NavigationProp = NativeStackNavigationProp<HomeStackParamList, 'ArticleDetail'>;
 
@@ -37,13 +36,13 @@ interface Resource {
     type: 'meditation' | 'sleep' | 'music' | 'article' | 'course';
     category: string;
     coverImage: string;
-    duration?: number; // in minutes
+    duration?: number;
     author: Author;
     isPremium: boolean;
     likes: number;
     views: number;
     rating: number;
-    url?: string; // For external articles
+    url?: string;
 }
 
 // Categories
@@ -556,19 +555,11 @@ const ArticleSelection: React.FC = () => {
                     <Text style={styles.statText}>👁️ {item.views}</Text>
                     <Text style={styles.statText}>❤️ {item.likes}</Text>
                     {item.duration && <Text style={styles.statText}>⏱️ {item.duration}m</Text>}
-                </View>
-
-                {item.isPremium && (
-                    <View style={styles.premiumBadge}>
-                        <Text style={styles.premiumText}>PRO</Text>
+                    <View style={styles.typeBadgeInline}>
+                        <Text style={styles.typeText}>
+                            {item.type === 'course' ? 'COURSE' : 'ARTICLE'}
+                        </Text>
                     </View>
-                )}
-
-                {/* Show course/article type badge */}
-                <View style={styles.typeBadge}>
-                    <Text style={styles.typeText}>
-                        {item.type === 'course' ? 'COURSE' : 'ARTICLE'}
-                    </Text>
                 </View>
             </View>
         </TouchableOpacity>
@@ -777,7 +768,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 8,
-        marginRight: 8,
+        marginRight: 20,
         borderRadius: 20,
     },
     categorySelected: {
@@ -868,28 +859,13 @@ const styles = StyleSheet.create({
         color: '#888',
         marginRight: 12,
     },
-    premiumBadge: {
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        backgroundColor: '#F6BD60',
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        borderRadius: 8,
-    },
-    premiumText: {
-        fontSize: 10,
-        fontWeight: 'bold',
-        color: '#FFF',
-    },
-    typeBadge: {
-        position: 'absolute',
-        top: 8,
-        right: 70,
+    typeBadgeInline: {
         backgroundColor: '#6A8D73',
         paddingHorizontal: 6,
         paddingVertical: 2,
         borderRadius: 6,
+        marginLeft: 'auto',
+        alignSelf: 'center',
     },
     typeText: {
         fontSize: 9,

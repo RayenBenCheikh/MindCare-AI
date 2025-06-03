@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +16,8 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ track, onClose }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [position, setPosition] = useState(0);
     const [duration, setDuration] = useState(0);
+    const [audioLoadError, setAudioLoadError] = useState<string | null>(null);
+
     const getCategoryColor = (category: string): string => {
         const colors = {
             meditation: '#8DAA6D',
@@ -26,11 +29,26 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ track, onClose }) => {
         };
         return colors[category as keyof typeof colors] || '#8DAA6D';
     };
+
     useEffect(() => {
-        // Set up audio
         const setupAudio = async () => {
             try {
-                // Request audio permissions
+                setAudioLoadError(null);
+                if (sound) {
+                    await sound.unloadAsync();
+                    setSound(null);
+                }
+                setIsPlaying(false);
+                setPosition(0);
+                setDuration(0);
+
+                if (!track.previewUrl) {
+                    console.log(`MusicPlayer: No previewUrl for track "${track.title}"`);
+                    return;
+                }
+
+                console.log(`MusicPlayer: Attempting to load audio from ${track.previewUrl}`);
+
                 await Audio.setAudioModeAsync({
                     allowsRecordingIOS: false,
                     staysActiveInBackground: true,
@@ -39,16 +57,48 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ track, onClose }) => {
                     playThroughEarpieceAndroid: false,
                 });
 
-                // Load audio
-                const { sound: newSound } = await Audio.Sound.createAsync(
-                    { uri: track.previewUrl || '' },
+                // Try to load the audio with timeout
+                const audioPromise = Audio.Sound.createAsync(
+                    { uri: track.previewUrl },
                     { shouldPlay: false },
                     onPlaybackStatusUpdate
                 );
 
-                setSound(newSound);
-            } catch (error) {
-                console.error('Error setting up audio:', error);
+                // Add timeout to prevent hanging
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Audio loading timeout')), 15000)
+                );
+
+                const { sound: newSound, status } = await Promise.race([audioPromise, timeoutPromise]) as any;
+
+                console.log('MusicPlayer: Audio creation status:', status);
+
+                if (status.isLoaded) {
+                    setSound(newSound);
+                    console.log('MusicPlayer: ✅ Audio loaded successfully!');
+                } else {
+                    console.error('MusicPlayer: ❌ Audio status indicates not loaded');
+                    console.log('MusicPlayer: Status details:', JSON.stringify(status, null, 2));
+                    setAudioLoadError('Audio file could not be loaded - file may not exist or be corrupted');
+                }
+            } catch (error: any) {
+                console.error('MusicPlayer: ❌ Error setting up audio:', error);
+                console.error('MusicPlayer: Error details:', error.message);
+
+                // Provide more specific error messages
+                let errorMessage = 'Failed to load audio';
+                if (error.message.includes('404')) {
+                    errorMessage = 'Audio file not found (404 error)';
+                } else if (error.message.includes('timeout')) {
+                    errorMessage = 'Audio loading timed out - check your connection';
+                } else if (error.message.includes('Network')) {
+                    errorMessage = 'Network error - check your internet connection';
+                } else {
+                    errorMessage = `Audio error: ${error.message}`;
+                }
+
+                setAudioLoadError(errorMessage);
+                setSound(null);
             }
         };
 
@@ -56,29 +106,57 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ track, onClose }) => {
             setupAudio();
         }
 
-        // Cleanup
         return () => {
             if (sound) {
+                console.log('MusicPlayer: 🧹 Cleaning up sound for:', track.title);
                 sound.unloadAsync();
             }
         };
     }, [track]);
 
+    // Update the onPlaybackStatusUpdate function to log status changes
     const onPlaybackStatusUpdate = (status: any) => {
+        console.log('MusicPlayer: Playback status update:', {
+            isLoaded: status.isLoaded,
+            isPlaying: status.isPlaying,
+            didJustFinish: status.didJustFinish,
+            error: status.error
+        });
+
         if (status.isLoaded) {
             setPosition(status.positionMillis / 1000);
             setDuration(status.durationMillis / 1000);
             setIsPlaying(status.isPlaying);
+
+            if (status.didJustFinish) {
+                console.log('MusicPlayer: ✅ Track finished playing');
+            }
+        }
+
+        if (status.error) {
+            console.error('MusicPlayer: ❌ Playback error:', status.error);
+            setAudioLoadError(`Playback error: ${status.error}`);
         }
     };
 
+    // Update togglePlayback with more logging
     const togglePlayback = async () => {
-        if (!sound) return;
+        if (!sound) {
+            console.log('MusicPlayer: ❌ No sound object available for playback');
+            return;
+        }
 
-        if (isPlaying) {
-            await sound.pauseAsync();
-        } else {
-            await sound.playAsync();
+        try {
+            if (isPlaying) {
+                console.log('MusicPlayer: ⏸️ Pausing audio');
+                await sound.pauseAsync();
+            } else {
+                console.log('MusicPlayer: ▶️ Playing audio');
+                await sound.playAsync();
+            }
+        } catch (error: any) {
+            console.error('MusicPlayer: ❌ Error toggling playback:', error);
+            setAudioLoadError(`Playback error: ${error.message}`);
         }
     };
 
@@ -106,7 +184,6 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ track, onClose }) => {
                 <Text style={styles.title}>{track.title}</Text>
                 <Text style={styles.artist}>{track.artist}</Text>
 
-                {/* Category badge */}
                 <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(track.category) }]}>
                     <Text style={styles.categoryBadgeText}>
                         {track.category.charAt(0).toUpperCase() + track.category.slice(1)}
@@ -115,40 +192,50 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ track, onClose }) => {
             </View>
 
             {track.previewUrl ? (
-                <>
-                    <View style={styles.sliderContainer}>
-                        <Text style={styles.timeText}>{formatTime(position)}</Text>
-                        <Slider
-                            style={styles.slider}
-                            minimumValue={0}
-                            maximumValue={duration}
-                            value={position}
-                            onSlidingComplete={seekAudio}
-                            minimumTrackTintColor="#8DAA6D"
-                            maximumTrackTintColor="#D8D8D8"
-                            thumbTintColor="#8DAA6D"
-                        />
-                        <Text style={styles.timeText}>{formatTime(duration)}</Text>
-                    </View>
-
-                    <View style={styles.controlsContainer}>
-                        <TouchableOpacity style={styles.controlButton}>
-                            <Ionicons name="play-skip-back" size={24} color="#333" />
+                audioLoadError ? (
+                    <View style={styles.noPreviewContainer}>
+                        <Ionicons name="warning-outline" size={36} color="#FF6B6B" style={styles.noPreviewIcon} />
+                        <Text style={styles.noPreviewTitle}>Audio Playback Error</Text>
+                        <Text style={styles.noPreviewText}>{audioLoadError}</Text>
+                        <TouchableOpacity style={styles.similarButton} onPress={onClose}>
+                            <Text style={styles.similarButtonText}>Close Player</Text>
                         </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.playButton} onPress={togglePlayback}>
-                            <Ionicons
-                                name={isPlaying ? "pause" : "play"}
-                                size={32}
-                                color="#FFF"
+                    </View>
+                ) : (
+                    <>
+                        <View style={styles.sliderContainer}>
+                            <Text style={styles.timeText}>{formatTime(position)}</Text>
+                            <Slider
+                                style={styles.slider}
+                                minimumValue={0}
+                                maximumValue={duration || 1}
+                                value={position}
+                                onSlidingComplete={seekAudio}
+                                minimumTrackTintColor="#8DAA6D"
+                                maximumTrackTintColor="#D8D8D8"
+                                thumbTintColor="#8DAA6D"
+                                disabled={!sound || duration === 0}
                             />
-                        </TouchableOpacity>
+                            <Text style={styles.timeText}>{formatTime(duration)}</Text>
+                        </View>
 
-                        <TouchableOpacity style={styles.controlButton}>
-                            <Ionicons name="play-skip-forward" size={24} color="#333" />
-                        </TouchableOpacity>
-                    </View>
-                </>
+                        <View style={styles.controlsContainer}>
+                            <TouchableOpacity style={styles.controlButton} disabled={!sound}>
+                                <Ionicons name="play-skip-back" size={24} color={!sound ? "#ccc" : "#333"} />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.playButton} onPress={togglePlayback} disabled={!sound}>
+                                <Ionicons
+                                    name={isPlaying ? "pause" : "play"}
+                                    size={32}
+                                    color="#FFF"
+                                />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.controlButton} disabled={!sound}>
+                                <Ionicons name="play-skip-forward" size={24} color={!sound ? "#ccc" : "#333"} />
+                            </TouchableOpacity>
+                        </View>
+                    </>
+                )
             ) : (
                 <View style={styles.noPreviewContainer}>
                     <Ionicons name="alert-circle-outline" size={36} color="#888" style={styles.noPreviewIcon} />

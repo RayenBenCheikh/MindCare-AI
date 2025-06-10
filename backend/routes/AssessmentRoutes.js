@@ -263,6 +263,186 @@ router.get("/history", auth, async (req, res) => {
     }
 });
 
+router.get("/vitalSigns", auth, async (req, res) => {
+    try {
+        const { userId, assessmentId, timeRange = '30d' } = req.query;
+
+        console.log('=== VITAL SIGNS REQUEST ===');
+        console.log('Query params:', { userId, assessmentId, timeRange });
+        console.log('User from auth middleware:', req.user?.id);
+
+        // If assessmentId is provided, get vital signs from specific assessment
+        if (assessmentId) {
+            console.log('Fetching vital signs for assessment:', assessmentId);
+
+            try {
+                // Use Mongoose's findById directly - it handles ObjectId conversion
+                const assessment = await Assessment.findById(assessmentId);
+
+                console.log('Assessment found:', !!assessment);
+
+                if (!assessment) {
+                    console.log('No assessment found with ID:', assessmentId);
+                    return res.json({
+                        success: false,
+                        message: 'Assessment not found',
+                        vitalSigns: [],
+                        count: 0
+                    });
+                }
+
+                console.log('Assessment details:', {
+                    id: assessment._id,
+                    user: assessment.user,
+                    hasVitalSigns: !!assessment.vitalSigns,
+                    vitalSignsCount: assessment.vitalSigns?.length || 0,
+                    isSubmitted: assessment.isSubmitted,
+                    createdAt: assessment.createdAt,
+                    completedAt: assessment.completedAt
+                });
+
+                // Log the actual vital signs data
+                if (assessment.vitalSigns && assessment.vitalSigns.length > 0) {
+                    console.log('Raw vital signs data:', assessment.vitalSigns);
+                }
+
+                // Extract vital signs from this assessment
+                const vitalSigns = assessment.vitalSigns || [];
+
+                // Format the data
+                const formattedVitalSigns = vitalSigns.map((vitalSign, index) => {
+                    const formatted = {
+                        timestamp: vitalSign.timestamp,
+                        date: vitalSign.date,
+                        heartRate: vitalSign.heartRate,
+                        systolicBP: vitalSign.systolicBP,
+                        diastolicBP: vitalSign.diastolicBP,
+                        confidence: vitalSign.confidence,
+                        _id: `${assessmentId}_${vitalSign.timestamp || index}`,
+                        assessmentId: assessmentId
+                    };
+                    console.log(`Formatted vital sign ${index}:`, formatted);
+                    return formatted;
+                });
+
+                console.log('Final response:', {
+                    success: true,
+                    count: formattedVitalSigns.length,
+                    vitalSigns: formattedVitalSigns
+                });
+
+                return res.json({
+                    success: true,
+                    vitalSigns: formattedVitalSigns,
+                    count: formattedVitalSigns.length
+                });
+
+            } catch (dbError) {
+                console.error('Database error:', dbError);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Database error',
+                    error: dbError.message,
+                    vitalSigns: [],
+                    count: 0
+                });
+            }
+        }
+
+        // If no assessmentId, get all vital signs for user
+        console.log('No assessmentId provided, fetching for user...');
+
+        const targetUserId = userId || req.user.id;
+        console.log('Target user ID:', targetUserId);
+
+        const assessments = await Assessment.find({
+            user: targetUserId,
+            vitalSigns: { $exists: true, $ne: [] },
+            isSubmitted: true
+        }).sort({ completedAt: -1 });
+
+        console.log('Found assessments for user:', assessments.length);
+
+        const allVitalSigns = [];
+
+        assessments.forEach((assessment, assessmentIndex) => {
+            console.log(`Processing assessment ${assessmentIndex}:`, {
+                id: assessment._id,
+                vitalSignsCount: assessment.vitalSigns?.length || 0
+            });
+
+            if (assessment.vitalSigns && assessment.vitalSigns.length > 0) {
+                assessment.vitalSigns.forEach((vitalSign, vitalIndex) => {
+                    const formatted = {
+                        timestamp: vitalSign.timestamp,
+                        date: vitalSign.date,
+                        heartRate: vitalSign.heartRate,
+                        systolicBP: vitalSign.systolicBP,
+                        diastolicBP: vitalSign.diastolicBP,
+                        confidence: vitalSign.confidence,
+                        assessmentId: assessment._id,
+                        _id: `${assessment._id}_${vitalSign.timestamp || vitalIndex}`
+                    };
+
+                    console.log(`Adding vital sign ${vitalIndex} from assessment ${assessmentIndex}:`, formatted);
+                    allVitalSigns.push(formatted);
+                });
+            }
+        });
+
+        console.log('Total vital signs found:', allVitalSigns.length);
+
+        res.json({
+            success: true,
+            vitalSigns: allVitalSigns,
+            count: allVitalSigns.length
+        });
+
+    } catch (error) {
+        console.error('Error in /vitalSigns route:', error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching vital signs",
+            error: error.message,
+            vitalSigns: [],
+            count: 0
+        });
+    }
+});
+router.get("/debug/user-assessments", auth, async (req, res) => {
+    try {
+        const { userId } = req.query;
+        const targetUserId = userId || req.user.id;
+
+        console.log('Debug: Looking for assessments for user:', targetUserId);
+
+        // Get all assessments for this user
+        const allAssessments = await Assessment.find({ user: targetUserId });
+
+        console.log('Debug: Found total assessments:', allAssessments.length);
+
+        const assessmentInfo = allAssessments.map(assessment => ({
+            id: assessment._id,
+            createdAt: assessment.createdAt,
+            completedAt: assessment.completedAt,
+            isSubmitted: assessment.isSubmitted,
+            hasVitalSigns: !!assessment.vitalSigns,
+            vitalSignsCount: assessment.vitalSigns?.length || 0,
+            vitalSigns: assessment.vitalSigns || []
+        }));
+
+        res.json({
+            message: 'Debug info for user assessments',
+            userId: targetUserId,
+            totalAssessments: allAssessments.length,
+            assessments: assessmentInfo
+        });
+
+    } catch (error) {
+        console.error('Debug error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 // Delete an assessment
 router.delete("/:id", auth, async (req, res) => {
     try {

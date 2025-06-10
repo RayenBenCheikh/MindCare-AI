@@ -249,7 +249,7 @@ const MindfulMusic = ({ }: MindfulMusicProps) => {
 
                             {/* Spotify logo */}
                             <View style={styles.spotifyBadge}>
-                                <Text style={styles.spotifyText}>🎵 Jamendo</Text>
+                                <Text style={styles.spotifyText}>🎵 Local</Text>
                             </View>
                         </View>
                     </TouchableOpacity>

@@ -19,7 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '@/src/context/AuthContext';
 import LocalMusicAPI, { MusicTrack } from '@/src/service/MusicApi';
 import MusicPlayer from './CustomAudio';
-import Modal from 'react-native-modal'; // You may need to install this: npm install react-native-modal
+import Modal from 'react-native-modal';
 import { API_BASE_URL } from '@/src/api/config';
 interface MusicSelectionProps {
     route?: {

@@ -306,12 +306,6 @@ const VitalSignsScreen = () => {
           </View>
         </View>
       </View>
-
-      <View style={styles.disclaimerBar}>
-        <Text style={styles.disclaimerText}>
-          For estimation purposes only. Not for medical use.
-        </Text>
-      </View>
     </SafeAreaView>
   );
 };
@@ -436,15 +430,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  disclaimerBar: {
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    padding: 8,
-    alignItems: 'center',
-  },
-  disclaimerText: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 12,
   },
   connectionStatusBar: {
     backgroundColor: '#FF9800',

@@ -4,8 +4,6 @@ import base64
 import matplotlib.pyplot as plt
 import pandas as pd
 import logging
-from scipy.signal import find_peaks, butter, filtfilt
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -116,7 +114,6 @@ def analyze_skin_color_variations(face_info):
         # Use much smaller multipliers to avoid overestimation
         rg_factor = (avg_rg_ratio - 1.0) * 10.0  # More subtle influence
         
-        
         # Apply more subtle adjustments
         hr_adjustment = rg_factor
         
@@ -160,14 +157,16 @@ def analyze_skin_color_variations(face_info):
                 'adjusted_hr': float(heart_rate),
                 'error_margin': error_margin
             }
+            # Removed vitalSignsImage from return - no longer saving images
         }
     except Exception as e:
         logger.error(f"Error analyzing skin color: {str(e)}")
         return {
-            'heart_rate': 65,  # More conservative fallback
+            'heart_rate': 65,  
             'heart_rate_range': [60, 75],
             'confidence': 30,
             'metrics': {}
+            
         }
 def estimate_bp(heart_rate, age=24, weight_kg=80, height_cm=180, is_male=True):
     """Improved blood pressure estimation with better physiological model"""

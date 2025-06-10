@@ -123,7 +123,7 @@ def get_user_assessment(assessment_id):
         logger.error(f"Error retrieving assessment: {str(e)}")
         return None
 def save_vital_signs_to_assessment(assessment_id, heart_rate, systolic_bp, diastolic_bp, image_base64=None, confidence=None):
-    """Save vital signs data to the assessment document"""
+    """Save vital signs data to the assessment document as an array entry"""
     if assessments_collection is None:
         return False
         
@@ -140,8 +140,8 @@ def save_vital_signs_to_assessment(assessment_id, heart_rate, systolic_bp, diast
                 logger.error(f"Error converting to ObjectId: {str(e)}")
                 return False
         
-        # Prepare vitals data
-        vitals_data = {
+        # Prepare vitals data entry
+        vitals_entry = {
             "timestamp": time.time(),
             "date": time.strftime("%Y-%m-%d %H:%M:%S"),
             "heartRate": heart_rate,
@@ -150,23 +150,17 @@ def save_vital_signs_to_assessment(assessment_id, heart_rate, systolic_bp, diast
         }
         
         if confidence is not None:
-            vitals_data["confidence"] = confidence
+            vitals_entry["confidence"] = confidence
             
-        # Prepare update document
+        # Use $push to add to array instead of $set to replace
         update_doc = {
+            "$push": {
+                "vitalSigns": vitals_entry
+            },
             "$set": {
-                "vitalSigns": vitals_data
+                "updatedAt": time.strftime("%Y-%m-%d %H:%M:%S")
             }
-        }
-        
-        # Add image if provided (be careful with large images)
-        if image_base64:
-            # Check if image is too large - MongoDB has 16MB document size limit
-            if len(image_base64) < 1024 * 1024 * 10:  # 10MB limit
-                update_doc["$set"]["vitalSignsImage"] = image_base64
-            else:
-                logger.warning("Image too large to store in MongoDB document")
-        
+        }  
         # Update the assessment document
         result = assessments_collection.update_one(
             {"_id": obj_id},
@@ -174,7 +168,7 @@ def save_vital_signs_to_assessment(assessment_id, heart_rate, systolic_bp, diast
         )
         
         if result.modified_count > 0:
-            logger.info(f"Successfully updated assessment {assessment_id} with vital signs data")
+            logger.info(f"Successfully added vital signs entry to assessment {assessment_id}")
             return True
         else:
             logger.warning(f"Assessment {assessment_id} was not updated - document not found or no changes made")
@@ -183,7 +177,6 @@ def save_vital_signs_to_assessment(assessment_id, heart_rate, systolic_bp, diast
     except Exception as e:
         logger.error(f"Error saving vital signs to assessment: {str(e)}")
         return False
-
 @app.route('/api/analyze', methods=['POST', 'OPTIONS'])
 def analyze_vital_signs():
     # Handle preflight CORS requests
@@ -252,24 +245,13 @@ def analyze_vital_signs():
         # Save data if requested
         should_save = data.get('saveData', False)
         if should_save and assessments_collection is not None:
-            # Truncate image data to avoid overly large documents
-            image_to_save = None
-            if data.get('saveImage', False):
-                # First check if base64 string includes the prefix
-                img_data = base64_image
-                if ',' in base64_image:
-                    img_data = base64_image.split(',')[1]
-                    
-                # Store only the first part of the image to keep doc size reasonable
-                # Will still be viewable but lower quality
-                image_to_save = img_data[:512000]  # Store ~500KB of image data
-                
+            # No longer saving images - removed image handling completely
             save_result = save_vital_signs_to_assessment(
                 assessment_id, 
                 heart_rate, 
                 sys_bp, 
                 dia_bp, 
-                image_to_save,  
+                None,  
                 confidence
             )
         else:
@@ -371,10 +353,10 @@ def get_assessment_vitals(assessment_id):
         from bson.objectid import ObjectId
         obj_id = ObjectId(assessment_id)
         
-        # Find the assessment
+        # Find the assessment - removed vitalSignsImage from projection
         assessment = assessments_collection.find_one(
             {"_id": obj_id},
-            {"vitalSigns": 1, "vitalSignsImage": 1}
+            {"vitalSigns": 1}
         )
         
         if not assessment:
@@ -383,20 +365,138 @@ def get_assessment_vitals(assessment_id):
         if "vitalSigns" not in assessment:
             return jsonify({"error": "No vital signs data found for this assessment"}), 404
             
-        response = {
+        # Return the array of vital signs
+        return jsonify({
+            "success": True,
             "vitalSigns": assessment["vitalSigns"]
-        }
-        
-        # Include image if available and requested
-        if "vitalSignsImage" in assessment and request.args.get('includeImage', 'false').lower() == 'true':
-            response["image"] = assessment["vitalSignsImage"]
-            
-        return jsonify(response)
+        })
         
     except Exception as e:
         logger.error(f"Error retrieving vital signs: {str(e)}")
         return jsonify({"error": "Server error"}), 500
+    
+@app.route('/api/assessments/vitalSigns', methods=['GET'])
+def get_vital_signs():
+    try:
+        # Get query parameters
+        assessment_id = request.args.get('assessmentId')
+        user_id = request.args.get('userId')
+        time_range = request.args.get('timeRange', '30d')
+        
+        logger.info(f"Request params - assessmentId: {assessment_id}, userId: {user_id}")
+        
+        if assessment_id:
+            # Get specific assessment by _id
+            from bson import ObjectId
+            try:
+                # Convert string to ObjectId
+                obj_id = ObjectId(assessment_id)
+                logger.info(f"Looking for assessment with ObjectId: {obj_id}")
+            except Exception as e:
+                logger.error(f"Invalid assessment ID format: {e}")
+                return jsonify({
+                    'success': False,
+                    'message': 'Invalid assessment ID format'
+                }), 400
 
+            # Find specific assessment by _id
+            assessment = assessments_collection.find_one({'_id': obj_id})
+            
+            if not assessment:
+                logger.warning(f"Assessment not found with _id: {obj_id}")
+                return jsonify({
+                    'success': False,
+                    'message': 'Assessment not found',
+                    'vitalSigns': [],
+                    'count': 0
+                })
+            
+            logger.info(f"Found assessment: {assessment.get('_id')}")
+            logger.info(f"Vital signs count: {len(assessment.get('vitalSigns', []))}")
+            
+            # Extract vital signs from this assessment
+            vital_signs = assessment.get('vitalSigns', [])
+            
+            # Format the vital signs data
+            formatted_vital_signs = []
+            for vital_sign in vital_signs:
+                formatted_vital_signs.append({
+                    'timestamp': vital_sign.get('timestamp'),
+                    'date': vital_sign.get('date'),
+                    'heartRate': vital_sign.get('heartRate'),
+                    'systolicBP': vital_sign.get('systolicBP'),
+                    'diastolicBP': vital_sign.get('diastolicBP'),
+                    'confidence': vital_sign.get('confidence'),
+                    '_id': f"{assessment_id}_{vital_sign.get('timestamp')}",
+                    'assessmentId': str(assessment['_id'])
+                })
+            
+            logger.info(f"Returning {len(formatted_vital_signs)} vital signs")
+            
+            return jsonify({
+                'success': True,
+                'vitalSigns': formatted_vital_signs,
+                'count': len(formatted_vital_signs)
+            })
+            
+        elif user_id:
+            # Get all assessments for user (existing logic)
+            from bson import ObjectId
+            try:
+                user_object_id = ObjectId(user_id)
+            except:
+                return jsonify({
+                    'success': False,
+                    'message': 'Invalid user ID format'
+                }), 400
+
+            # Query all assessments with vitalSigns for the user
+            assessments = assessments_collection.find({
+                'user': user_object_id,
+                'vitalSigns': {'$exists': True, '$ne': []},
+                'isSubmitted': True
+            })
+
+            # Extract all vital signs from all assessments
+            all_vital_signs = []
+            
+            for assessment in assessments:
+                if 'vitalSigns' in assessment and assessment['vitalSigns']:
+                    for vital_sign in assessment['vitalSigns']:
+                        vital_sign_data = {
+                            'timestamp': vital_sign.get('timestamp'),
+                            'date': vital_sign.get('date'),
+                            'heartRate': vital_sign.get('heartRate'),
+                            'systolicBP': vital_sign.get('systolicBP'),
+                            'diastolicBP': vital_sign.get('diastolicBP'),
+                            'confidence': vital_sign.get('confidence'),
+                            '_id': f"{assessment['_id']}_{vital_sign.get('timestamp')}",
+                            'assessmentId': str(assessment['_id'])
+                        }
+                        all_vital_signs.append(vital_sign_data)
+
+            # Sort by timestamp (most recent first)
+            all_vital_signs.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+
+            return jsonify({
+                'success': True,
+                'vitalSigns': all_vital_signs,
+                'count': len(all_vital_signs)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Either assessmentId or userId is required'
+            }), 400
+
+    except Exception as e:
+        logger.error(f"Error fetching vital signs: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Error fetching vital signs: {str(e)}',
+            'vitalSigns': [],
+            'count': 0
+        }), 500
 if __name__ == '__main__':
     # Check if OpenCV face detector is available
     if not os.path.exists(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'):

@@ -26,7 +26,7 @@ const LLM_OPTIONS = [
     },
     {
         id: 'qwen3',
-        name: 'qwen3:1.7b',
+        name: 'qwen3:8b',
         description: 'Alibaba\'s compact model with excellent efficiency and multilingual support'
     },
     {

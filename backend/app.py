@@ -8,8 +8,8 @@ import json
 import requests
 import sys
 from flask_cors import CORS
-from Chatbot import chatbot_bp
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from AI.Chatbot import chatbot_bp
 # Import our analysis functions
 from AI.vital_signs_analyzer import (
     preprocess_image, 

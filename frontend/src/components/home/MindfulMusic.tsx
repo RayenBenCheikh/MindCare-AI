@@ -59,12 +59,12 @@ const MindfulMusic = ({ }: MindfulMusicProps) => {
     // Helper function to get category icon
     const getCategoryIcon = (category: string): string => {
         const icons = {
-            meditation: 'flower-outline',  // or 'leaf-outline'
+            meditation: 'flower-outline',
             sleep: 'bed-outline',
-            focus: 'radio-button-on-outline',  // or 'disc-outline'
+            focus: 'radio-button-on-outline',
             nature: 'leaf-outline',
-            anxiety: 'heart-outline',  // changed from 'heart-pulse'
-            stress: 'pulse-outline'    // changed from 'brain'
+            anxiety: 'heart-outline',
+            stress: 'pulse-outline'
         };
         return icons[category as keyof typeof icons] || 'musical-notes-outline'; // changed from 'music'
     };

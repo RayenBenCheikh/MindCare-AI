@@ -8,125 +8,51 @@ import {
     Image,
     Dimensions,
     ActivityIndicator,
-    Linking,
     Alert
 } from 'react-native';
 import { AuthContext } from '@/src/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '@/src/navigation/HomeNavigation';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import LocalMusicAPI, { MusicTrack } from '@/src/service/MusicApi';
-import { API_BASE_URL } from '@/src/api/config';
-
+import { formatDuration, getCategoryColor, getCategoryIcon } from '@/src/constants/MusicHelpers';
 type NavigationProp = NativeStackNavigationProp<HomeStackParamList>;
 const { width } = Dimensions.get('window');
 
-interface MindfulMusicProps { }
-
-const MindfulMusic = ({ }: MindfulMusicProps) => {
+const MindfulMusic = () => {
     const [activeMusicIndex, setActiveMusicIndex] = useState(0);
     const [musicTracks, setMusicTracks] = useState<MusicTrack[]>([]);
     const [loading, setLoading] = useState(true);
     const navigation = useNavigation<NavigationProp>();
-    const { userToken, userData } = useContext(AuthContext);
-    const [refreshing, setRefreshing] = useState(false);
-    // Helper function to format duration
-    const formatDuration = (seconds: number): string => {
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        if (minutes >= 60) {
-            const hours = Math.floor(minutes / 60);
-            const remainingMinutes = minutes % 60;
-            return `${hours}h ${remainingMinutes}m`;
-        }
-        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-    };
+    const { userToken } = useContext(AuthContext);
 
-    // Helper function to get category color
-    const getCategoryColor = (category: string): string => {
-        const colors = {
-            meditation: '#8DAA6D',
-            sleep: '#6A8D73',
-            focus: '#F6BD60',
-            nature: '#5D8A66',
-            anxiety: '#9E88B0',
-            stress: '#BD8C61'
-        };
-        return colors[category as keyof typeof colors] || '#8DAA6D';
-    };
-
-    // Helper function to get category icon
-    const getCategoryIcon = (category: string): string => {
-        const icons = {
-            meditation: 'flower-outline',
-            sleep: 'bed-outline',
-            focus: 'radio-button-on-outline',
-            nature: 'leaf-outline',
-            anxiety: 'heart-outline',
-            stress: 'pulse-outline'
-        };
-        return icons[category as keyof typeof icons] || 'musical-notes-outline'; // changed from 'music'
-    };
-
-    // Fetch music tracks function
     const fetchMusic = useCallback(async () => {
         try {
             setLoading(true);
-            console.log('🎵 MindfulMusic: Starting fetch process...');
-            console.log('🎵 API Base URL:', API_BASE_URL);
 
-            // First test if backend is reachable
-            console.log('🎵 Testing backend connection...');
             const isConnected = await LocalMusicAPI.testConnection();
-
             if (!isConnected) {
-                console.error('🎵 Backend connection failed');
-                Alert.alert(
-                    'Connection Error',
-                    'Cannot connect to the music service. Please check your network connection and try again.'
-                );
+                Alert.alert('Connection Error', 'Cannot connect to the music service.');
                 setMusicTracks([]);
                 return;
             }
 
-            console.log('🎵 Backend connection successful, fetching music...');
-
-            // Fetch from your local database
             const tracks = await LocalMusicAPI.fetchWellnessMusic();
-            console.log('🎵 MindfulMusic: Raw response:', tracks);
-            console.log('🎵 MindfulMusic: Response type:', typeof tracks);
-            console.log('🎵 MindfulMusic: Is array:', Array.isArray(tracks));
-
-            if (!tracks || !Array.isArray(tracks)) {
-                console.error('🎵 Invalid response format');
+            if (Array.isArray(tracks)) {
+                setMusicTracks(tracks);
+            } else {
                 setMusicTracks([]);
-                return;
             }
-
-            setMusicTracks(tracks);
-            console.log(`🎵 MindfulMusic: Successfully set ${tracks.length} tracks in state`);
-
-            if (tracks.length === 0) {
-                console.warn('🎵 No tracks returned from API');
-            }
-
         } catch (error) {
-            console.error('❌ MindfulMusic: Error fetching music:', error);
-            console.error('❌ Error details:', error instanceof Error ? error.message : String(error));
+            console.error('Error fetching music:', error);
             setMusicTracks([]);
-
-            Alert.alert(
-                'Error',
-                'Failed to load music. Please try again later.'
-            );
+            Alert.alert('Error', 'Failed to load music. Please try again later.');
         } finally {
             setLoading(false);
-            setRefreshing(false);
         }
-    }, [userToken]);
+    }, []);
 
-    // Add useEffect to fetch music when component mounts
     useEffect(() => {
         fetchMusic();
     }, [fetchMusic]);
@@ -134,28 +60,21 @@ const MindfulMusic = ({ }: MindfulMusicProps) => {
     const handleSeeAllPress = () => {
         if (userToken) {
             navigation.navigate('MusicSelection' as any);
-        } else {
-            console.log('User not authenticated, redirect to sign in');
         }
     };
 
     const handleMusicPress = (track: MusicTrack) => {
         if (userToken) {
-            console.log('🎵 Playing track:', track.title);
-
-            // Pass the current music tracks to avoid re-fetching
             navigation.navigate('MusicSelection' as any, {
                 selectedTrack: track,
                 autoPlay: true,
-                existingTracks: musicTracks // Pass existing tracks
+                existingTracks: musicTracks
             });
         } else {
-            console.log('User not authenticated, redirect to sign in');
             Alert.alert('Authentication Required', 'Please sign in to play music.');
         }
     };
 
-    // Show loading state
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
@@ -165,7 +84,6 @@ const MindfulMusic = ({ }: MindfulMusicProps) => {
         );
     }
 
-    // Show message if no music tracks
     if (!userToken || musicTracks.length === 0) {
         return (
             <View style={styles.emptyContainer}>
@@ -197,7 +115,7 @@ const MindfulMusic = ({ }: MindfulMusicProps) => {
                 }}
                 scrollEventThrottle={16}
             >
-                {musicTracks.map((track, index) => (
+                {musicTracks.map((track) => (
                     <TouchableOpacity
                         key={track.id}
                         style={styles.musicCard}
@@ -209,7 +127,6 @@ const MindfulMusic = ({ }: MindfulMusicProps) => {
                             resizeMode="cover"
                         />
                         <View style={styles.musicContent}>
-                            {/* Category badge */}
                             <View style={[
                                 styles.categoryBadge,
                                 { backgroundColor: getCategoryColor(track.category) }
@@ -247,7 +164,6 @@ const MindfulMusic = ({ }: MindfulMusicProps) => {
                                 </View>
                             </View>
 
-                            {/* Spotify logo */}
                             <View style={styles.spotifyBadge}>
                                 <Text style={styles.spotifyText}>🎵 Local</Text>
                             </View>
@@ -271,6 +187,7 @@ const MindfulMusic = ({ }: MindfulMusicProps) => {
     );
 };
 
+// Simplified styles - removed duplicate/unused ones
 const styles = StyleSheet.create({
     sectionHeader: {
         flexDirection: 'row',

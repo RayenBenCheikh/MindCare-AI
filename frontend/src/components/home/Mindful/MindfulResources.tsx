@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import {
     View,
     Text,
@@ -14,27 +14,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '@/src/navigation/HomeNavigation';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import axios from 'axios';
+import { fetchNewsArticles, generateWellnessContent } from '@/src/constants/ResourceHelPers';
+
 
 type NavigationProp = NativeStackNavigationProp<HomeStackParamList>;
 const { width } = Dimensions.get('window');
-
-interface MindfulResourcesProps { }
-
-interface Author {
-    name: string;
-    image: string;
-}
 
 interface Resource {
     id: string;
     title: string;
     description: string;
-    type: 'meditation' | 'sleep' | 'music' | 'article';
+    type: 'article';
     category: string;
     coverImage: string;
-    duration?: number;
-    author: Author;
+    author: { name: string; image: string };
     isPremium: boolean;
     likes: number;
     views: number;
@@ -42,89 +35,13 @@ interface Resource {
     url?: string;
 }
 
-const MindfulResources = ({ }: MindfulResourcesProps) => {
+const MindfulResources = () => {
     const [activeResourceIndex, setActiveResourceIndex] = useState(0);
     const [resources, setResources] = useState<Resource[]>([]);
     const [loading, setLoading] = useState(true);
     const navigation = useNavigation<NavigationProp>();
-    const { userToken, userData } = useContext(AuthContext);
+    const { userToken } = useContext(AuthContext);
 
-    // Helper function to categorize articles based on content
-    const getCategoryFromContent = (content: string): string => {
-        const lowerContent = content.toLowerCase();
-
-        if (lowerContent.includes('stress') || lowerContent.includes('pressure') || lowerContent.includes('overwhelm')) {
-            return 'Stress Relief';
-        } else if (lowerContent.includes('anxiety') || lowerContent.includes('worry') || lowerContent.includes('panic')) {
-            return 'Anxiety Help';
-        } else if (lowerContent.includes('sleep') || lowerContent.includes('insomnia') || lowerContent.includes('rest')) {
-            return 'Sleep';
-        } else if (lowerContent.includes('focus') || lowerContent.includes('concentration') || lowerContent.includes('attention')) {
-            return 'Focus';
-        } else if (lowerContent.includes('meditation') || lowerContent.includes('mindful') || lowerContent.includes('zen')) {
-            return 'Meditation';
-        }
-
-        return 'Mental Health';
-    };
-
-    // Helper function to generate wellness content
-    const generateWellnessContent = (): Resource[] => {
-        const wellnessArticles = [
-            {
-                id: 'wellness_stress_1',
-                title: '10-Minute Daily Stress Relief Routine',
-                description: 'A simple, science-backed routine you can do anywhere to reduce stress and increase calm in your daily life.',
-                type: 'article' as const,
-                category: 'Stress Relief',
-                coverImage: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b',
-                author: {
-                    name: 'Dr. Sarah Johnson',
-                    image: 'https://randomuser.me/api/portraits/women/44.jpg'
-                },
-                isPremium: false,
-                likes: 342,
-                views: 1876,
-                rating: 4.8
-            },
-            {
-                id: 'wellness_meditation_1',
-                title: 'Mindfulness Meditation: A Beginner\'s Complete Guide',
-                description: 'Start your meditation journey with this comprehensive guide to mindfulness practice and techniques.',
-                type: 'article' as const,
-                category: 'Meditation',
-                coverImage: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773',
-                author: {
-                    name: 'Dr. Anna Patel',
-                    image: 'https://randomuser.me/api/portraits/women/29.jpg'
-                },
-                isPremium: false,
-                likes: 678,
-                views: 3245,
-                rating: 4.9
-            },
-            {
-                id: 'wellness_sleep_1',
-                title: 'The Perfect Sleep Environment: A Complete Guide',
-                description: 'Transform your bedroom into a sleep sanctuary with these evidence-based optimization techniques.',
-                type: 'article' as const,
-                category: 'Sleep',
-                coverImage: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55',
-                author: {
-                    name: 'Dr. Emily Rodriguez',
-                    image: 'https://randomuser.me/api/portraits/women/67.jpg'
-                },
-                isPremium: false,
-                likes: 523,
-                views: 2876,
-                rating: 4.9
-            }
-        ];
-
-        return wellnessArticles;
-    };
-
-    // Fetch resources function
     const fetchResources = useCallback(async () => {
         if (!userToken) {
             setLoading(false);
@@ -133,119 +50,53 @@ const MindfulResources = ({ }: MindfulResourcesProps) => {
 
         try {
             setLoading(true);
-            console.log('MindfulResources: Starting to fetch resources...');
-
             const allResources: Resource[] = [];
 
-            // 1. FETCH FROM NEWS API (Real articles)
-            try {
-                const NEWS_API_KEY = 'd8f42abb753441b5a5627315c2d11f2b';
-                const NEWS_API_BASE = 'https://newsapi.org/v2';
+            // Fetch news articles
+            const newsArticles = await fetchNewsArticles();
+            allResources.push(...newsArticles);
 
-                console.log('MindfulResources: Fetching real articles from News API...');
-
-                const response = await axios.get(`${NEWS_API_BASE}/everything`, {
-                    params: {
-                        q: 'mental health OR meditation OR stress relief OR anxiety help OR mindfulness OR wellness',
-                        language: 'en',
-                        sortBy: 'publishedAt',
-                        pageSize: 10, // Limit for home page
-                        apiKey: NEWS_API_KEY
-                    }
-                });
-
-                if (response.data && response.data.articles && Array.isArray(response.data.articles)) {
-                    const newsArticles: Resource[] = response.data.articles
-                        .filter((article: any) => article.title && article.description && article.urlToImage)
-                        .map((article: any, index: number) => ({
-                            id: `news_${index}_${Date.now()}`,
-                            title: article.title,
-                            description: article.description || 'No description available',
-                            type: 'article' as const,
-                            category: getCategoryFromContent(article.title + ' ' + article.description),
-                            coverImage: article.urlToImage || 'https://images.unsplash.com/photo-1506126613408-eca07ce68773',
-                            author: {
-                                name: article.author || article.source?.name || 'Unknown Author',
-                                image: 'https://randomuser.me/api/portraits/men/32.jpg'
-                            },
-                            isPremium: false,
-                            likes: Math.floor(Math.random() * 500),
-                            views: Math.floor(Math.random() * 2000),
-                            rating: Math.random() * 2 + 3,
-                            url: article.url
-                        }));
-
-                    allResources.push(...newsArticles);
-                    console.log(`MindfulResources: Loaded ${newsArticles.length} articles from News API`);
-                }
-            } catch (newsError) {
-                console.error('MindfulResources: News API failed:', newsError);
-            }
-
-            // 2. ADD CURATED WELLNESS CONTENT
+            // Add wellness content
             const wellnessContent = generateWellnessContent();
             allResources.push(...wellnessContent);
-            console.log(`MindfulResources: Added ${wellnessContent.length} curated wellness articles`);
 
-            // 3. SHUFFLE AND LIMIT FOR HOME PAGE
+            // Shuffle and limit for home page
             const shuffledResources = allResources
                 .sort(() => Math.random() - 0.5)
-                .slice(0, 6); // Show only 6 articles on home page
+                .slice(0, 6);
 
             setResources(shuffledResources);
-            console.log(`MindfulResources: Successfully loaded ${shuffledResources.length} articles for home page`);
-
         } catch (error) {
-            console.error('MindfulResources: Error fetching resources:', error);
-            // Fallback to wellness content only
+            console.error('Error fetching resources:', error);
             setResources(generateWellnessContent());
         } finally {
             setLoading(false);
         }
     }, [userToken]);
 
-    // Load resources when component mounts
     useEffect(() => {
         fetchResources();
     }, [fetchResources]);
 
-    // Refresh when screen comes into focus
     useFocusEffect(
         useCallback(() => {
-            if (userToken) {
-                fetchResources();
-            }
+            if (userToken) fetchResources();
         }, [fetchResources, userToken])
     );
 
     const handleSeeAllPress = () => {
-        if (userToken) {
-            navigation.navigate('ArticleSelection');
-        } else {
-            console.log('User not authenticated, redirect to sign in');
-        }
+        if (userToken) navigation.navigate('ArticleSelection');
     };
 
     const handleResourcePress = (resource: Resource) => {
-        if (userToken) {
-            if (resource.url && resource.id.startsWith('news_')) {
-                // External news article - navigate to ArticleDetail with URL
-                navigation.navigate('ArticleDetail', {
-                    articleId: resource.id,
-                    articleUrl: resource.url
-                });
-            } else {
-                // Local wellness content
-                navigation.navigate('ArticleDetail', {
-                    articleId: resource.id
-                });
-            }
-        } else {
-            console.log('User not authenticated, redirect to sign in');
-        }
+        if (!userToken) return;
+
+        navigation.navigate('ArticleDetail', {
+            articleId: resource.id,
+            articleUrl: resource.url
+        });
     };
 
-    // Show loading state
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
@@ -255,7 +106,6 @@ const MindfulResources = ({ }: MindfulResourcesProps) => {
         );
     }
 
-    // Show message if no resources
     if (!userToken || resources.length === 0) {
         return (
             <View style={styles.emptyContainer}>
@@ -287,7 +137,7 @@ const MindfulResources = ({ }: MindfulResourcesProps) => {
                 }}
                 scrollEventThrottle={16}
             >
-                {resources.map((resource, index) => (
+                {resources.map((resource) => (
                     <TouchableOpacity
                         key={resource.id}
                         style={styles.resourceCard}
@@ -342,6 +192,7 @@ const MindfulResources = ({ }: MindfulResourcesProps) => {
     );
 };
 
+// Simplified styles - keep only essential ones
 const styles = StyleSheet.create({
     sectionHeader: {
         flexDirection: 'row',

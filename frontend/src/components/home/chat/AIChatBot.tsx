@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
     View,
     Text,
@@ -9,17 +9,95 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { HomeStackParamList } from '@/src/navigation/HomeNavigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AuthContext } from '@/src/context/AuthContext';
+import { api } from '@/src/api/config';
 
 interface AIChatbotProps {
     onChatPress: () => void;
     onSettingsPress: () => void;
 }
+
+interface ChatbotStats {
+    totalConversations: number;
+    thisMonthConversations: number;
+    remainingThisMonth: number;
+    monthlyLimit: number;
+}
+
 type NavigationProp = NativeStackNavigationProp<HomeStackParamList>;
+
 const AIChatbot = ({ }: AIChatbotProps) => {
     const navigation = useNavigation<NavigationProp>();
+    const { userToken, userData } = useContext(AuthContext);
+    const [stats, setStats] = useState<ChatbotStats>({
+        totalConversations: 0,
+        thisMonthConversations: 0,
+        remainingThisMonth: 0,
+        monthlyLimit: 100 // Default limit, you can make this configurable
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchChatbotStats();
+    }, []);
+
+    const fetchChatbotStats = async () => {
+        try {
+            setLoading(true);
+
+            // Fetch conversation history
+            const response = await api.get('/api/chatbot/history', {
+                headers: {
+                    'Authorization': `Bearer ${userToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.data.success && response.data.conversations) {
+                const conversations = response.data.conversations;
+                const currentDate = new Date();
+                const currentMonth = currentDate.getMonth();
+                const currentYear = currentDate.getFullYear();
+
+                // Count total conversations
+                const totalConversations = conversations.length;
+
+                // Count conversations from this month
+                const thisMonthConversations = conversations.filter((conv: any) => {
+                    const convDate = new Date(conv.createdAt || conv.lastUpdated);
+                    return convDate.getMonth() === currentMonth && convDate.getFullYear() === currentYear;
+                }).length;
+
+                // Calculate remaining conversations for this month
+                const monthlyLimit = 100; // You can make this configurable or fetch from user settings
+                const remainingThisMonth = Math.max(0, monthlyLimit - thisMonthConversations);
+
+                setStats({
+                    totalConversations,
+                    thisMonthConversations,
+                    remainingThisMonth,
+                    monthlyLimit
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching chatbot stats:', error);
+            // Keep default values on error
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleSettingsPress = () => {
         navigation.navigate('settings');
     };
+
+    const formatNumber = (num: number): string => {
+        if (num >= 1000) {
+            return (num / 1000).toFixed(1) + 'k';
+        }
+        return num.toString();
+    };
+
     return (
         <>
             <View style={styles.sectionHeader}>
@@ -32,9 +110,13 @@ const AIChatbot = ({ }: AIChatbotProps) => {
             <View style={styles.chatbotCard}>
                 <View style={styles.chatbotContent}>
                     <View>
-                        <Text style={styles.chatbotNumber}>2,541</Text>
+                        <Text style={styles.chatbotNumber}>
+                            {loading ? '...' : formatNumber(stats.totalConversations)}
+                        </Text>
                         <Text style={styles.chatbotLabel}>Conversations</Text>
-                        <Text style={styles.chatbotSubtext}>83 left this month</Text>
+                        <Text style={styles.chatbotSubtext}>
+                            {loading ? 'Loading...' : `${stats.remainingThisMonth} left this month`}
+                        </Text>
                         <View style={styles.chatbotPromo}>
                             <Ionicons name="star" size={14} color="#FFFFFF" />
                             <Text style={styles.promoText}>Go Pro. Now!</Text>
@@ -50,7 +132,11 @@ const AIChatbot = ({ }: AIChatbotProps) => {
                 <View style={styles.chatbotActions}>
                     <TouchableOpacity
                         style={[styles.actionButton, { backgroundColor: '#8DAA6D' }]}
-                        onPress={() => navigation.navigate('Chatbot' as never)}
+                        onPress={() => {
+                            navigation.navigate('Chatbot' as never);
+                            // Refresh stats after navigating to chatbot
+                            setTimeout(() => fetchChatbotStats(), 1000);
+                        }}
                     >
                         <Ionicons name="add" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
@@ -58,8 +144,7 @@ const AIChatbot = ({ }: AIChatbotProps) => {
                         style={[styles.actionButton, { backgroundColor: '#E18942' }]}
                         onPress={() => navigation.navigate('conversation')}
                     >
-                        <Ionicons name="settings-sharp" size={22} color="#FFFFFF" />
-
+                        <Ionicons name="chatbubbles-outline" size={22} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -96,6 +181,7 @@ const styles = StyleSheet.create({
         fontSize: 32,
         fontWeight: 'bold',
         color: '#FFFFFF',
+        minWidth: 80, // Prevent layout shift while loading
     },
     chatbotLabel: {
         fontSize: 16,
@@ -106,6 +192,7 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: '#E8E8E8',
         marginBottom: 8,
+        minHeight: 18, // Prevent layout shift while loading
     },
     chatbotPromo: {
         flexDirection: 'row',

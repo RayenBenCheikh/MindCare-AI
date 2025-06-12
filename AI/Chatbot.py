@@ -3,7 +3,9 @@ import requests
 import logging
 from pymongo import MongoClient
 import datetime
-import re
+from bson import ObjectId
+import random
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -86,6 +88,69 @@ try:
 except Exception as e:
     logger.error(f"MongoDB connection error in Chatbot blueprint: {str(e)}")
     assessments_collection = None
+try:
+    music_collection = db.Music  
+    logger.info("Music collection connected in Chatbot blueprint")
+except Exception as e:
+    logger.error(f"Music collection connection error: {str(e)}")
+    music_collection = None
+
+
+def get_music_recommendations_for_stress(stress_level, limit=3):
+    """Get music recommendations based on stress level"""
+    try:
+        if music_collection is None:
+            logger.error("Music collection not available")
+            return []
+        
+        # Map stress levels to music categories
+        stress_to_category = {
+            1: ['meditation', 'nature'],  # Low stress - maintain calm
+            2: ['meditation', 'focus', 'nature'],  # Mild stress - focus and calm
+            3: ['meditation', 'anxiety', 'sleep'],  # Moderate stress - anxiety relief
+            4: ['anxiety', 'stress', 'meditation'],  # High stress - stress relief
+            5: ['stress', 'anxiety', 'sleep']  # Very high stress - immediate relief
+        }
+        
+        categories = stress_to_category.get(stress_level, ['meditation'])
+        
+        # Query music from database
+        music_tracks = []
+        
+        for category in categories:
+            # Get tracks from each category
+            tracks = list(music_collection.find({
+                'category': category,
+                'isActive': {'$ne': False}  # Include documents without isActive field
+            }).limit(limit))
+            
+            music_tracks.extend(tracks)
+        
+        # If no tracks found, get any available tracks
+        if not music_tracks:
+            music_tracks = list(music_collection.find({}).limit(limit))
+        
+        # Format tracks for recommendation
+        recommendations = []
+        for track in music_tracks[:limit]:
+            recommendation = {
+                'id': str(track['_id']),
+                'title': track.get('title', 'Unknown Title'),
+                'artist': track.get('artist', 'Unknown Artist'),
+                'category': track.get('category', 'general'),
+                'duration': track.get('duration', 0),
+                'coverImage': track.get('coverImage', ''),
+                'previewUrl': f"/api/music/stream/{track['_id']}",
+                'description': track.get('tags', [])
+            }
+            recommendations.append(recommendation)
+        
+        logger.info(f"Found {len(recommendations)} music recommendations for stress level {stress_level}")
+        return recommendations
+        
+    except Exception as e:
+        logger.error(f"Error getting music recommendations: {str(e)}")
+        return []
 
 def get_fallback_stress_level(responses):
     """Fallback stress level calculation when LLM fails"""
@@ -324,14 +389,21 @@ def assessment():
     # Get stress level with fallback
     stress_level = get_stress_level_with_ollama_api(responses, model)
     
-    
     if stress_level is None:
         logger.error("Failed to get stress level from LLM, using fallback")
         stress_level = get_fallback_stress_level(responses)
     
-    # Get personalized advice
-    advice = get_personalized_advice_with_ollama(responses, stress_level, model)
-  
+    # Get personalized advice with music recommendations
+    advice_result = get_personalized_advice_with_ollama(responses, stress_level, model)
+    
+    # Handle both old and new return formats
+    if isinstance(advice_result, dict):
+        advice = advice_result.get('advice', '')
+        music_recommendations = advice_result.get('musicRecommendations', [])
+    else:
+        advice = advice_result
+        music_recommendations = get_music_recommendations_for_stress(stress_level, limit=3)
+    
     # Determine mood and severity
     mood = "depression" if stress_level >= 3 else "positive"
     severity = stress_level
@@ -340,8 +412,33 @@ def assessment():
         'mood': mood,
         'severity': severity,
         'message': f"Based on your responses, your stress level is {stress_level}/5.",
-        'solutions': advice
+        'solutions': advice,
+        'musicRecommendations': music_recommendations  # Add music recommendations
     })
+@chatbot_bp.route('/music-recommendations', methods=['POST'])
+def get_music_for_stress():
+    """Get music recommendations based on stress level"""
+    data = request.json
+    stress_level = data.get('stressLevel', 3)
+    limit = data.get('limit', 5)
+    
+    try:
+        recommendations = get_music_recommendations_for_stress(stress_level, limit)
+        
+        return jsonify({
+            'success': True,
+            'recommendations': recommendations,
+            'count': len(recommendations),
+            'stressLevel': stress_level
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in music recommendations endpoint: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'recommendations': []
+        }), 500
 
 @chatbot_bp.route('/assessments/save', methods=['POST'])
 def save_assessment():
@@ -563,10 +660,13 @@ Stress level (1=low, 5=high):"""
     return None
 
 def get_personalized_advice_with_ollama(responses, stress_level, selected_model='gemma'):
-    """Get personalized advice from Ollama based on user's responses - ALL MODELS SUPPORTED"""
+    """Get personalized advice from Ollama based on user's responses - WITH MUSIC RECOMMENDATIONS"""
     api_url = "http://127.0.0.1:11434/api/generate"
     
-    # Create summary of concerning responses
+    # Get music recommendations first
+    music_recommendations = get_music_recommendations_for_stress(stress_level, limit=3)
+    
+    # Create summary of concerning responses (existing code)
     concerning_responses = []
     
     if "very bad" in responses[0].lower() or "bad" in responses[0].lower():
@@ -598,38 +698,46 @@ def get_personalized_advice_with_ollama(responses, stress_level, selected_model=
     
     model_to_use = model_mapping.get(selected_model, selected_model)
     
+    # Add music context to prompt
+    music_context = ""
+    if music_recommendations:
+        music_titles = [track['title'] for track in music_recommendations]
+        music_context = f"\n\nI also have some calming music recommendations that might help: {', '.join(music_titles)}. "
+    
     # Configure prompt based on model type
     if 'deepseek' in model_to_use.lower() or 'qwen' in model_to_use.lower():
-        # Shorter prompt for reasoning models
         prompt = f"""Mental health advice for stress level {stress_level}/5.
 
 Concerns: {', '.join(concerning_responses) if concerning_responses else 'None specific'}
 
-Give 3-4 helpful suggestions. Be supportive and direct. No reasoning process."""
+{music_context}
+
+Give 3-4 helpful suggestions including the music recommendations. Be supportive and direct. No reasoning process."""
         
         options = {
             "temperature": 0.5,
             "top_p": 0.8,
-            "num_predict": 300,
+            "num_predict": 350,
             "stop": ['<think>', '</', '\n\nUser:', 'Human:']
         }
         timeout = 45
     else:
-        # Full prompt for Gemma and Llama
         prompt = f"""You are a compassionate mental health assistant. The user has stress level {stress_level}/5.
 
 Their concerning responses include:
 - {chr(10).join(concerning_responses) if concerning_responses else 'None specifically'}
 
-Please provide personalized, actionable advice to help them manage their stress and improve their mental wellbeing.
+{music_context}
+
+Please provide personalized, actionable advice including music therapy suggestions.
 Give 3-5 specific suggestions that address their particular concerns.
 For high stress levels (4-5), recommend professional help but also provide immediate coping strategies.
 
-Respond directly in a caring, positive, and supportive tone. About 150-200 words."""
+Respond directly in a caring, positive, and supportive tone. About 150-250 words."""
         
         options = {
             "temperature": 0.7,
-            "num_predict": 300,
+            "num_predict": 400,
             "stop": ["\n\nUser:", "\n\nHuman:"]
         }
         timeout = 60
@@ -658,15 +766,23 @@ Respond directly in a caring, positive, and supportive tone. About 150-200 words
                     advice = advice.split('<think>')[0].strip()
             
             if len(advice) > 30:
-                return advice
+                return {
+                    'advice': advice,
+                    'musicRecommendations': music_recommendations
+                }
                 
         logger.error(f"Failed to get advice from {model_to_use}")
                 
     except Exception as e:
         logger.error(f"Error getting advice with {model_to_use}: {e}")
     
-    # Fallback advice
-    return get_fallback_advice(stress_level)
+    # Fallback advice with music
+    fallback_advice = get_fallback_advice(stress_level)
+    return {
+        'advice': fallback_advice,
+        'musicRecommendations': music_recommendations
+    }
+
 
 def get_fallback_advice(stress_level):
     """Return fallback advice based on stress level if API calls fail"""

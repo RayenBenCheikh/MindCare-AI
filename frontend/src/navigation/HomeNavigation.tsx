@@ -7,6 +7,13 @@ import LLMSettings from "../components/home/chat/LLMSettings";
 import ArticleSelection from "../components/home/Article/ArticleSelection";
 import ArticleDetail from "../components/home/Article/ArticleDetail";
 import MusicSelection from "../components/home/Music/MusicSelection";
+import MindfulDashboard from "../components/home/Mindful/MindfulDashbord";
+import AssessmentHistory from "../components/home/Mindful/AssessmentHistory";
+import MindfulHours from "../components/home/Mindful/MindfulHours";
+import SleepQuality from "../components/home/Mindful/SleepQuality";
+import MoodTracker from "../components/home/Mindful/MoodTracker";
+import StressLevel from "./StressLevel";
+
 export type HomeStackParamList = {
     home: undefined;
     Chatbot: { conversationId?: string };
@@ -15,9 +22,15 @@ export type HomeStackParamList = {
     ArticleSelection: undefined;
     ArticleDetail: {
         articleId: string;
-        articleUrl?: string; // Optional for external articles
+        articleUrl?: string;
     };
     MusicSelection: undefined;
+    MindfulDashboard: undefined;
+    AssessmentHistory: undefined;
+    MindfulHours: undefined;
+    SleepQuality: undefined;
+    StressLevel: undefined;
+    MoodTracker: undefined;
 }
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -62,6 +75,36 @@ const HomeNavigator = () => {
                     headerShown: false,
                     title: 'Music Library'
                 }}
+            />
+            <Stack.Screen
+                name="MindfulDashboard"
+                component={MindfulDashboard}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="AssessmentHistory"
+                component={AssessmentHistory}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="MindfulHours"
+                component={MindfulHours}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="SleepQuality"
+                component={SleepQuality}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="StressLevel"
+                component={StressLevel}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="MoodTracker"
+                component={MoodTracker}
+                options={{ headerShown: false }}
             />
         </Stack.Navigator>
     );

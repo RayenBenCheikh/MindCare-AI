@@ -65,7 +65,6 @@ router.post("/submit", auth, async (req, res) => {
             professionalHelp,
             completedAt,
             description,
-            // Additional fields from mental health assessment
             mentalHealthResponses,
             mentalHealthStressLevel
         } = req.body;
@@ -190,7 +189,7 @@ router.post("/save-progress", auth, async (req, res) => {
         });
 
         if (assessment) {
-            // Update existing draft
+
             assessment = await Assessment.findByIdAndUpdate(
                 assessment._id,
                 {
@@ -406,6 +405,30 @@ router.get("/vitalSigns", auth, async (req, res) => {
             error: error.message,
             vitalSigns: [],
             count: 0
+        });
+    }
+});
+router.get('/assessment-results', auth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Find all assessment results for the user
+        const assessments = await AssessmentResult.find({
+            userId: userId
+        }).sort({ completedAt: -1 }).limit(50); // Get last 50 assessments
+
+        res.json({
+            success: true,
+            assessments: assessments,
+            count: assessments.length
+        });
+
+    } catch (error) {
+        console.error('Error fetching assessment results:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching assessment results',
+            error: error.message
         });
     }
 });

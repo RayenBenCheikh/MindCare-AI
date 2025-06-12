@@ -7,20 +7,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { colors, images } from '@/src/theme';
 import { AuthContext } from '@/src/context/AuthContext';
-import MindfulTracker from '@/src/components/home/MindfulTracker';
+import MindfulTracker from '@/src/components/home/Mindful/MindfulTracker';
 import MentalHealthMetrics from '@/src/components/home/MentalHealthMetrics';
-//import AIChatbot from '../../components/home/AIChatbot';
-import MindfulResources from '@/src/components/home/MindfulResources';
+import MindfulResources from '@/src/components/home/Mindful/MindfulResources';
 import axios from 'axios';
 import { AssessmentData, useAssessmentStore } from '@/src/store/Store';
 import { API_ENDPOINTS } from '@/src/constants/const';
 import { useNavigation } from '@react-navigation/native';
 import { api, setAuthToken } from '@/src/api/config';
 import { isTokenExpired } from '@/src/api/config';
-import MindfulMusic from '@/src/components/home/MindfulMusic';
+
 import { HomeStackParamList } from '@/src/navigation/HomeNavigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AIChatbot from '@/src/components/home/chat/AIChatBot';
+import MindfulMusic from '@/src/components/home/Mindful/MindfulMusic';
 type NavigationProp = NativeStackNavigationProp<HomeStackParamList>;
 const Home = () => {
     const [currentDateTime, setCurrentDateTime] = useState('');
@@ -29,9 +29,12 @@ const Home = () => {
     const { userData, userToken } = useContext(AuthContext);
     const navigation = useNavigation<NavigationProp>();
     const { signOut } = useContext(AuthContext);
+    const [refreshKey, setRefreshKey] = useState(0);
     // Extract the user's name or use a fallback
     const username = userData?.name || userData?.username || userData?.email?.split('@')[0] || "User";
-
+    const handleRefreshTracker = () => {
+        setRefreshKey(prev => prev + 1);
+    };
     // Update the time every minute
     useEffect(() => {
         const updateDateTime = () => {
@@ -166,9 +169,11 @@ const Home = () => {
 
                 {/* Mindful Tracker Component */}
                 <MindfulTracker
+                    key={refreshKey}
                     backendAssessmentData={backendAssessmentData}
                     assessmentData={backendAssessmentData}
                     isLoading={isLoading}
+                    onRefresh={handleRefreshTracker}
                 />
 
                 {/* AI Therapy Chatbot Component */}

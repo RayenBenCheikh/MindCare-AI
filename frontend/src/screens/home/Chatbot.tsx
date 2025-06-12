@@ -2,23 +2,44 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, ScrollView,
     StyleSheet, ActivityIndicator, SafeAreaView, KeyboardAvoidingView, Platform,
-    Dimensions
+    Dimensions, Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { colors } from '@/src/theme';
 import { api, VITAL_SIGNS_URL, } from '@/src/api/config';
 import { AuthContext } from '@/src/context/AuthContext';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { HomeStackParamList } from '@/src/navigation/HomeNavigation';
+import { StackNavigationProp } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
 let messageCounter = 0;
-// Get screen dimensions
+
 interface ChatMessage {
     id: string;
     text: string;
     sender: 'user' | 'bot';
     timestamp: Date;
+}
+
+interface AssessmentResponse {
+    mood: string;
+    severity: number;
+    message: string;
+    solutions: string;
+    musicRecommendations?: MusicRecommendation[];
+}
+
+interface MusicRecommendation {
+    id: string;
+    title: string;
+    artist: string;
+    category: string;
+    duration: number;
+    coverImage: string;
+    previewUrl: string;
+    description: string[];
 }
 
 // Assessment questions from your Python model
@@ -48,17 +69,93 @@ const ASSESSMENT_OPTIONS = [
     ["Not at all", "A little", "Somewhat", "Mostly", "Completely"],
     ["Never", "Rarely", "Sometimes", "Often", "Always"]
 ];
+
 // Create a helper function to generate unique IDs
 const generateUniqueId = () => {
     messageCounter += 1;
     return `msg_${Date.now()}_${messageCounter}`;
 };
+
+// Helper function for category colors
+const getCategoryColor = (category: string): string => {
+    const colors = {
+        meditation: '#8DAA6D',
+        sleep: '#6A8D73',
+        focus: '#F6BD60',
+        nature: '#5D8A66',
+        anxiety: '#9E88B0',
+        stress: '#BD8C61'
+    };
+    return colors[category as keyof typeof colors] || '#8DAA6D';
+};
+
+// Music Recommendation Card Component
+const MusicRecommendationCard: React.FC<{
+    recommendations: MusicRecommendation[];
+    onPress: () => void;
+}> = ({ recommendations, onPress }) => {
+    if (!recommendations || recommendations.length === 0) return null;
+
+    return (
+        <View style={styles.musicRecommendationCard}>
+            <View style={styles.musicCardHeader}>
+                <Ionicons name="musical-notes" size={20} color="#8DAA6D" />
+                <Text style={styles.musicCardTitle}>Music Recommendations</Text>
+            </View>
+
+            <Text style={styles.musicCardSubtitle}>
+                {recommendations.length} personalized tracks to help you feel better
+            </Text>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.musicPreviewContainer}>
+                {recommendations.slice(0, 3).map((track, index) => (
+                    <View key={track.id} style={styles.musicPreviewItem}>
+                        <Image source={{ uri: track.coverImage }} style={styles.musicPreviewImage} />
+                        <Text style={styles.musicPreviewTitle} numberOfLines={1}>{track.title}</Text>
+                        <Text style={styles.musicPreviewArtist} numberOfLines={1}>{track.artist}</Text>
+                        <View style={[styles.musicCategoryBadge, { backgroundColor: getCategoryColor(track.category) }]}>
+                            <Text style={styles.musicCategoryText}>{track.category}</Text>
+                        </View>
+                    </View>
+                ))}
+            </ScrollView>
+
+            <TouchableOpacity style={styles.viewMusicButton} onPress={onPress}>
+                <Text style={styles.viewMusicButtonText}>🎵 Listen Now</Text>
+                <Ionicons name="arrow-forward" size={16} color="#FFF" />
+            </TouchableOpacity>
+        </View>
+    );
+};
+
 const Chatbot: React.FC = () => {
     const { userToken, userData } = useContext(AuthContext);
     const route = useRoute<RouteProp<HomeStackParamList, 'Chatbot'>>();
+    const navigation = useNavigation<StackNavigationProp<any>>();
     const conversationId = route.params?.conversationId;
+
     const [currentConversation, setCurrentConversation] = useState<any>(null);
     const [currentLLM, setCurrentLLM] = useState('gemma3:4b');
+    const [musicRecommendations, setMusicRecommendations] = useState<MusicRecommendation[]>([]);
+    const [showMusicRecommendations, setShowMusicRecommendations] = useState(false);
+    const [inputText, setInputText] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
+    const [inAssessment, setInAssessment] = useState(false);
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [assessmentResponses, setAssessmentResponses] = useState<string[]>([]);
+    const scrollViewRef = useRef<ScrollView>(null);
+    const [isSavingAssessment, setIsSavingAssessment] = useState(false);
+
+    // Initialize messages
+    const [messages, setMessages] = useState<ChatMessage[]>([
+        {
+            id: generateUniqueId(),
+            text: 'Hello! I am MindCare AI assistant. How can I help you today? Type "start assessment" to begin a mental health evaluation.',
+            sender: 'bot',
+            timestamp: new Date(),
+        },
+    ]);
+
     useEffect(() => {
         const loadPreferredModel = async () => {
             try {
@@ -74,23 +171,49 @@ const Chatbot: React.FC = () => {
 
         loadPreferredModel();
     }, []);
-    useEffect(() => {
 
+    useEffect(() => {
         if (conversationId) {
             loadConversationMessages(conversationId);
         }
     }, [conversationId]);
 
-    // Add function to load conversation messages
+    useEffect(() => {
+        // Scroll to bottom when messages change
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, [messages]);
+
+    const handleMusicRecommendationPress = () => {
+        if (musicRecommendations && musicRecommendations.length > 0) {
+            // Navigate to music selection with recommendations
+            navigation.navigate('MusicSelection' as any, {
+                existingTracks: musicRecommendations.map(rec => ({
+                    id: rec.id,
+                    title: rec.title,
+                    artist: rec.artist,
+                    album: 'Recommended',
+                    duration: rec.duration,
+                    coverImage: rec.coverImage,
+                    previewUrl: rec.previewUrl,
+                    category: rec.category,
+                    popularity: 85,
+                    type: 'track',
+                    description: rec.description.join(', ')
+                })),
+                autoPlay: false
+            });
+        }
+    };
+
+    // Load conversation messages
     const loadConversationMessages = async (id: string) => {
         try {
-            setIsTyping(true); // Show loading state
+            setIsTyping(true);
             const response = await api.get(`/api/chatbot/${id}`);
 
             if (response.data.success && response.data.conversation) {
                 setCurrentConversation(response.data.conversation);
 
-                // Convert conversation messages to ChatMessage format
                 if (response.data.conversation.messages && response.data.conversation.messages.length > 0) {
                     const formattedMessages = response.data.conversation.messages.map((msg: any) => ({
                         id: msg._id || generateUniqueId(),
@@ -104,7 +227,6 @@ const Chatbot: React.FC = () => {
             }
         } catch (error) {
             console.error('Error loading conversation:', error);
-            // Show error message
             const errorMessage: ChatMessage = {
                 id: generateUniqueId(),
                 text: "I couldn't load your previous conversation. Let's start a new one.",
@@ -117,26 +239,10 @@ const Chatbot: React.FC = () => {
         }
     };
 
-    const [messages, setMessages] = useState<ChatMessage[]>([
-        {
-            id: generateUniqueId(),
-            text: 'Hello! I am MindCare AI assistant. How can I help you today? Type "start assessment" to begin a mental health evaluation.',
-            sender: 'bot',
-            timestamp: new Date(),
-        },
-    ]);
-    const [inputText, setInputText] = useState('');
-    const [isTyping, setIsTyping] = useState(false);
-    const [inAssessment, setInAssessment] = useState(false);
-    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [assessmentResponses, setAssessmentResponses] = useState<string[]>([]);
-    const scrollViewRef = useRef<ScrollView>(null);
-    const [isSavingAssessment, setIsSavingAssessment] = useState(false);
     const saveAssessmentToDatabase = async (assessmentData: any) => {
         try {
             setIsSavingAssessment(true);
 
-            // Check if user data exists and has an ID
             if (!userData || !userData.id) {
                 console.error('Cannot save assessment: No user ID available', userData);
                 const errorMessage: ChatMessage = {
@@ -152,11 +258,10 @@ const Chatbot: React.FC = () => {
             console.log('User data available, with ID:', userData.id);
             console.log('Saving assessment data:', assessmentData);
 
-            // Create a description that includes assessment details
             const assessmentDate = new Date().toLocaleDateString();
             const stressLevel = assessmentData.severity;
 
-            // Use the submit endpoint which updates existing assessment if present
+            // Save to assessments collection (existing functionality)
             const formattedAssessment = {
                 mood: {
                     id: assessmentData.mood,
@@ -165,19 +270,15 @@ const Chatbot: React.FC = () => {
                 completedAt: new Date().toISOString(),
                 isSubmitted: true,
                 description: `Mental health assessment from ${assessmentDate} - Stress level: ${stressLevel}/5`,
-                // Store relevant mental health data in appropriate fields
                 stressLevel: {
                     id: "mentalhealth",
                     text: `Stress level ${stressLevel}`
                 },
-                // Add responses to existing fields where appropriate
                 professionalHelp: assessmentData.severity >= 4 ? "recommended" : "optional",
-                // We avoid creating new field structures
             };
 
             console.log('Sending properly formatted assessment:', formattedAssessment);
 
-            // Use the submit endpoint which will update existing assessment
             const saveResponse = await api.post(
                 '/api/assessments/submit',
                 formattedAssessment,
@@ -190,12 +291,8 @@ const Chatbot: React.FC = () => {
             );
 
             console.log('Assessment saved successfully:', saveResponse.data);
-            const savedMessage: ChatMessage = {
-                id: generateUniqueId(),
-                text: `Your assessment has been updated with your mental health status.`,
-                sender: 'bot',
-                timestamp: new Date(),
-            };
+
+            // Save assessment results to chatbot conversations (NEW)
             try {
                 const saveResultsResponse = await api.post('/api/chatbot/assessment-results', {
                     responses: assessmentData.responses,
@@ -203,12 +300,24 @@ const Chatbot: React.FC = () => {
                     recommendations: assessmentData.solutions,
                     stressLevel: assessmentData.severity,
                     mood: assessmentData.mood
+                }, {
+                    headers: {
+                        'Authorization': `Bearer ${userToken}`,
+                        'Content-Type': 'application/json'
+                    }
                 });
 
-                console.log('Assessment results saved separately:', saveResultsResponse.data);
+                console.log('Assessment results saved to conversations:', saveResultsResponse.data);
             } catch (error) {
-                console.error('Error saving assessment results:', error);
+                console.error('Error saving assessment results to conversations:', error);
             }
+
+            const savedMessage: ChatMessage = {
+                id: generateUniqueId(),
+                text: `Your assessment has been updated with your mental health status.`,
+                sender: 'bot',
+                timestamp: new Date(),
+            };
 
             setTimeout(() => {
                 setMessages(prev => [...prev, savedMessage]);
@@ -218,7 +327,6 @@ const Chatbot: React.FC = () => {
         } catch (error) {
             console.error('Error saving assessment:', error);
 
-            // More detailed logging
             if (axios.isAxiosError(error)) {
                 console.error('Request URL:', error.config?.url);
                 console.error('Request data:', error.config?.data ? JSON.stringify(error.config.data) : null);
@@ -238,20 +346,13 @@ const Chatbot: React.FC = () => {
             setIsSavingAssessment(false);
         }
     };
-    useEffect(() => {
-        // Scroll to bottom when messages change
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, [messages]);
-
     const startAssessment = () => {
         setInAssessment(true);
         setCurrentQuestionIndex(0);
         setAssessmentResponses([]);
 
-        // Show available options for first question with clear numbering
         const options = ASSESSMENT_OPTIONS[0].map((opt, i) => `${i + 1}. ${opt}`).join('\n');
 
-        // Add first question with clear instructions
         const botMessage: ChatMessage = {
             id: generateUniqueId(),
             text: "I'll ask you 10 questions to understand how you're feeling. Please answer by entering a number between 1-5.\n\n" +
@@ -263,17 +364,17 @@ const Chatbot: React.FC = () => {
         setMessages(prev => [...prev, botMessage]);
         saveChatMessage(botMessage);
     };
+
     const saveChatMessage = async (message: ChatMessage) => {
         if (!userData || !userData.id || !userToken) return;
 
         try {
-            // If we have a conversation ID, include it
             const payload = {
                 userId: userData.id,
                 text: message.text,
                 sender: message.sender,
                 timestamp: message.timestamp,
-                conversationId: conversationId // Will be undefined for new conversations
+                conversationId: conversationId
             };
 
             await api.post('/api/chatbot/messages', payload);
@@ -284,10 +385,8 @@ const Chatbot: React.FC = () => {
     };
 
     const processAssessmentResponse = async (response: string) => {
-        // Try to map numerical responses (1-5) to the actual option text
         let processedResponse = response;
 
-        // If it's just a number, convert it to the corresponding option
         if (/^[1-5]$/.test(response)) {
             const optionIndex = parseInt(response) - 1;
             const options = ASSESSMENT_OPTIONS[currentQuestionIndex];
@@ -296,17 +395,13 @@ const Chatbot: React.FC = () => {
             }
         }
 
-        // Store the response
         const newResponses = [...assessmentResponses, processedResponse];
         setAssessmentResponses(newResponses);
 
-        // Move to next question
         const nextIndex = currentQuestionIndex + 1;
         setCurrentQuestionIndex(nextIndex);
 
-        // If there are more questions, ask the next one
         if (nextIndex < ASSESSMENT_QUESTIONS.length) {
-            // Show available options for next question
             const options = ASSESSMENT_OPTIONS[nextIndex].map((opt, i) => `${i + 1}. ${opt}`).join('\n');
 
             const nextQuestion: ChatMessage = {
@@ -318,11 +413,11 @@ const Chatbot: React.FC = () => {
 
             setTimeout(() => {
                 setMessages(prev => [...prev, nextQuestion]);
-                saveChatMessage(nextQuestion); // Add this line
+                saveChatMessage(nextQuestion);
                 setIsTyping(false);
             }, 1000);
         } else {
-            // Assessment complete, send all responses for analysis
+            // Assessment complete
             setIsTyping(true);
             const waitingMessage: ChatMessage = {
                 id: generateUniqueId(),
@@ -340,7 +435,7 @@ const Chatbot: React.FC = () => {
                     model: currentLLM
                 });
 
-                // Display results (REMOVE THE DUPLICATE WAITING MESSAGE HERE)
+                // Display results
                 const resultMessage: ChatMessage = {
                     id: generateUniqueId(),
                     text: response.data.message || "Assessment complete. Thank you for your responses.",
@@ -350,7 +445,8 @@ const Chatbot: React.FC = () => {
 
                 setMessages(prev => [...prev, resultMessage]);
                 saveChatMessage(resultMessage);
-                // If solutions provided, display them
+
+                // Display solutions
                 if (response.data.solutions) {
                     const solutionsMessage: ChatMessage = {
                         id: generateUniqueId(),
@@ -358,18 +454,6 @@ const Chatbot: React.FC = () => {
                         sender: 'bot',
                         timestamp: new Date(),
                     };
-                    // Save assessment results to database with user info
-                    if (userData && userToken) {
-                        const assessmentData = {
-                            responses: newResponses,
-                            severity: response.data.severity,
-                            mood: response.data.mood,
-                            message: response.data.message,
-                            solutions: response.data.solutions
-                        };
-
-                        saveAssessmentToDatabase(assessmentData);
-                    }
 
                     setTimeout(() => {
                         setMessages(prev => [...prev, solutionsMessage]);
@@ -377,14 +461,45 @@ const Chatbot: React.FC = () => {
                     }, 1000);
                 }
 
-                // If high stress level with suicidal thoughts, add emergency message
-                if (response.data.severity >= 4 && newResponses[9].includes("Sometimes") ||
-                    newResponses[9].includes("Often") || newResponses[9].includes("Always")) {
+                // Display music recommendations if available
+                if (response.data.musicRecommendations && response.data.musicRecommendations.length > 0) {
+                    const musicMessage: ChatMessage = {
+                        id: generateUniqueId(),
+                        text: `🎵 I've also prepared some music recommendations based on your stress level that might help you feel better. Would you like to listen to some calming music?`,
+                        sender: 'bot',
+                        timestamp: new Date(),
+                    };
 
+                    setTimeout(() => {
+                        setMessages(prev => [...prev, musicMessage]);
+                        saveChatMessage(musicMessage);
+                        setMusicRecommendations(response.data.musicRecommendations);
+                        setShowMusicRecommendations(true);
+                    }, 2000);
+                }
+
+                // Save assessment to database
+                if (userData && userToken) {
+                    const assessmentData = {
+                        responses: newResponses,
+                        severity: response.data.severity,
+                        mood: response.data.mood,
+                        message: response.data.message,
+                        solutions: response.data.solutions
+                    };
+
+                    saveAssessmentToDatabase(assessmentData);
+                }
+
+                // Emergency message for high-risk cases
+                if (response.data.severity >= 4 && (
+                    newResponses[9].includes("Sometimes") ||
+                    newResponses[9].includes("Often") ||
+                    newResponses[9].includes("Always")
+                )) {
                     const emergencyMessage: ChatMessage = {
                         id: generateUniqueId(),
-                        text:
-                            "Your life matters, and support is available.",
+                        text: "Your life matters, and support is available. Please consider reaching out to a mental health professional or crisis helpline.",
                         sender: 'bot',
                         timestamp: new Date(),
                     };
@@ -392,10 +507,9 @@ const Chatbot: React.FC = () => {
                     setTimeout(() => {
                         setMessages(prev => [...prev, emergencyMessage]);
                         saveChatMessage(emergencyMessage);
-                    }, 2000);
+                    }, 3000);
                 }
 
-                // Reset assessment state
                 setInAssessment(false);
 
             } catch (error) {
@@ -432,13 +546,40 @@ const Chatbot: React.FC = () => {
         setInputText('');
         saveChatMessage(userMessage);
         setIsTyping(true);
+
+        // Check for assessment start command
         if (currentInput.toLowerCase().includes('start assessment') && !inAssessment) {
             startAssessment();
             setIsTyping(false);
             return;
         }
 
-        // If in assessment mode, handle differently
+        // Check if user is asking about music recommendations
+        if (currentInput.toLowerCase().includes('music') ||
+            currentInput.toLowerCase().includes('listen') ||
+            currentInput.toLowerCase().includes('songs')) {
+
+            if (musicRecommendations && musicRecommendations.length > 0) {
+                const musicResponseMessage: ChatMessage = {
+                    id: generateUniqueId(),
+                    text: `Great! I have ${musicRecommendations.length} personalized music recommendations for you. Let me show them to you.`,
+                    sender: 'bot',
+                    timestamp: new Date(),
+                };
+
+                setMessages(prev => [...prev, musicResponseMessage]);
+                saveChatMessage(musicResponseMessage);
+
+                setTimeout(() => {
+                    handleMusicRecommendationPress();
+                }, 1000);
+
+                setIsTyping(false);
+                return;
+            }
+        }
+
+        // Handle assessment responses
         if (inAssessment) {
             processAssessmentResponse(currentInput);
             return;
@@ -446,26 +587,22 @@ const Chatbot: React.FC = () => {
 
         // Normal chat flow
         try {
-            // Get conversation history in correct format
             const history = messages.map(msg => ({
                 role: msg.sender === 'user' ? 'user' : 'assistant',
                 content: msg.text
             }));
 
-            // Add current message
             history.push({
                 role: 'user',
                 content: currentInput
             });
 
-            // Call your backend API
             const response = await axios.post(`${VITAL_SIGNS_URL}/api/chat`, {
                 message: currentInput,
                 history: history,
                 model: currentLLM
             });
 
-            // Process the response
             const botMessage: ChatMessage = {
                 id: generateUniqueId(),
                 text: response.data.reply || "I'm sorry, I couldn't process that. Can you try again?",
@@ -478,7 +615,6 @@ const Chatbot: React.FC = () => {
         } catch (error) {
             console.error('Error getting chatbot response:', error);
 
-            // Add fallback response
             const errorMessage: ChatMessage = {
                 id: generateUniqueId(),
                 text: "I'm having trouble connecting right now. Please try again later.",
@@ -501,7 +637,7 @@ const Chatbot: React.FC = () => {
             <ScrollView
                 ref={scrollViewRef}
                 style={styles.messagesContainer}
-                contentContainerStyle={{ paddingBottom: 180 }} // Increased for combined input+tabbar
+                contentContainerStyle={{ paddingBottom: 180 }}
                 showsVerticalScrollIndicator={true}
             >
                 {messages.map((message) => (
@@ -524,6 +660,14 @@ const Chatbot: React.FC = () => {
                     </View>
                 ))}
 
+                {/* Music recommendation card */}
+                {showMusicRecommendations && musicRecommendations && musicRecommendations.length > 0 && (
+                    <MusicRecommendationCard
+                        recommendations={musicRecommendations}
+                        onPress={handleMusicRecommendationPress}
+                    />
+                )}
+
                 {isTyping && (
                     <View style={[styles.messageBubble, styles.botMessage]}>
                         <ActivityIndicator size="small" color="#666" />
@@ -531,7 +675,6 @@ const Chatbot: React.FC = () => {
                 )}
             </ScrollView>
 
-            {/* Footer container that includes input field + tab bar spacing */}
             <View style={styles.footerContainer}>
                 <KeyboardAvoidingView
                     behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -547,7 +690,6 @@ const Chatbot: React.FC = () => {
                                         style={styles.numberButton}
                                         onPress={() => {
                                             setInputText(num.toString());
-                                            // Auto-submit after a brief delay for better UX
                                             setTimeout(() => {
                                                 handleSendMessage();
                                             }, 300);
@@ -562,12 +704,8 @@ const Chatbot: React.FC = () => {
                             style={styles.input}
                             value={inputText}
                             onChangeText={(text) => {
-                                // For assessment, only allow numbers 1-5
                                 if (inAssessment) {
-                                    // Filter to only allow digits 1-5
                                     const filtered = text.replace(/[^1-5]/g, '');
-
-                                    // Only take the first digit if multiple are entered
                                     if (filtered.length > 1) {
                                         setInputText(filtered.charAt(0));
                                     } else {
@@ -581,8 +719,8 @@ const Chatbot: React.FC = () => {
                             placeholderTextColor="#999"
                             onSubmitEditing={handleSendMessage}
                             returnKeyType="send"
-                            keyboardType={inAssessment ? "number-pad" : "default"} // Use number pad for assessment
-                            maxLength={inAssessment ? 1 : undefined} // Limit to single digit during assessment
+                            keyboardType={inAssessment ? "number-pad" : "default"}
+                            maxLength={inAssessment ? 1 : undefined}
                         />
                         <TouchableOpacity
                             style={[
@@ -601,12 +739,11 @@ const Chatbot: React.FC = () => {
                     </View>
                 </KeyboardAvoidingView>
 
-                {/* Space for the tab bar that will render underneath */}
                 <View style={styles.tabBarSpace} />
             </View>
         </SafeAreaView>
     );
-}
+};
 
 const styles = StyleSheet.create({
     container: {
@@ -724,5 +861,84 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: 'white',
     },
+    // Music recommendation styles
+    musicRecommendationCard: {
+        backgroundColor: '#F8F9FA',
+        borderRadius: 12,
+        padding: 16,
+        marginHorizontal: 16,
+        marginVertical: 8,
+        borderLeftWidth: 4,
+        borderLeftColor: '#8DAA6D',
+    },
+    musicCardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    musicCardTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#333',
+        marginLeft: 8,
+    },
+    musicCardSubtitle: {
+        fontSize: 14,
+        color: '#666',
+        marginBottom: 12,
+    },
+    musicPreviewContainer: {
+        marginBottom: 12,
+    },
+    musicPreviewItem: {
+        width: 100,
+        marginRight: 12,
+        alignItems: 'center',
+    },
+    musicPreviewImage: {
+        width: 80,
+        height: 80,
+        borderRadius: 8,
+        marginBottom: 6,
+    },
+    musicPreviewTitle: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#333',
+        textAlign: 'center',
+        marginBottom: 2,
+    },
+    musicPreviewArtist: {
+        fontSize: 10,
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: 4,
+    },
+    musicCategoryBadge: {
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 8,
+    },
+    musicCategoryText: {
+        fontSize: 8,
+        fontWeight: '600',
+        color: '#FFF',
+        textTransform: 'capitalize',
+    },
+    viewMusicButton: {
+        flexDirection: 'row',
+        backgroundColor: '#8DAA6D',
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    viewMusicButtonText: {
+        color: '#FFF',
+        fontWeight: '600',
+        marginRight: 8,
+    },
 });
+
 export default Chatbot;

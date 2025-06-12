@@ -50,9 +50,7 @@ const conversationSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// IMPORTANT: Define the model consistently - you were using 'chatbot' in some places and 'Conversation' in others
-const Conversation = mongoose.models.Conversation ||
-    mongoose.model('Conversation', conversationSchema);
+
 
 // Define generateConversationTopic function before it's used
 const generateConversationTopic = async (messages) => {
@@ -157,75 +155,105 @@ router.post('/messages', auth, async (req, res) => {
     }
 });
 
-// Fix all other routes that use Conversation model
-router.post('/assessment-results', auth, async (req, res) => {
+router.get('/assessment-results', auth, async (req, res) => {
     try {
-        const {
-            conversationId,
-            responses,
-            analysis,
-            recommendations,
-            stressLevel,
-            mood
-        } = req.body;
+        const userId = req.user.id;
 
-        // Find the conversation
-        let conversation;
+        // Find all conversations with completed assessment results for the user
+        const conversations = await Conversation.find({
+            userId: userId,
+            'assessmentResults.completed': true
+        }).sort({ 'assessmentResults.completedAt': -1 }).limit(50);
 
-        if (conversationId) {
-            // If conversation ID provided, use it
-            conversation = await Conversation.findOne({  // Fixed: using Conversation model
-                _id: conversationId,
-                userId: req.user.id
-            });
-        } else {
-            // Otherwise find most recent conversation
-            conversation = await Conversation.findOne({  // Fixed: using Conversation model
-                userId: req.user.id
-            }).sort({ lastUpdated: -1 });
-        }
+        // Extract assessment results from conversations
+        const assessments = conversations
+            .filter(conv => conv.assessmentResults && conv.assessmentResults.completed)
+            .map(conv => ({
+                _id: conv._id,
+                stressLevel: conv.assessmentResults.stressLevel || 0,
+                mood: conv.assessmentResults.mood || 'neutral',
+                severity: conv.assessmentResults.stressLevel || 0,
+                responses: conv.assessmentResults.responses || [],
+                completedAt: conv.assessmentResults.completedAt || conv.createdAt,
+                recommendations: conv.assessmentResults.recommendations || '',
+                analysis: conv.assessmentResults.analysis || ''
+            }));
 
-        if (!conversation) {
-            return res.status(404).json({
-                success: false,
-                message: "No conversation found to save assessment results"
-            });
-        }
-
-        // Update with assessment results
-        conversation.assessmentResults = {
-            responses,
-            analysis,
-            recommendations,
-            stressLevel,
-            mood,
-            completed: true,
-            completedAt: new Date()
-        };
-
-        // Update topic to reflect this is an assessment
-        if (conversation.topic !== "Mental Health Assessment") {
-            conversation.topic = "Mental Health Assessment";
-        }
-
-        // Save updated conversation
-        await conversation.save();
-
-        res.status(200).json({
+        res.json({
             success: true,
-            message: "Assessment results saved to conversation",
-            conversationId: conversation._id
+            assessments: assessments,
+            count: assessments.length
         });
+
     } catch (error) {
-        console.error("Error saving assessment results:", error);
+        console.error('Error fetching assessment results:', error);
         res.status(500).json({
             success: false,
-            message: "Error saving assessment results",
+            message: 'Error fetching assessment results',
             error: error.message
         });
     }
 });
+// Add stats endpoint for AIChatbot component
+router.get('/stats', auth, async (req, res) => {
+    try {
+        const userId = req.user.id;
 
+        // Get current date info
+        const currentDate = new Date();
+        const currentMonth = currentDate.getMonth();
+        const currentYear = currentDate.getFullYear();
+        const startOfMonth = new Date(currentYear, currentMonth, 1);
+        const endOfMonth = new Date(currentYear, currentMonth + 1, 0);
+
+        // Count total conversations for user
+        const totalConversations = await Conversation.countDocuments({
+            userId: userId
+        });
+
+        // Count conversations from this month
+        const thisMonthConversations = await Conversation.countDocuments({
+            userId: userId,
+            createdAt: {
+                $gte: startOfMonth,
+                $lte: endOfMonth
+            }
+        });
+
+        // You can make this configurable per user or subscription tier
+        const monthlyLimit = 100;
+        const remainingThisMonth = Math.max(0, monthlyLimit - thisMonthConversations);
+
+        // Count assessments completed this month
+        const assessmentsThisMonth = await Conversation.countDocuments({
+            userId: userId,
+            'assessmentResults.completed': true,
+            'assessmentResults.completedAt': {
+                $gte: startOfMonth,
+                $lte: endOfMonth
+            }
+        });
+
+        res.json({
+            success: true,
+            stats: {
+                totalConversations,
+                thisMonthConversations,
+                remainingThisMonth,
+                monthlyLimit,
+                assessmentsThisMonth
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching chatbot stats:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching chatbot statistics',
+            error: error.message
+        });
+    }
+});
 // Get conversation history for a user
 router.get('/history', auth, async (req, res) => {
     try {
@@ -299,5 +327,5 @@ router.get('/:conversationId', auth, async (req, res) => {
         });
     }
 });
-
+const Conversation = mongoose.models.Conversation || mongoose.model('Conversation', conversationSchema, 'conversations');
 export default router;

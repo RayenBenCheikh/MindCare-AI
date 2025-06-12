@@ -321,7 +321,7 @@ const MentalHealthMetrics = ({ backendAssessmentData, isLoading }: MentalHealthM
                                         <Text style={[styles.moodText, { fontSize: 16 }]}>
                                             {typeof backendAssessmentData?.sleepQuality?.hours === 'number' && backendAssessmentData.sleepQuality.hours < 3
                                                 ? '<3h'
-                                                : `${backendAssessmentData?.sleepQuality?.hours || "?"}h`
+                                                : `${backendAssessmentData?.sleepQuality?.hours || "?"}`
                                             }
                                         </Text>
                                     </View>
@@ -390,6 +390,7 @@ const styles = StyleSheet.create({
         width: 100,
         height: 100,
         borderRadius: 50,
+        marginTop: - 20,
         backgroundColor: 'rgba(255,255,255,0.3)',
         borderWidth: 4,
         borderColor: '#FFFFFF',

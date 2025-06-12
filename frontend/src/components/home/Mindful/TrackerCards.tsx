@@ -40,7 +40,7 @@ const TrackerCards: React.FC<TrackerCardsProps> = ({ trackerData }) => {
                     <View style={styles.cardMainContent}>
                         <View style={styles.cardHeaderRow}>
                             <Text style={styles.trackerTitle}>Mindful Hours</Text>
-                            <Ionicons name="chevron-forward" size={16} color="#8B7B73" />
+
                         </View>
                         <Text style={styles.trackerValue}>
                             {trackerData ? `${trackerData.mindfulHours.toFixed(1)}h/8h Today` : '0h/8h Today'}
@@ -49,6 +49,7 @@ const TrackerCards: React.FC<TrackerCardsProps> = ({ trackerData }) => {
                             Tap to view session history →
                         </Text>
                     </View>
+                    <Ionicons name="chevron-forward" size={16} color="#8B7B73" />
                 </View>
             </TouchableOpacity>
 
@@ -65,7 +66,7 @@ const TrackerCards: React.FC<TrackerCardsProps> = ({ trackerData }) => {
                     <View style={styles.cardMainContent}>
                         <View style={styles.cardHeaderRow}>
                             <Text style={styles.trackerTitle}>Sleep Quality</Text>
-                            <Ionicons name="chevron-forward" size={16} color="#8B7B73" />
+
                         </View>
                         <Text style={styles.trackerValue}>
                             {trackerData?.sleepQuality || 'No data'}
@@ -78,7 +79,9 @@ const TrackerCards: React.FC<TrackerCardsProps> = ({ trackerData }) => {
                         <Text style={styles.qualityValue}>
                             {trackerData ? getDetailedSleepDisplay(trackerData.sleepQuality, trackerData.assessments).display : "?"}
                         </Text>
+
                     </View>
+                    <Ionicons name="chevron-forward" size={16} color="#8B7B73" />
                 </View>
             </TouchableOpacity>
 
@@ -95,7 +98,7 @@ const TrackerCards: React.FC<TrackerCardsProps> = ({ trackerData }) => {
                     <View style={styles.streakInfoContainer}>
                         <View style={styles.cardHeaderRow}>
                             <Text style={styles.trackerTitle}>Assessment Streak</Text>
-                            <Ionicons name="chevron-forward" size={16} color="#8B7B73" />
+
                         </View>
                         <Text style={styles.trackerValue}>
                             {trackerData ? `${trackerData.journalStreak} Day Streak` : '0 Day Streak'}
@@ -128,6 +131,7 @@ const TrackerCards: React.FC<TrackerCardsProps> = ({ trackerData }) => {
                             ))
                         }
                     </View>
+                    <Ionicons name="chevron-forward" size={16} color="#8B7B73" />
                 </View>
             </TouchableOpacity>
 
@@ -144,7 +148,7 @@ const TrackerCards: React.FC<TrackerCardsProps> = ({ trackerData }) => {
                     <View style={styles.cardMainContent}>
                         <View style={styles.cardHeaderRow}>
                             <Text style={styles.trackerTitle}>Stress Level</Text>
-                            <Ionicons name="chevron-forward" size={16} color="#8B7B73" />
+
                         </View>
                         <Text style={styles.trackerValue}>
                             {trackerData
@@ -166,7 +170,9 @@ const TrackerCards: React.FC<TrackerCardsProps> = ({ trackerData }) => {
                                 }
                             ]} />
                         </View>
+
                     </View>
+                    <Ionicons name="chevron-forward" size={16} color="#8B7B73" />
                 </View>
             </TouchableOpacity>
 
@@ -187,7 +193,7 @@ const TrackerCards: React.FC<TrackerCardsProps> = ({ trackerData }) => {
                     <View style={styles.cardMainContent}>
                         <View style={styles.cardHeaderRow}>
                             <Text style={styles.trackerTitle}>Current Mood</Text>
-                            <Ionicons name="chevron-forward" size={16} color="#8B7B73" />
+
                         </View>
                         <Text style={styles.trackerValue}>
                             {formatMoodLabel(trackerData?.currentMood || 'neutral')}
@@ -201,6 +207,7 @@ const TrackerCards: React.FC<TrackerCardsProps> = ({ trackerData }) => {
                             {getMoodEmoji(trackerData?.currentMood || 'neutral')}
                         </Text>
                     </View>
+                    <Ionicons name="chevron-forward" size={16} color="#8B7B73" />
                 </View>
             </TouchableOpacity>
         </>

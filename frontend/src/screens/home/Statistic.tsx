@@ -49,10 +49,11 @@ const Statistic: React.FC<StatisticProps> = ({ userId }) => {
     const [error, setError] = useState<string | null>(null);
     const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
     const [statsSummary, setStatsSummary] = useState<StatsSummary | null>(null);
+    const [chartViewMode, setChartViewMode] = useState<'latest' | 'all'>('latest'); // New state for chart view
 
     // Get auth data from context
     const { userToken, userData } = useContext(AuthContext);
-    const isAuthenticated = !!userToken; // Derive authentication status from userToken
+    const isAuthenticated = !!userToken;
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -153,9 +154,36 @@ const Statistic: React.FC<StatisticProps> = ({ userId }) => {
     const getLineChartData = () => {
         if (!vitalSigns.length) return { labels: [], datasets: [] };
 
-        const labels = vitalSigns.slice(-7).map((_, index) => `Reading ${index + 1}`);
-        const heartRateData = vitalSigns.slice(-7).map(item => item.heartRate);
-        const systolicData = vitalSigns.slice(-7).map(item => item.systolicBP);
+        let dataToUse = vitalSigns;
+        let chartWidth = screenWidth - 40;
+
+        if (chartViewMode === 'latest') {
+            // Show latest 7 readings
+            dataToUse = vitalSigns.slice(-7);
+        } else {
+            // Show all readings - calculate dynamic width
+            const pointsPerScreen = 7; // Number of points that fit on screen nicely
+            const minWidth = screenWidth - 40;
+            const calculatedWidth = Math.max(minWidth, (vitalSigns.length / pointsPerScreen) * minWidth);
+            chartWidth = calculatedWidth;
+        }
+
+        const labels = dataToUse.map((item, index) => {
+            if (chartViewMode === 'all' && dataToUse.length > 10) {
+                // For many points, show date in short format
+                const date = new Date(item.timestamp * 1000);
+                return `${date.getMonth() + 1}/${date.getDate()}`;
+            } else {
+                // For fewer points, show reading number
+                return `R${dataToUse.length > 7 ?
+                    vitalSigns.indexOf(item) + 1 :
+                    index + 1}`;
+            }
+        });
+
+        const heartRateData = dataToUse.map(item => item.heartRate);
+        const systolicData = dataToUse.map(item => item.systolicBP);
+        const diastolicData = dataToUse.map(item => item.diastolicBP);
 
         return {
             labels,
@@ -163,15 +191,21 @@ const Statistic: React.FC<StatisticProps> = ({ userId }) => {
                 {
                     data: heartRateData,
                     color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
-                    strokeWidth: 2
+                    strokeWidth: 3
                 },
                 {
                     data: systolicData,
                     color: (opacity = 1) => `rgba(255, 99, 132, ${opacity})`,
-                    strokeWidth: 2
+                    strokeWidth: 3
+                },
+                {
+                    data: diastolicData,
+                    color: (opacity = 1) => `rgba(75, 192, 192, ${opacity})`,
+                    strokeWidth: 3
                 }
             ],
-            legend: ["Heart Rate", "Systolic BP"]
+            legend: ["Heart Rate (BPM)", "Systolic BP", "Diastolic BP"],
+            chartWidth
         };
     };
 
@@ -228,7 +262,14 @@ const Statistic: React.FC<StatisticProps> = ({ userId }) => {
         color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
         strokeWidth: 2,
         barPercentage: 0.5,
-        useShadowColorFromDataset: false
+        useShadowColorFromDataset: false,
+        decimalPlaces: 0,
+        propsForLabels: {
+            fontSize: 10,
+        },
+        propsForVerticalLabels: {
+            fontSize: 10,
+        },
     };
 
     // Show authentication error if not authenticated
@@ -267,6 +308,8 @@ const Statistic: React.FC<StatisticProps> = ({ userId }) => {
             </View>
         );
     }
+
+    const lineChartData = getLineChartData();
 
     return (
         <ScrollView style={styles.container}>
@@ -371,22 +414,82 @@ const Statistic: React.FC<StatisticProps> = ({ userId }) => {
             {/* Charts */}
             {vitalSigns.length > 0 ? (
                 <View style={styles.chartsContainer}>
-                    {/* Line Chart */}
+                    {/* Line Chart with Horizontal Scroll */}
                     <View style={styles.chartSection}>
-                        <Text style={styles.chartTitle}>Vital Signs Trends</Text>
-                        <LineChart
-                            data={getLineChartData()}
-                            width={screenWidth - 40}
-                            height={220}
-                            chartConfig={chartConfig}
-                            bezier
-                            style={styles.chart}
-                        />
+                        <View style={styles.chartHeader}>
+                            <Text style={styles.chartTitle}>Vital Signs Trends</Text>
+                            <View style={styles.chartViewSelector}>
+                                <TouchableOpacity
+                                    style={[styles.viewButton, chartViewMode === 'latest' && styles.activeViewButton]}
+                                    onPress={() => setChartViewMode('latest')}
+                                >
+                                    <Text style={[styles.viewButtonText, chartViewMode === 'latest' && styles.activeViewButtonText]}>
+                                        Latest 7
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.viewButton, chartViewMode === 'all' && styles.activeViewButton]}
+                                    onPress={() => setChartViewMode('all')}
+                                >
+                                    <Text style={[styles.viewButtonText, chartViewMode === 'all' && styles.activeViewButtonText]}>
+                                        All Data
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        {/* Chart Info */}
+                        <View style={styles.chartInfo}>
+                            <Text style={styles.chartInfoText}>
+                                Showing {chartViewMode === 'latest' ? 'latest 7' : 'all'} readings
+                                {chartViewMode === 'all' && vitalSigns.length > 7 && ' (scroll horizontally)'}
+                            </Text>
+                        </View>
+
+                        {/* Scrollable Chart Container */}
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={true}
+                            contentContainerStyle={styles.chartScrollContainer}
+                            style={styles.chartScrollView}
+                        >
+                            <LineChart
+                                data={lineChartData}
+                                width={lineChartData.chartWidth || screenWidth - 40}
+                                height={250}
+                                chartConfig={chartConfig}
+                                bezier
+                                style={styles.chart}
+                                withVerticalLabels={true}
+                                withHorizontalLabels={true}
+                                withDots={true}
+                                withInnerLines={true}
+                                withOuterLines={true}
+                                withShadow={false}
+                                segments={4}
+                            />
+                        </ScrollView>
+
+                        {/* Chart Legend */}
+                        <View style={styles.chartLegend}>
+                            <View style={styles.legendItem}>
+                                <View style={[styles.legendColor, { backgroundColor: 'rgba(134, 65, 244, 1)' }]} />
+                                <Text style={styles.legendText}>Heart Rate</Text>
+                            </View>
+                            <View style={styles.legendItem}>
+                                <View style={[styles.legendColor, { backgroundColor: 'rgba(255, 99, 132, 1)' }]} />
+                                <Text style={styles.legendText}>Systolic BP</Text>
+                            </View>
+                            <View style={styles.legendItem}>
+                                <View style={[styles.legendColor, { backgroundColor: 'rgba(75, 192, 192, 1)' }]} />
+                                <Text style={styles.legendText}>Diastolic BP</Text>
+                            </View>
+                        </View>
                     </View>
 
                     {/* Bar Chart */}
                     <View style={styles.chartSection}>
-                        <Text style={styles.chartTitle}>Confidence Levels</Text>
+                        <Text style={styles.chartTitle}>Confidence Levels (Latest 5)</Text>
                         <BarChart
                             data={getBarChartData()}
                             width={screenWidth - 40}
@@ -593,15 +696,77 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#f0f0f0',
     },
+    chartHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
     chartTitle: {
         fontSize: 16,
         fontWeight: 'bold',
         color: '#333',
-        marginBottom: 16,
-        textAlign: 'center',
+    },
+    chartViewSelector: {
+        flexDirection: 'row',
+        backgroundColor: '#f0f0f0',
+        borderRadius: 6,
+        padding: 2,
+    },
+    viewButton: {
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 4,
+    },
+    activeViewButton: {
+        backgroundColor: '#2196f3',
+    },
+    viewButtonText: {
+        fontSize: 12,
+        color: '#666',
+        fontWeight: '500',
+    },
+    activeViewButtonText: {
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+    chartInfo: {
+        marginBottom: 12,
+    },
+    chartInfoText: {
+        fontSize: 12,
+        color: '#666',
+        fontStyle: 'italic',
+    },
+    chartScrollView: {
+        marginBottom: 12,
+    },
+    chartScrollContainer: {
+        paddingRight: 20,
     },
     chart: {
         borderRadius: 8,
+    },
+    chartLegend: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        flexWrap: 'wrap',
+        marginTop: 8,
+    },
+    legendItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    legendColor: {
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        marginRight: 6,
+    },
+    legendText: {
+        fontSize: 12,
+        color: '#666',
     },
     noData: {
         alignItems: 'center',

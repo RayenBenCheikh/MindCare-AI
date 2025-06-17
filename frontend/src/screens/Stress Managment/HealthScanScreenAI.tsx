@@ -8,7 +8,7 @@ import {
   SafeAreaView,
   Alert
 } from 'react-native';
-import { CameraView, CameraType, useCameraPermissions, Camera } from 'expo-camera';
+import { CameraView, CameraType, Camera } from 'expo-camera';
 import axios from 'axios';
 import { api, VITAL_SIGNS_URL } from '@/src/api/config';
 import { AuthContext } from '@/src/context/AuthContext';

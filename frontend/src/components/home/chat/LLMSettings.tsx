@@ -15,24 +15,24 @@ import { AuthContext } from '@/src/context/AuthContext';
 
 const LLM_OPTIONS = [
     {
-        id: 'gemma',
-        name: 'gemma3:4b',
-        description: 'Google\'s lightweight model optimized for helpful dialogues and coding assistance'
-    },
-    {
         id: 'llama3.1',
         name: 'Llama3.1:8b',
-        description: 'Meta\'s open-source model with strong reasoning and instruction following'
+        description: 'Meta\'s model - Excellent for conversational mental health support'
+    },
+    {
+        id: 'gemma',
+        name: 'Gemma3:4b',
+        description: 'Google\'s lightweight model - Fast responses for quick mental health checks'
     },
     {
         id: 'qwen3',
-        name: 'qwen3:8b',
-        description: 'Alibaba\'s compact model with excellent efficiency and multilingual support'
+        name: 'Qwen3:8b',
+        description: 'Alibaba\'s reasoning model - Advanced analysis for complex mental health topics'
     },
     {
         id: 'deepseek',
-        name: 'deepseek-r1:7b',
-        description: 'DeepSeek\'s model designed for high-quality responses and fast inference'
+        name: 'DeepSeek-R1:7b',
+        description: 'DeepSeek\'s reasoning model - In-depth mental health assessment and advice'
     }
 ];
 

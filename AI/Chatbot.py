@@ -5,11 +5,14 @@ from pymongo import MongoClient
 import datetime
 from bson import ObjectId
 import random
-
+import re
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# ADD MISSING OLLAMA_URL
+OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
 
 # Initialize emotion detector with proper error handling
 try:
@@ -88,6 +91,7 @@ try:
 except Exception as e:
     logger.error(f"MongoDB connection error in Chatbot blueprint: {str(e)}")
     assessments_collection = None
+
 try:
     music_collection = db.Music  
     logger.info("Music collection connected in Chatbot blueprint")
@@ -231,274 +235,14 @@ def get_fallback_stress_level(responses):
         logger.error(f"Error in fallback stress calculation: {e}")
         return 3
 
-def get_chat_response_with_emotion(message, history, selected_model):
-    """Process a chat message with emotion detection using Ollama API"""
-    api_url = "http://127.0.0.1:11434/api/generate"
-    
-    # Detect emotion in user's message
-    detected_emotion = None
-    emotion_confidence = 0.0
-    emotion_context = ""
-    if emotion_detector and emotion_detector.model:
-        try:
-            detected_emotion, emotion_confidence = emotion_detector.predict_emotion(message)
-            emotion_probs = emotion_detector.get_emotion_probabilities(message)
-            
-            logger.info(f"Detected emotion: {detected_emotion} (confidence: {emotion_confidence:.2f})")
-            
-            if detected_emotion and emotion_confidence > 0.4:
-                emotion_context = f"The user seems to be feeling {detected_emotion}. "
-                
-                emotion_guidance = {
-                    'sadness': "Be extra compassionate and supportive. Offer comfort and gentle encouragement.",
-                    'anger': "Acknowledge their frustration calmly. Help them process these feelings constructively.",
-                    'fear': "Provide reassurance and practical steps to address their concerns.",
-                    'joy': "Share in their positive feelings and help maintain this positive state."
-                }
-                
-                if detected_emotion in emotion_guidance:
-                    emotion_context += emotion_guidance[detected_emotion] + " "
-        
-        except Exception as e:
-            logger.error(f"Error in emotion detection: {e}")
-
-    # Get model configuration
-    model_to_use = model_mapping.get(selected_model, selected_model)
-    
-    # Configure based on model type
-    if 'deepseek' in model_to_use.lower() or 'qwen' in model_to_use.lower():
-        # Anti-thinking prompt for reasoning models
-        prompt = "You are MindCare AI, a compassionate mental health assistant. "
-        prompt += "Be helpful, supportive, and provide actionable advice. "
-        prompt += "Keep responses concise and supportive. "
-        if emotion_context:
-            prompt += emotion_context
-        prompt += "IMPORTANT: Respond directly without any thinking process. "
-        prompt += "Don't use <think> tags or explain your reasoning.\n\n"
-        
-        # Add conversation history (limited)
-        for msg in history[-3:]:
-            role = msg.get('role', '')
-            content = msg.get('content', '')
-            if role and content:
-                prompt += f"{role.title()}: {content}\n"
-        
-        prompt += f"\nUser: {message}\nMindCare AI:"
-        
-        # Restrictive options for reasoning models
-        options = {
-            "temperature": 0.3,
-            "top_k": 10,
-            "top_p": 0.7,
-            "num_predict": 200,
-            "stop": ['<think>', '</', '\n\nUser:', 'User:', 'Human:']
-        }
-        timeout = 45
+def get_fallback_advice(stress_level):
+    """Return fallback advice based on stress level if API calls fail"""
+    if stress_level <= 2:
+        return "Your stress level appears relatively low. Continue your healthy habits and self-care routines. Regular exercise, good sleep, and social connections all contribute to maintaining positive mental health. Take a moment each day to appreciate what's going well in your life."
+    elif stress_level == 3:
+        return "You're experiencing moderate stress. Try incorporating regular breaks into your day, practice deep breathing when feeling overwhelmed, and ensure you're making time for activities you enjoy. Limiting screen time before bed and maintaining a consistent sleep schedule can also help manage stress levels."
     else:
-        # Standard configuration for Gemma and Llama
-        prompt = "You are MindCare AI, a compassionate mental health assistant. "
-        prompt += "Be helpful, supportive, and provide actionable advice. "
-        prompt += "Keep responses concise and supportive. "
-        if emotion_context:
-            prompt += emotion_context
-        prompt += "\n\n"
-        
-        # Add conversation history
-        for msg in history[-5:]:
-            role = msg.get('role', '')
-            content = msg.get('content', '')
-            if role and content:
-                prompt += f"{role.title()}: {content}\n"
-        
-        prompt += f"\nUser: {message}\nMindCare AI:"
-        
-        # Standard options
-        options = {
-            "temperature": 0.6,
-            "num_predict": 300
-        }
-        timeout = 30
-    
-    try:
-        logger.info(f"Generating chat response with model: {model_to_use}")
-        
-        payload = {
-            "model": model_to_use,
-            "prompt": prompt,
-            "stream": False,
-            "options": options
-        }
-        
-        response = requests.post(api_url, json=payload, timeout=timeout)
-        
-        if response.status_code == 200:
-            result = response.json()
-            reply = result.get("response", "").strip()
-            
-            # Clean up thinking tokens if present
-            if 'deepseek' in model_to_use.lower() or 'qwen' in model_to_use.lower():
-                if '<think>' in reply and '</think>' in reply:
-                    # Extract content after </think>
-                    parts = reply.split('</think>')
-                    if len(parts) > 1:
-                        reply = parts[-1].strip()
-                        logger.info(f"Cleaned thinking tokens from {model_to_use}")
-                elif '<think>' in reply:
-                    # Remove everything from <think> onwards
-                    reply = reply.split('<think>')[0].strip()
-                    logger.info(f"Truncated at thinking token for {model_to_use}")
-            
-            if len(reply) > 10:
-                return reply, detected_emotion, emotion_confidence
-        
-        logger.error(f"Failed to get response from {model_to_use}")
-                
-    except Exception as e:
-        logger.error(f"Error with {model_to_use}: {e}")
-    
-    # Fallback response
-    fallback_reply = "I'm sorry, I'm having trouble processing your request at the moment. Could you try again later?"
-    return fallback_reply, detected_emotion, emotion_confidence
-
-@chatbot_bp.route('/chat', methods=['POST'])
-def chat():
-    data = request.json
-    message = data.get('message', '')
-    history = data.get('history', [])
-    model = data.get('model', 'gemma')
-    
-    response, detected_emotion, emotion_confidence = get_chat_response_with_emotion(message, history, model)
-    
-    return jsonify({
-        'reply': response,
-        'detected_emotion': detected_emotion,
-        'emotion_confidence': float(emotion_confidence) if emotion_confidence else 0.0
-    })
-
-@chatbot_bp.route('/assessment', methods=['POST'])
-def assessment():
-    data = request.json
-    responses = data.get('responses', [])
-    model = data.get('model', 'gemma')
-    
-    if not responses or len(responses) != 10:
-        return jsonify({
-            'error': 'Invalid assessment data. Expected 10 responses.'
-        }), 400
-    
-    # Get stress level with fallback
-    stress_level = get_stress_level_with_ollama_api(responses, model)
-    
-    if stress_level is None:
-        logger.error("Failed to get stress level from LLM, using fallback")
-        stress_level = get_fallback_stress_level(responses)
-    
-    # Get personalized advice with music recommendations
-    advice_result = get_personalized_advice_with_ollama(responses, stress_level, model)
-    
-    # Handle both old and new return formats
-    if isinstance(advice_result, dict):
-        advice = advice_result.get('advice', '')
-        music_recommendations = advice_result.get('musicRecommendations', [])
-    else:
-        advice = advice_result
-        music_recommendations = get_music_recommendations_for_stress(stress_level, limit=3)
-    
-    # Determine mood and severity
-    mood = "depression" if stress_level >= 3 else "positive"
-    severity = stress_level
-    
-    return jsonify({
-        'mood': mood,
-        'severity': severity,
-        'message': f"Based on your responses, your stress level is {stress_level}/5.",
-        'solutions': advice,
-        'musicRecommendations': music_recommendations  # Add music recommendations
-    })
-@chatbot_bp.route('/music-recommendations', methods=['POST'])
-def get_music_for_stress():
-    """Get music recommendations based on stress level"""
-    data = request.json
-    stress_level = data.get('stressLevel', 3)
-    limit = data.get('limit', 5)
-    
-    try:
-        recommendations = get_music_recommendations_for_stress(stress_level, limit)
-        
-        return jsonify({
-            'success': True,
-            'recommendations': recommendations,
-            'count': len(recommendations),
-            'stressLevel': stress_level
-        })
-        
-    except Exception as e:
-        logger.error(f"Error in music recommendations endpoint: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': str(e),
-            'recommendations': []
-        }), 500
-
-@chatbot_bp.route('/assessments/save', methods=['POST'])
-def save_assessment():
-    """Save an assessment to the database"""
-    if not request.is_json:
-        return jsonify({'error': 'Request must be JSON'}), 400
-        
-    data = request.json
-    logger.info(f"Received assessment data: {data}")
-    
-    required_fields = ['userId', 'stressLevel', 'responses']
-    for field in required_fields:
-        if field not in data:
-            logger.error(f"Missing required field: {field}")
-            return jsonify({'error': f'Missing required field: {field}'}), 400
-    
-    try:
-        auth_header = request.headers.get('Authorization', '')
-        
-        if auth_header.startswith('Bearer '):
-            token = auth_header[7:]
-            logger.info("Processing assessment save request")
-        else:
-            logger.error("No Bearer token provided")
-            return jsonify({'error': 'Authorization token required'}), 401
-        
-        if assessments_collection is None:
-            return jsonify({'error': 'Database connection not available'}), 500
-        
-        assessment_doc = {
-            'userId': data['userId'],
-            'date': data.get('date', datetime.datetime.now().isoformat()),
-            'responses': data['responses'],
-            'stressLevel': data['stressLevel'],
-            'mood': data.get('mood', ''),
-            'analysis': data.get('analysis', ''),
-            'recommendations': data.get('solutions', '')
-        }
-        
-        logger.info(f"Saving assessment document: {assessment_doc}")
-        
-        result = assessments_collection.insert_one(assessment_doc)
-        
-        if result.inserted_id:
-            return jsonify({
-                'success': True,
-                'message': 'Assessment saved successfully',
-                'assessmentId': str(result.inserted_id)
-            }), 201
-        else:
-            return jsonify({'error': 'Failed to save assessment'}), 500
-            
-    except Exception as e:
-        logger.error(f"Error saving assessment: {str(e)}")
-        return jsonify({'error': f'Server error: {str(e)}'}), 500
-
-def get_chat_response(message, history, selected_model):
-    """Process a chat message using Ollama API with user-selected model"""
-    # This function can be simplified or removed since get_chat_response_with_emotion handles everything
-    return get_chat_response_with_emotion(message, history, selected_model)[0]
+        return "Your stress level is high. Consider talking to a trusted friend or mental health professional about how you're feeling. In the meantime, try stress-reduction techniques like mindfulness meditation, physical exercise, or journaling. Remember to be kind to yourself and recognize when you need to set boundaries. Your mental health is important, and seeking support is a sign of strength."
 
 def get_stress_level_with_ollama_api(responses, selected_model):
     """Enhanced function to get stress level using Ollama API - ALL MODELS SUPPORTED"""
@@ -517,11 +261,12 @@ def get_stress_level_with_ollama_api(responses, selected_model):
     except Exception as e:
         logger.warning(f"Could not verify model availability: {e}")
     
-    # Configure based on model type - FIXED APPROACH
-    if 'deepseek' in model_to_use.lower():
-        # Special handling for DeepSeek R1 reasoning model
-        prompt = f"""Rate stress level 1-5 based on mental health responses:
+    # Configure based on model type - IMPROVED FOR QWEN3
+    if 'deepseek' in model_to_use.lower() or 'qwen' in model_to_use.lower():
+        # BOTH DeepSeek AND Qwen3 use thinking patterns - treat them similarly
+        prompt = f"""Rate stress level 1-5 based on mental health responses.
 
+Assessment Data:
 Mood: {responses[0]}
 Enjoyment: {responses[1]} 
 Sleep: {responses[2]}
@@ -533,42 +278,19 @@ Future outlook: {responses[7]}
 Support: {responses[8]}
 Life thoughts: {responses[9]}
 
-Give only a number from 1 to 5 representing stress level:"""
+Think about this assessment, but respond with ONLY a number from 1 to 5. Show your final answer only.
+
+Stress level:"""
         
         options = {
             'temperature': 0.1,
             'top_p': 0.3,
-            'num_predict': 20,
-            'stop': ['\n', 'because', 'The', 'Based', 'This', 'Looking']
+            'num_predict': 50,  # Allow more tokens for thinking but we'll clean it
+            'stop': ['\n\n', 'Explanation:', 'Because', 'The reason', 'Analysis:', 'Overall']
         }
         timeout = 60
-    elif 'qwen' in model_to_use.lower():
-        # Special handling for Qwen
-        prompt = f"""Analyze mental health responses and rate stress level 1-5:
-
-User responses:
-1. Mood: {responses[0]}
-2. Activities enjoyable: {responses[1]}
-3. Sleep quality: {responses[2]}
-4. Energy level: {responses[3]}
-5. Appetite: {responses[4]}
-6. Concentration: {responses[5]}
-7. Feeling overwhelmed: {responses[6]}
-8. Future outlook: {responses[7]}
-9. Social support: {responses[8]}
-10. Life thoughts: {responses[9]}
-
-Stress level (1=low, 5=high):"""
-        
-        options = {
-            'temperature': 0.2,
-            'top_p': 0.5,
-            'num_predict': 15,
-            'stop': ['\n', '.', ' out of', 'because']
-        }
-        timeout = 45
     else:
-        # Standard prompt for Gemma and Llama - KEEP WORKING VERSION
+        # Standard prompt for Gemma and Llama
         prompt = (
             "You are a mental health assessment assistant. "
             "Rate the user's stress level from 1 (very low) to 5 (very high) based on these responses. "
@@ -587,77 +309,104 @@ Stress level (1=low, 5=high):"""
             'stop': ['\n', '.', ' ', ',', ':', ';']
         }
         timeout = 45
+
+    # Make the API request
+    data = {
+        "model": model_to_use,
+        "prompt": prompt,
+        "stream": False,
+        "options": options
+    }
     
     try:
-        logger.info(f"Trying stress assessment with selected model: {model_to_use}")
+        response = requests.post(OLLAMA_URL, json=data, timeout=timeout)
+        response.raise_for_status()
         
-        response = requests.post(
-            'http://localhost:11434/api/generate',
-            json={
-                'model': model_to_use,
-                'prompt': prompt,
-                'stream': False,
-                'options': options
-            },
-            timeout=timeout
-        )
+        result = response.json()
+        raw_response = result.get('response', '').strip()
         
-        if response.status_code == 200:
-            result = response.json()
-            output = result.get("response", "").strip()
-            logger.info(f"Model {model_to_use} raw response: '{output}'")
+        logger.info(f"Raw Ollama response for {model_to_use}: '{raw_response[:100]}...'")
+        
+        # ENHANCED parsing for thinking models (Qwen3 and DeepSeek)
+        if 'deepseek' in model_to_use.lower() or 'qwen' in model_to_use.lower():
             
-            if output:
-                # Clean up response for all models
-                cleaned_output = output.strip()
-                
-                # Remove common prefixes
-                prefixes_to_remove = ["stress level:", "level:", "rating:", "score:", "answer:"]
-                for prefix in prefixes_to_remove:
-                    if cleaned_output.lower().startswith(prefix):
-                        cleaned_output = cleaned_output[len(prefix):].strip()
-                
-                # Handle thinking tokens for reasoning models
-                if '<think>' in cleaned_output:
-                    if '</think>' in cleaned_output:
-                        # Extract content after </think>
-                        parts = cleaned_output.split('</think>')
-                        if len(parts) > 1:
-                            cleaned_output = parts[-1].strip()
-                    else:
-                        # Remove everything from <think> onwards
-                        cleaned_output = cleaned_output.split('<think>')[0].strip()
-                
-                # Look for digits 1-5 with word boundaries or at start/end
-                import re
-                digits = re.findall(r'(?:^|\s)([1-5])(?:\s|$|[.,;:])', cleaned_output)
-                if digits:
-                    extracted_level = int(digits[0])
-                    logger.info(f"✓ Successfully extracted stress level {extracted_level} from {model_to_use}")
-                    return extracted_level
-                
-                # Fallback: any digit 1-5 in the response
-                for c in cleaned_output:
-                    if c in "12345":
-                        extracted_level = int(c)
-                        logger.info(f"✓ Fallback extracted stress level {extracted_level} from {model_to_use}")
-                        return extracted_level
+            # METHOD 1: Look for the final answer pattern
+            # Try to find "Stress level: X" or similar patterns
+            final_patterns = [
+                r'stress level:?\s*([1-5])',
+                r'level:?\s*([1-5])',
+                r'rating:?\s*([1-5])',
+                r'answer:?\s*([1-5])',
+                r'result:?\s*([1-5])',
+                r'\b([1-5])\s*$',  # Number at the end
+                r'\b([1-5])\s*/\s*5',  # X/5 format
+            ]
             
-            logger.warning(f"No valid stress level found in response from {model_to_use}: '{output}'")
+            clean_response = raw_response.lower()
+            
+            for pattern in final_patterns:
+                matches = re.findall(pattern, clean_response)
+                if matches:
+                    stress_level = int(matches[-1])  # Take the last match
+                    logger.info(f"Extracted stress level using pattern '{pattern}': {stress_level}")
+                    return stress_level
+            
+            # METHOD 2: Clean thinking text and extract last number
+            # Remove common thinking patterns
+            thinking_patterns = [
+                'thinking...', 'let me think', 'let me analyze', 'looking at',
+                'based on', 'the responses', 'this indicates', 'i would rate',
+                'considering', 'given that', 'therefore', 'in conclusion',
+                'my assessment', 'i believe', 'it appears', 'it seems'
+            ]
+            
+            cleaned_text = raw_response.lower()
+            for pattern in thinking_patterns:
+                # Find where the thinking ends
+                if pattern in cleaned_text:
+                    parts = cleaned_text.split(pattern)
+                    if len(parts) > 1:
+                        # Take text after the last thinking pattern
+                        cleaned_text = parts[-1]
+            
+            # Extract numbers from cleaned text
+            numbers = re.findall(r'\b([1-5])\b', cleaned_text)
+            if numbers:
+                stress_level = int(numbers[-1])  # Take the last valid number
+                logger.info(f"Extracted stress level from cleaned text: {stress_level}")
+                return stress_level
+            
+            # METHOD 3: Split by common separators and take last part
+            separators = ['\n\nstress level:', '\nfinal answer:', '\nrating:', '\nresult:']
+            for sep in separators:
+                if sep in raw_response.lower():
+                    final_part = raw_response.lower().split(sep)[-1]
+                    numbers = re.findall(r'\b([1-5])\b', final_part)
+                    if numbers:
+                        stress_level = int(numbers[0])
+                        logger.info(f"Extracted stress level after separator '{sep}': {stress_level}")
+                        return stress_level
+        
         else:
-            logger.error(f"API request failed with status code: {response.status_code}")
-            if response.status_code == 404:
-                logger.error(f"Model {model_to_use} not found. Check if it's pulled with: ollama pull {model_to_use}")
-            
+            # Standard parsing for other models
+            numbers = re.findall(r'\b([1-5])\b', raw_response)
+            if numbers:
+                stress_level = int(numbers[0])
+                logger.info(f"Extracted stress level: {stress_level}")
+                return stress_level
+        
+        logger.warning(f"Could not extract valid stress level from: '{raw_response[:200]}...'")
+        return None
+        
     except requests.exceptions.Timeout:
-        logger.error(f"Timeout with model {model_to_use}")
-    except requests.exceptions.ConnectionError:
-        logger.error(f"Connection error with model {model_to_use} - is Ollama running?")
+        logger.error(f"Timeout waiting for {model_to_use} response")
+        return None
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error calling Ollama API with {model_to_use}: {e}")
+        return None
     except Exception as e:
         logger.error(f"Unexpected error with {model_to_use}: {e}")
-    
-    logger.error("LLM model failed - no fallback available")
-    return None
+        return None
 
 def get_personalized_advice_with_ollama(responses, stress_level, selected_model='gemma'):
     """Get personalized advice from Ollama based on user's responses - WITH MUSIC RECOMMENDATIONS"""
@@ -666,7 +415,7 @@ def get_personalized_advice_with_ollama(responses, stress_level, selected_model=
     # Get music recommendations first
     music_recommendations = get_music_recommendations_for_stress(stress_level, limit=3)
     
-    # Create summary of concerning responses (existing code)
+    # Create summary of concerning responses
     concerning_responses = []
     
     if "very bad" in responses[0].lower() or "bad" in responses[0].lower():
@@ -758,12 +507,40 @@ Respond directly in a caring, positive, and supportive tone. About 150-250 words
             result = response.json()
             advice = result.get("response", "").strip()
             
-            # Clean thinking tokens if present
+            # Enhanced cleaning for thinking models
             if 'deepseek' in model_to_use.lower() or 'qwen' in model_to_use.lower():
-                if '<think>' in advice and '</think>' in advice:
-                    advice = advice.split('</think>')[-1].strip()
-                elif '<think>' in advice:
-                    advice = advice.split('<think>')[0].strip()
+                # Remove thinking patterns
+                thinking_patterns = [
+                    'thinking...', 'let me think', 'let me analyze', 'considering',
+                    'based on', 'given that', 'i would suggest', 'my advice'
+                ]
+                
+                lines = advice.split('\n')
+                clean_lines = []
+                skip_thinking = False
+                
+                for line in lines:
+                    line_lower = line.lower().strip()
+                    
+                    # Skip thinking lines
+                    if any(think in line_lower for think in thinking_patterns):
+                        skip_thinking = True
+                        continue
+                    
+                    # Look for actual advice content
+                    if skip_thinking and line.strip():
+                        advice_indicators = [
+                            'try', 'consider', 'practice', 'focus on', 'remember',
+                            'it\'s important', 'you might', 'here are', 'suggestions'
+                        ]
+                        if any(indicator in line_lower for indicator in advice_indicators):
+                            skip_thinking = False
+                            clean_lines.append(line)
+                    elif not skip_thinking:
+                        clean_lines.append(line)
+                
+                if clean_lines:
+                    advice = '\n'.join(clean_lines).strip()
             
             if len(advice) > 30:
                 return {
@@ -783,12 +560,348 @@ Respond directly in a caring, positive, and supportive tone. About 150-250 words
         'musicRecommendations': music_recommendations
     }
 
-
-def get_fallback_advice(stress_level):
-    """Return fallback advice based on stress level if API calls fail"""
-    if stress_level <= 2:
-        return "Your stress level appears relatively low. Continue your healthy habits and self-care routines. Regular exercise, good sleep, and social connections all contribute to maintaining positive mental health. Take a moment each day to appreciate what's going well in your life."
-    elif stress_level == 3:
-        return "You're experiencing moderate stress. Try incorporating regular breaks into your day, practice deep breathing when feeling overwhelmed, and ensure you're making time for activities you enjoy. Limiting screen time before bed and maintaining a consistent sleep schedule can also help manage stress levels."
+def get_chat_response_with_emotion(message, history, selected_model):
+    """Process a chat message with emotion detection using Ollama API"""
+    api_url = "http://127.0.0.1:11434/api/generate"
+    
+    # INITIALIZE emotion_data DICTIONARY
+    emotion_data = {
+        'emotion': 'neutral',
+        'confidence': 0.0
+    }
+    
+    # Detect emotion in user's message
+    if emotion_detector and emotion_detector.model:
+        try:
+            detected_emotion, emotion_confidence = emotion_detector.predict_emotion(message)
+            emotion_probs = emotion_detector.get_emotion_probabilities(message)
+            
+            logger.info(f"Detected emotion: {detected_emotion} (confidence: {emotion_confidence:.2f})")
+            
+            # UPDATE emotion_data dictionary
+            emotion_data['emotion'] = detected_emotion if detected_emotion else 'neutral'
+            emotion_data['confidence'] = emotion_confidence if emotion_confidence else 0.0
+            
+            emotion_context = ""
+            if detected_emotion and emotion_confidence > 0.4:
+                emotion_context = f"The user seems to be feeling {detected_emotion}. "
+                
+                emotion_guidance = {
+                    'sadness': "Be extra compassionate and supportive. Offer comfort and gentle encouragement.",
+                    'anger': "Acknowledge their frustration calmly. Help them process these feelings constructively.",
+                    'fear': "Provide reassurance and practical steps to address their concerns.",
+                    'joy': "Share in their positive feelings and help maintain this positive state."
+                }
+                
+                if detected_emotion in emotion_guidance:
+                    emotion_context += emotion_guidance[detected_emotion] + " "
+        
+        except Exception as e:
+            logger.error(f"Error in emotion detection: {e}")
+            emotion_context = ""
     else:
-        return "Your stress level is high. Consider talking to a trusted friend or mental health professional about how you're feeling. In the meantime, try stress-reduction techniques like mindfulness meditation, physical exercise, or journaling. Remember to be kind to yourself and recognize when you need to set boundaries. Your mental health is important, and seeking support is a sign of strength."
+        emotion_context = ""
+
+    # Get model configuration
+    model_to_use = model_mapping.get(selected_model, selected_model)
+    
+    # Configure based on model type - IMPROVED FOR QWEN3 CHAT
+    if 'deepseek' in model_to_use.lower() or 'qwen' in model_to_use.lower():
+        # Allow thinking but extract clean response
+        prompt = "You are MindCare AI, a compassionate mental health assistant. "
+        prompt += "You can think about your response, but provide only your final helpful answer to the user. "
+        prompt += "Keep your final response under 150 words and be empathetic. "
+        if emotion_context:
+            prompt += emotion_context
+        prompt += "\n\nConversation:\n"
+        
+        # Add conversation history (limited)
+        for msg in history[-3:]:
+            role = msg.get('role', '')
+            content = msg.get('content', '')
+            if role and content:
+                prompt += f"{role.title()}: {content}\n"
+        
+        prompt += f"\nUser: {message}\n\nProvide your caring response:\nMindCare AI:"
+        
+        # Allow more tokens but we'll clean the response
+        options = {
+            "temperature": 0.4,
+            "top_k": 15,
+            "top_p": 0.7,
+            "num_predict": 300,
+            "stop": ['\n\nUser:', 'User:', 'Human:', '\n\nThinking:', 'Let me think about']
+        }
+        timeout = 50
+    else:
+        # Standard configuration for Gemma and Llama
+        prompt = "You are MindCare AI, a compassionate mental health assistant. "
+        prompt += "Be helpful, supportive, and provide actionable advice. "
+        prompt += "Keep responses concise and supportive. "
+        if emotion_context:
+            prompt += emotion_context
+        prompt += "\n\n"
+        
+        # Add conversation history
+        for msg in history[-5:]:
+            role = msg.get('role', '')
+            content = msg.get('content', '')
+            if role and content:
+                prompt += f"{role.title()}: {content}\n"
+        
+        prompt += f"\nUser: {message}\nMindCare AI:"
+        
+        # Standard options
+        options = {
+            "temperature": 0.6,
+            "num_predict": 300
+        }
+        timeout = 30
+    
+    # Make the API request
+    data = {
+        "model": model_to_use,
+        "prompt": prompt,
+        "stream": False,
+        "options": options
+    }
+    
+    try:
+        response = requests.post(api_url, json=data, timeout=timeout)
+        response.raise_for_status()
+        
+        result = response.json()
+        ai_response = result.get('response', '').strip()
+        
+        # ENHANCED cleaning for thinking models (Qwen3 and DeepSeek)
+        if 'deepseek' in model_to_use.lower() or 'qwen' in model_to_use.lower():
+            
+            # METHOD 1: Look for explicit response markers
+            response_markers = [
+                'mindcare ai:', 'my response:', 'response:', 'final answer:',
+                'here\'s my advice:', 'i would suggest:', 'my suggestion:'
+            ]
+            
+            lower_response = ai_response.lower()
+            for marker in response_markers:
+                if marker in lower_response:
+                    # Split and take everything after the marker
+                    parts = ai_response.split(marker, 1)
+                    if len(parts) > 1:
+                        ai_response = parts[1].strip()
+                        break
+            
+            # METHOD 2: Remove thinking patterns from the beginning
+            thinking_starts = [
+                'thinking...', 'let me think', 'let me consider', 'i need to',
+                'looking at this', 'based on what', 'given that', 'considering'
+            ]
+            
+            lines = ai_response.split('\n')
+            clean_lines = []
+            skip_thinking = False
+            
+            for line in lines:
+                line_lower = line.lower().strip()
+                
+                # Check if this line starts thinking
+                if any(think in line_lower for think in thinking_starts):
+                    skip_thinking = True
+                    continue
+                
+                # Check if thinking ends (usually when we see helpful content)
+                if skip_thinking and line.strip():
+                    helpful_indicators = [
+                        'i understand', 'i hear you', 'it sounds like', 'i\'m sorry',
+                        'that must be', 'thank you for', 'i appreciate',
+                        'here are some', 'you might try', 'consider'
+                    ]
+                    
+                    if any(indicator in line_lower for indicator in helpful_indicators):
+                        skip_thinking = False
+                        clean_lines.append(line)
+                    elif not any(think in line_lower for think in thinking_starts):
+                        # If no more thinking patterns, include this line
+                        skip_thinking = False
+                        clean_lines.append(line)
+                elif not skip_thinking:
+                    clean_lines.append(line)
+            
+            if clean_lines:
+                ai_response = '\n'.join(clean_lines).strip()
+            
+            # METHOD 3: If response is still too long or contains thinking, extract the essence
+            if len(ai_response) > 500 or any(think in ai_response.lower() for think in ['thinking', 'let me', 'i need to consider']):
+                # Split into sentences and keep only the helpful ones
+                sentences = ai_response.split('. ')
+                helpful_sentences = []
+                
+                for sentence in sentences:
+                    sentence_lower = sentence.lower()
+                    if not any(think in sentence_lower for think in thinking_starts):
+                        # Keep sentences that seem like actual advice
+                        if any(word in sentence_lower for word in [
+                            'try', 'consider', 'might help', 'suggest', 'important',
+                            'you can', 'it may', 'perhaps', 'remember', 'focus on'
+                        ]):
+                            helpful_sentences.append(sentence)
+                
+                if helpful_sentences:
+                    ai_response = '. '.join(helpful_sentences[:3])  # Keep first 3 helpful sentences
+                    if not ai_response.endswith('.'):
+                        ai_response += '.'
+        
+        logger.info(f"AI Response length after cleaning: {len(ai_response)}")
+        
+        return {
+            'response': ai_response,
+            'emotion_detected': emotion_data.get('emotion', 'neutral'),
+            'confidence': emotion_data.get('confidence', 0.0),
+            'model_used': model_to_use
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting chat response: {e}")
+        return {
+            'response': "I'm sorry, I'm having trouble processing your message right now. Please try again.",
+            'emotion_detected': 'neutral',
+            'confidence': 0.0,
+            'model_used': model_to_use
+        }
+
+@chatbot_bp.route('/chat', methods=['POST'])
+def chat():
+    data = request.json
+    message = data.get('message', '')
+    history = data.get('history', [])
+    model = data.get('model', 'gemma')
+    
+    # FIX: Get response as dictionary and extract values
+    response_data = get_chat_response_with_emotion(message, history, model)
+    
+    return jsonify({
+        'reply': response_data['response'],
+        'detected_emotion': response_data['emotion_detected'],
+        'emotion_confidence': float(response_data['confidence']) if response_data['confidence'] else 0.0
+    })
+
+@chatbot_bp.route('/assessment', methods=['POST'])
+def assessment():
+    data = request.json
+    responses = data.get('responses', [])
+    model = data.get('model', 'gemma')
+    
+    if not responses or len(responses) != 10:
+        return jsonify({
+            'error': 'Invalid assessment data. Expected 10 responses.'
+        }), 400
+    
+    # Get stress level with fallback
+    stress_level = get_stress_level_with_ollama_api(responses, model)
+    
+    if stress_level is None:
+        logger.error("Failed to get stress level from LLM, using fallback")
+        stress_level = get_fallback_stress_level(responses)
+    
+    # Get personalized advice with music recommendations
+    advice_result = get_personalized_advice_with_ollama(responses, stress_level, model)
+    
+    # Handle both old and new return formats
+    if isinstance(advice_result, dict):
+        advice = advice_result.get('advice', '')
+        music_recommendations = advice_result.get('musicRecommendations', [])
+    else:
+        advice = advice_result
+        music_recommendations = get_music_recommendations_for_stress(stress_level, limit=3)
+    
+    # Determine mood and severity
+    mood = "depression" if stress_level >= 3 else "positive"
+    severity = stress_level
+    
+    return jsonify({
+        'mood': mood,
+        'severity': severity,
+        'message': f"Based on your responses, your stress level is {stress_level}/5.",
+        'solutions': advice,
+        'musicRecommendations': music_recommendations  # Add music recommendations
+    })
+
+@chatbot_bp.route('/music-recommendations', methods=['POST'])
+def get_music_for_stress():
+    """Get music recommendations based on stress level"""
+    data = request.json
+    stress_level = data.get('stressLevel', 3)
+    limit = data.get('limit', 5)
+    
+    try:
+        recommendations = get_music_recommendations_for_stress(stress_level, limit)
+        
+        return jsonify({
+            'success': True,
+            'recommendations': recommendations,
+            'count': len(recommendations),
+            'stressLevel': stress_level
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in music recommendations endpoint: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'recommendations': []
+        }), 500
+
+@chatbot_bp.route('/assessments/save', methods=['POST'])
+def save_assessment():
+    """Save an assessment to the database"""
+    if not request.is_json:
+        return jsonify({'error': 'Request must be JSON'}), 400
+        
+    data = request.json
+    logger.info(f"Received assessment data: {data}")
+    
+    required_fields = ['userId', 'stressLevel', 'responses']
+    for field in required_fields:
+        if field not in data:
+            logger.error(f"Missing required field: {field}")
+            return jsonify({'error': f'Missing required field: {field}'}), 400
+    
+    try:
+        auth_header = request.headers.get('Authorization', '')
+        
+        if auth_header.startswith('Bearer '):
+            token = auth_header[7:]
+            logger.info("Processing assessment save request")
+        else:
+            logger.error("No Bearer token provided")
+            return jsonify({'error': 'Authorization token required'}), 401
+        
+        if assessments_collection is None:
+            return jsonify({'error': 'Database connection not available'}), 500
+        
+        assessment_doc = {
+            'userId': data['userId'],
+            'date': data.get('date', datetime.datetime.now().isoformat()),
+            'responses': data['responses'],
+            'stressLevel': data['stressLevel'],
+            'mood': data.get('mood', ''),
+            'analysis': data.get('analysis', ''),
+            'recommendations': data.get('solutions', '')
+        }
+        
+        logger.info(f"Saving assessment document: {assessment_doc}")
+        
+        result = assessments_collection.insert_one(assessment_doc)
+        
+        if result.inserted_id:
+            return jsonify({
+                'success': True,
+                'message': 'Assessment saved successfully',
+                'assessmentId': str(result.inserted_id)
+            }), 201
+        else:
+            return jsonify({'error': 'Failed to save assessment'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error saving assessment: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500

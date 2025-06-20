@@ -1,0 +1,23 @@
+{
+  "timestamp": "2025-06-19 00:15:34",
+  "total_models": 2,
+  "best_accuracy": 0.9583333333333334,
+  "results": [
+    {
+      "model": "gemma3:4b",
+      "accuracy": 0.9583333333333334,
+      "precision": 0.9666666666666667,
+      "recall": 0.9583333333333334,
+      "f1": 0.9583333333333334,
+      "success_rate": 0.96
+    },
+    {
+      "model": "llama3.1:8b",
+      "accuracy": 0.44,
+      "precision": 0.34444444444444444,
+      "recall": 0.44,
+      "f1": 0.37922077922077924,
+      "success_rate": 1.0
+    }
+  ]
+}

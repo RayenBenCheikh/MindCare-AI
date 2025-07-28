@@ -15,31 +15,22 @@ import { AuthContext } from '@/src/context/AuthContext';
 
 const LLM_OPTIONS = [
     {
-        id: 'llama3.1',
-        name: 'Llama3.1:8b',
-        description: 'Meta\'s model - Excellent for conversational mental health support'
+        id: 'emotion_ai',
+        name: 'Emotion AI',
+        description: 'Specialized in emotional support and empathetic conversations. Perfect for daily mood tracking and emotional guidance.'
     },
     {
-        id: 'gemma',
-        name: 'Gemma3:4b',
-        description: 'Google\'s lightweight model - Fast responses for quick mental health checks'
-    },
-    {
-        id: 'qwen3',
-        name: 'Qwen3:8b',
-        description: 'Alibaba\'s reasoning model - Advanced analysis for complex mental health topics'
-    },
-    {
-        id: 'deepseek',
-        name: 'DeepSeek-R1:7b',
-        description: 'DeepSeek\'s reasoning model - In-depth mental health assessment and advice'
+        id: 'assessment_ai',
+        name: 'Assessment AI',
+        description: 'Expert in mental health assessments and personalized recommendations. Ideal for comprehensive stress analysis and coping strategies.'
     }
 ];
 
 const LLMSettings = () => {
     const navigation = useNavigation();
-    const [selectedModel, setSelectedModel] = useState('llama2'); // Default model
+    const [selectedModel, setSelectedModel] = useState('emotion_ai'); // Default model
     const { userData } = useContext(AuthContext);
+
 
     // Load saved preference on component mount
     useEffect(() => {

@@ -2,7 +2,6 @@ import { API_BASE_URL } from "../api/config";
 
 export const TIMEZONE = "Africa/Tunis";
 export const API_ENDPOINTS = {
-  // Auth endpoints
   auth: {
     login: `${API_BASE_URL}/api/auth/login`,
     register: `${API_BASE_URL}/api/auth/register`,
@@ -26,6 +25,8 @@ export const API_ENDPOINTS = {
     byLetter: `${API_BASE_URL}/api/medications/byLetter`,
     test: `${API_BASE_URL}/api/medications/test`,
   },
+
+  // Music endpoints
   music: {
     tracks: `${API_BASE_URL}/api/music/tracks`,
     category: (category: string) =>
@@ -45,6 +46,14 @@ export const API_ENDPOINTS = {
     profile: `${API_BASE_URL}/api/users/profile`,
     updateProfile: `${API_BASE_URL}/api/users/update-profile`,
     uploadImage: `${API_BASE_URL}/api/users/upload-image`,
+  },
+
+  // NOUVEAU: Notifications endpoints
+  notifications: {
+    list: `${API_BASE_URL}/api/notifications`,
+    markAsRead: (id: string) => `${API_BASE_URL}/api/notifications/${id}/read`,
+    markAllAsRead: `${API_BASE_URL}/api/notifications/mark-all-read`,
+    count: `${API_BASE_URL}/api/notifications/count`,
   },
 
   // External APIs

@@ -1,0 +1,30 @@
+\begin{thebibliography}{1}
+
+\bibitem{MVC}
+7/5/2025.
+\newblock URL:
+  \url{https://fr.wikipedia.org/wiki/Mod%C3%A8le-vue-contr%C3%B4leur}.
+
+\bibitem{uml}
+12/5/2025.
+\newblock URL: \url{https://www.urbanisation-si.com/articles/uml}.
+
+\bibitem{figma}
+20/4/2025.
+\newblock URL:
+  \url{https://help.figma.com/hc/en-us/articles/14563969806359-What-is-Figma}.
+
+\bibitem{PPG-DaLiA}
+Philip~Schmidt Attila~Reiss, Ina~Indlekofer.
+\newblock Ppg-dalia.
+\newblock 15/2/2025.
+\newblock URL: \url{https://archive.ics.uci.edu/dataset/495/ppg+dalia}.
+
+\bibitem{Emotion_Data}
+kaggle.
+\newblock Emotions dataset.
+\newblock 1/3/2025.
+\newblock URL:
+  \url{https://www.kaggle.com/datasets/praveengovi/emotions-dataset-for-nlp}.
+
+\end{thebibliography}

@@ -21,6 +21,7 @@ import { HomeStackParamList } from '@/src/navigation/HomeNavigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AIChatbot from '@/src/components/home/chat/AIChatBot';
 import MindfulMusic from '@/src/components/home/Mindful/MindfulMusic';
+import NotificationService from '@/src/service/NotificationService';
 type NavigationProp = NativeStackNavigationProp<HomeStackParamList>;
 const Home = () => {
     const [currentDateTime, setCurrentDateTime] = useState('');
@@ -30,6 +31,8 @@ const Home = () => {
     const navigation = useNavigation<NavigationProp>();
     const { signOut } = useContext(AuthContext);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [hasNotifications, setHasNotifications] = useState(false);
+    const [notificationCount, setNotificationCount] = useState(0);
     // Extract the user's name or use a fallback
     const username = userData?.name || userData?.username || userData?.email?.split('@')[0] || "User";
     const handleRefreshTracker = () => {
@@ -47,6 +50,24 @@ const Home = () => {
         const intervalId = setInterval(updateDateTime, 60000);
         return () => clearInterval(intervalId);
     }, []);
+    const fetchNotifications = async () => {
+        if (!userToken) return;
+
+        try {
+            const notificationService = NotificationService.getInstance();
+            const { notifications, unreadCount } = await notificationService.getNotifications();
+
+            setNotificationCount(unreadCount);
+            setHasNotifications(unreadCount > 0);
+
+            console.log(`📱 Loaded ${notifications.length} notifications, ${unreadCount} unread`);
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+            // Fallback avec des données mock
+            setNotificationCount(2);
+            setHasNotifications(true);
+        }
+    };
 
     // Fetch assessment data from API
     useEffect(() => {
@@ -73,10 +94,7 @@ const Home = () => {
                 console.log('Assessment API response:', response.data);
 
                 if (response.data.success && response.data.assessment) {
-                    // This sets the data directly from the backend response
                     setBackendAssessmentData(response.data.assessment);
-
-                    // Log the mood and sleep data to verify
                     console.log('Mood data:', response.data.assessment.mood);
                     console.log('Sleep data:', response.data.assessment.sleepQuality);
                 }
@@ -90,7 +108,21 @@ const Home = () => {
                 setIsLoading(false);
             }
         };
+
         fetchAssessmentData();
+    }, [userToken]);
+
+    // UseEffect séparé pour les notifications avec polling
+    useEffect(() => {
+        if (!userToken) return;
+
+        // Vérification initiale
+        fetchNotifications();
+
+        // Vérifier les nouvelles notifications toutes les 5 minutes
+        const notificationInterval = setInterval(fetchNotifications, 5 * 60 * 1000);
+
+        return () => clearInterval(notificationInterval);
     }, [userToken]);
 
     const handleChatPress = () => {
@@ -101,16 +133,6 @@ const Home = () => {
         });
         console.log('Chat button pressed');
     };
-
-    const handleSeeAllResources = () => {
-        // Navigate to resources screen with proper typing
-        console.log('See all resources button pressed');
-        navigation.navigate({
-            name: 'Chatbot',
-            params: {}
-        });
-    };
-
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor="#483524" />
@@ -122,9 +144,18 @@ const Home = () => {
                     <Text style={styles.dateText}>{currentDateTime}</Text>
                 </View>
 
-                <TouchableOpacity style={styles.notificationButton}>
+                <TouchableOpacity
+                    style={styles.notificationButton}
+                    onPress={() => navigation.navigate('Notifications' as any)}
+                >
                     <Ionicons name="notifications" size={22} color="#E8DDD9" />
-                    <View style={styles.notificationBadge} />
+                    {hasNotifications && (
+                        <View style={styles.notificationBadge}>
+                            <Text style={styles.notificationCount}>
+                                {notificationCount > 9 ? '9+' : notificationCount.toString()}
+                            </Text>
+                        </View>
+                    )}
                 </TouchableOpacity>
             </View>
 
@@ -226,12 +257,22 @@ const styles = StyleSheet.create({
     },
     notificationBadge: {
         position: 'absolute',
-        top: 10,
-        right: 10,
-        width: 8,
-        height: 8,
-        borderRadius: 4,
+        top: 5,
+        right: 5,
+        minWidth: 16,
+        height: 16,
+        borderRadius: 8,
         backgroundColor: '#E18942',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 3,
+    },
+
+    notificationCount: {
+        color: '#FFFFFF',
+        fontSize: 10,
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
     profileSection: {
         paddingHorizontal: 20,

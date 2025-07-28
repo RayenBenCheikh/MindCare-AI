@@ -12,7 +12,6 @@ import { AuthContext } from '@/src/context/AuthContext';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { HomeStackParamList } from '@/src/navigation/HomeNavigation';
 import { StackNavigationProp } from '@react-navigation/stack';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 let messageCounter = 0;
 
@@ -21,14 +20,6 @@ interface ChatMessage {
     text: string;
     sender: 'user' | 'bot';
     timestamp: Date;
-}
-
-interface AssessmentResponse {
-    mood: string;
-    severity: number;
-    message: string;
-    solutions: string;
-    musicRecommendations?: MusicRecommendation[];
 }
 
 interface MusicRecommendation {
@@ -42,7 +33,7 @@ interface MusicRecommendation {
     description: string[];
 }
 
-// Assessment questions from your Python model
+// Assessment questions
 const ASSESSMENT_QUESTIONS = [
     "How would you rate your mood today?",
     "Have you been enjoying activities that you usually find pleasurable?",
@@ -56,7 +47,7 @@ const ASSESSMENT_QUESTIONS = [
     "Have you had thoughts that life isn't worth living?"
 ];
 
-// Assessment options matching the Python backend
+// Assessment options
 const ASSESSMENT_OPTIONS = [
     ["1 - Very bad", "2 - Bad", "3 - Neutral", "4 - Good", "5 - Very good"],
     ["Yes", "No"],
@@ -70,13 +61,11 @@ const ASSESSMENT_OPTIONS = [
     ["Never", "Rarely", "Sometimes", "Often", "Always"]
 ];
 
-// Create a helper function to generate unique IDs
 const generateUniqueId = () => {
     messageCounter += 1;
     return `msg_${Date.now()}_${messageCounter}`;
 };
 
-// Helper function for category colors
 const getCategoryColor = (category: string): string => {
     const colors = {
         meditation: '#8DAA6D',
@@ -89,7 +78,6 @@ const getCategoryColor = (category: string): string => {
     return colors[category as keyof typeof colors] || '#8DAA6D';
 };
 
-// Music Recommendation Card Component
 const MusicRecommendationCard: React.FC<{
     recommendations: MusicRecommendation[];
     onPress: () => void;
@@ -134,8 +122,6 @@ const Chatbot: React.FC = () => {
     const navigation = useNavigation<StackNavigationProp<any>>();
     const conversationId = route.params?.conversationId;
 
-    const [currentConversation, setCurrentConversation] = useState<any>(null);
-    const [currentLLM, setCurrentLLM] = useState('gemma3:4b');
     const [musicRecommendations, setMusicRecommendations] = useState<MusicRecommendation[]>([]);
     const [showMusicRecommendations, setShowMusicRecommendations] = useState(false);
     const [inputText, setInputText] = useState('');
@@ -144,39 +130,17 @@ const Chatbot: React.FC = () => {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [assessmentResponses, setAssessmentResponses] = useState<string[]>([]);
     const scrollViewRef = useRef<ScrollView>(null);
-    const [isSavingAssessment, setIsSavingAssessment] = useState(false);
 
-    // Initialize messages
-    const [messages, setMessages] = useState<ChatMessage[]>([
-        {
-            id: generateUniqueId(),
-            text: 'Hello! I am MindCare AI assistant. How can I help you today? Type "start assessment" to begin a mental health evaluation.',
-            sender: 'bot',
-            timestamp: new Date(),
-        },
-    ]);
-
-    useEffect(() => {
-        const loadPreferredModel = async () => {
-            try {
-                const savedModel = await AsyncStorage.getItem('preferredLLM');
-                if (savedModel) {
-                    setCurrentLLM(savedModel);
-                    console.log(`Using LLM model: ${savedModel}`);
-                }
-            } catch (error) {
-                console.error('Error loading LLM preference:', error);
-            }
-        };
-
-        loadPreferredModel();
-    }, []);
-
-    useEffect(() => {
-        if (conversationId) {
-            loadConversationMessages(conversationId);
-        }
-    }, [conversationId]);
+    const [messages, setMessages] = useState<ChatMessage[]>(
+        [
+            {
+                id: generateUniqueId(),
+                text: 'Hello! I am MindCare AI assistant. How can I help you today? Type "start assessment" to begin a mental health evaluation.',
+                sender: 'bot',
+                timestamp: new Date(),
+            },
+        ]
+    );
 
     useEffect(() => {
         // Scroll to bottom when messages change
@@ -205,147 +169,6 @@ const Chatbot: React.FC = () => {
         }
     };
 
-    // Load conversation messages
-    const loadConversationMessages = async (id: string) => {
-        try {
-            setIsTyping(true);
-            const response = await api.get(`/api/chatbot/${id}`);
-
-            if (response.data.success && response.data.conversation) {
-                setCurrentConversation(response.data.conversation);
-
-                if (response.data.conversation.messages && response.data.conversation.messages.length > 0) {
-                    const formattedMessages = response.data.conversation.messages.map((msg: any) => ({
-                        id: msg._id || generateUniqueId(),
-                        text: msg.text,
-                        sender: msg.sender,
-                        timestamp: new Date(msg.timestamp)
-                    }));
-
-                    setMessages(formattedMessages);
-                }
-            }
-        } catch (error) {
-            console.error('Error loading conversation:', error);
-            const errorMessage: ChatMessage = {
-                id: generateUniqueId(),
-                text: "I couldn't load your previous conversation. Let's start a new one.",
-                sender: 'bot',
-                timestamp: new Date(),
-            };
-            setMessages([errorMessage]);
-        } finally {
-            setIsTyping(false);
-        }
-    };
-
-    const saveAssessmentToDatabase = async (assessmentData: any) => {
-        try {
-            setIsSavingAssessment(true);
-
-            if (!userData || !userData.id) {
-                console.error('Cannot save assessment: No user ID available', userData);
-                const errorMessage: ChatMessage = {
-                    id: generateUniqueId(),
-                    text: "I couldn't save your assessment because your user information isn't available.",
-                    sender: 'bot',
-                    timestamp: new Date(),
-                };
-                setMessages(prev => [...prev, errorMessage]);
-                return;
-            }
-
-            console.log('User data available, with ID:', userData.id);
-            console.log('Saving assessment data:', assessmentData);
-
-            const assessmentDate = new Date().toLocaleDateString();
-            const stressLevel = assessmentData.severity;
-
-            // Save to assessments collection (existing functionality)
-            const formattedAssessment = {
-                mood: {
-                    id: assessmentData.mood,
-                    label: assessmentData.mood === "depression" ? "Depressed" : "Positive"
-                },
-                completedAt: new Date().toISOString(),
-                isSubmitted: true,
-                description: `Mental health assessment from ${assessmentDate} - Stress level: ${stressLevel}/5`,
-                stressLevel: {
-                    id: "mentalhealth",
-                    text: `Stress level ${stressLevel}`
-                },
-                professionalHelp: assessmentData.severity >= 4 ? "recommended" : "optional",
-            };
-
-            console.log('Sending properly formatted assessment:', formattedAssessment);
-
-            const saveResponse = await api.post(
-                '/api/assessments/submit',
-                formattedAssessment,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${userToken}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-
-            console.log('Assessment saved successfully:', saveResponse.data);
-
-            // Save assessment results to chatbot conversations (NEW)
-            try {
-                const saveResultsResponse = await api.post('/api/chatbot/assessment-results', {
-                    responses: assessmentData.responses,
-                    analysis: assessmentData.message,
-                    recommendations: assessmentData.solutions,
-                    stressLevel: assessmentData.severity,
-                    mood: assessmentData.mood
-                }, {
-                    headers: {
-                        'Authorization': `Bearer ${userToken}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                console.log('Assessment results saved to conversations:', saveResultsResponse.data);
-            } catch (error) {
-                console.error('Error saving assessment results to conversations:', error);
-            }
-
-            const savedMessage: ChatMessage = {
-                id: generateUniqueId(),
-                text: `Your assessment has been updated with your mental health status.`,
-                sender: 'bot',
-                timestamp: new Date(),
-            };
-
-            setTimeout(() => {
-                setMessages(prev => [...prev, savedMessage]);
-                saveChatMessage(savedMessage);
-            }, 500);
-
-        } catch (error) {
-            console.error('Error saving assessment:', error);
-
-            if (axios.isAxiosError(error)) {
-                console.error('Request URL:', error.config?.url);
-                console.error('Request data:', error.config?.data ? JSON.stringify(error.config.data) : null);
-                console.error('Response status:', error.response?.status);
-                console.error('Response data:', error.response?.data);
-            }
-
-            const errorMessage: ChatMessage = {
-                id: generateUniqueId(),
-                text: "I couldn't save your assessment to your health record. Your results are still valid and you can try again later.",
-                sender: 'bot',
-                timestamp: new Date(),
-            };
-
-            setMessages(prev => [...prev, errorMessage]);
-        } finally {
-            setIsSavingAssessment(false);
-        }
-    };
     const startAssessment = () => {
         setInAssessment(true);
         setCurrentQuestionIndex(0);
@@ -362,26 +185,6 @@ const Chatbot: React.FC = () => {
         };
 
         setMessages(prev => [...prev, botMessage]);
-        saveChatMessage(botMessage);
-    };
-
-    const saveChatMessage = async (message: ChatMessage) => {
-        if (!userData || !userData.id || !userToken) return;
-
-        try {
-            const payload = {
-                userId: userData.id,
-                text: message.text,
-                sender: message.sender,
-                timestamp: message.timestamp,
-                conversationId: conversationId
-            };
-
-            await api.post('/api/chatbot/messages', payload);
-            console.log('Chat message saved to conversation');
-        } catch (error) {
-            console.error('Error saving chat message:', error);
-        }
     };
 
     const processAssessmentResponse = async (response: string) => {
@@ -413,7 +216,6 @@ const Chatbot: React.FC = () => {
 
             setTimeout(() => {
                 setMessages(prev => [...prev, nextQuestion]);
-                saveChatMessage(nextQuestion);
                 setIsTyping(false);
             }, 1000);
         } else {
@@ -421,18 +223,16 @@ const Chatbot: React.FC = () => {
             setIsTyping(true);
             const waitingMessage: ChatMessage = {
                 id: generateUniqueId(),
-                text: "Please wait while I analyze your responses... This may take a moment.",
+                text: "Please wait while I analyze your responses...",
                 sender: 'bot',
                 timestamp: new Date(),
             };
 
             setMessages(prev => [...prev, waitingMessage]);
-            saveChatMessage(waitingMessage);
 
             try {
                 const response = await axios.post(`${VITAL_SIGNS_URL}/api/assessment`, {
-                    responses: newResponses,
-                    model: currentLLM
+                    responses: newResponses
                 });
 
                 // Display results
@@ -444,7 +244,6 @@ const Chatbot: React.FC = () => {
                 };
 
                 setMessages(prev => [...prev, resultMessage]);
-                saveChatMessage(resultMessage);
 
                 // Display solutions
                 if (response.data.solutions) {
@@ -457,57 +256,23 @@ const Chatbot: React.FC = () => {
 
                     setTimeout(() => {
                         setMessages(prev => [...prev, solutionsMessage]);
-                        saveChatMessage(solutionsMessage);
                     }, 1000);
                 }
 
-                // Display music recommendations if available
+                // Display music recommendations
                 if (response.data.musicRecommendations && response.data.musicRecommendations.length > 0) {
                     const musicMessage: ChatMessage = {
                         id: generateUniqueId(),
-                        text: `🎵 I've also prepared some music recommendations based on your stress level that might help you feel better. Would you like to listen to some calming music?`,
+                        text: `🎵 I've also prepared some music recommendations that might help you feel better.`,
                         sender: 'bot',
                         timestamp: new Date(),
                     };
 
                     setTimeout(() => {
                         setMessages(prev => [...prev, musicMessage]);
-                        saveChatMessage(musicMessage);
                         setMusicRecommendations(response.data.musicRecommendations);
                         setShowMusicRecommendations(true);
                     }, 2000);
-                }
-
-                // Save assessment to database
-                if (userData && userToken) {
-                    const assessmentData = {
-                        responses: newResponses,
-                        severity: response.data.severity,
-                        mood: response.data.mood,
-                        message: response.data.message,
-                        solutions: response.data.solutions
-                    };
-
-                    saveAssessmentToDatabase(assessmentData);
-                }
-
-                // Emergency message for high-risk cases
-                if (response.data.severity >= 4 && (
-                    newResponses[9].includes("Sometimes") ||
-                    newResponses[9].includes("Often") ||
-                    newResponses[9].includes("Always")
-                )) {
-                    const emergencyMessage: ChatMessage = {
-                        id: generateUniqueId(),
-                        text: "Your life matters, and support is available. Please consider reaching out to a mental health professional or crisis helpline.",
-                        sender: 'bot',
-                        timestamp: new Date(),
-                    };
-
-                    setTimeout(() => {
-                        setMessages(prev => [...prev, emergencyMessage]);
-                        saveChatMessage(emergencyMessage);
-                    }, 3000);
                 }
 
                 setInAssessment(false);
@@ -544,7 +309,6 @@ const Chatbot: React.FC = () => {
 
         const currentInput = inputText;
         setInputText('');
-        saveChatMessage(userMessage);
         setIsTyping(true);
 
         // Check for assessment start command
@@ -554,7 +318,7 @@ const Chatbot: React.FC = () => {
             return;
         }
 
-        // Check if user is asking about music recommendations
+        // Check for music request
         if (currentInput.toLowerCase().includes('music') ||
             currentInput.toLowerCase().includes('listen') ||
             currentInput.toLowerCase().includes('songs')) {
@@ -562,13 +326,12 @@ const Chatbot: React.FC = () => {
             if (musicRecommendations && musicRecommendations.length > 0) {
                 const musicResponseMessage: ChatMessage = {
                     id: generateUniqueId(),
-                    text: `Great! I have ${musicRecommendations.length} personalized music recommendations for you. Let me show them to you.`,
+                    text: `Great! I have ${musicRecommendations.length} personalized music recommendations for you.`,
                     sender: 'bot',
                     timestamp: new Date(),
                 };
 
                 setMessages(prev => [...prev, musicResponseMessage]);
-                saveChatMessage(musicResponseMessage);
 
                 setTimeout(() => {
                     handleMusicRecommendationPress();
@@ -599,8 +362,7 @@ const Chatbot: React.FC = () => {
 
             const response = await axios.post(`${VITAL_SIGNS_URL}/api/chat`, {
                 message: currentInput,
-                history: history,
-                model: currentLLM
+                history: history
             });
 
             const botMessage: ChatMessage = {
@@ -611,7 +373,6 @@ const Chatbot: React.FC = () => {
             };
 
             setMessages((prevMessages) => [...prevMessages, botMessage]);
-            saveChatMessage(botMessage);
         } catch (error) {
             console.error('Error getting chatbot response:', error);
 
@@ -660,7 +421,6 @@ const Chatbot: React.FC = () => {
                     </View>
                 ))}
 
-                {/* Music recommendation card */}
                 {showMusicRecommendations && musicRecommendations && musicRecommendations.length > 0 && (
                     <MusicRecommendationCard
                         recommendations={musicRecommendations}
@@ -861,7 +621,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: 'white',
     },
-    // Music recommendation styles
     musicRecommendationCard: {
         backgroundColor: '#F8F9FA',
         borderRadius: 12,

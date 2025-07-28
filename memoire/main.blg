@@ -1,0 +1,57 @@
+This is BibTeX, Version 0.99d
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: main.aux
+Reallocating 'name_of_file' (item size: 1) to 9 items.
+The style file: plainurl.bst
+Reallocating 'name_of_file' (item size: 1) to 7 items.
+Reallocating 'glb_str_end' (item size: 4) to 20 items.
+Reallocating 'glb_str_ptr' (item size: 4) to 20 items.
+Reallocating 'global_strs' (item size: 1) to 4000000 items.
+Reallocating 'singl_function' (item size: 4) to 100 items.
+Reallocating 'singl_function' (item size: 4) to 100 items.
+Database file #1: biblio.bib
+Warning--to sort, need author or key in MVC
+Warning--to sort, need author or key in uml
+Warning--to sort, need author or key in figma
+You've used 5 entries,
+            2943 wiz_defined-function locations,
+            654 strings with 5524 characters,
+and the built_in function-call counts, 1471 in all, are:
+= -- 137
+> -- 19
+< -- 0
++ -- 9
+- -- 4
+* -- 42
+:= -- 181
+add.period$ -- 14
+call.type$ -- 5
+change.case$ -- 14
+chr.to.int$ -- 0
+cite$ -- 8
+duplicate$ -- 45
+empty$ -- 203
+format.name$ -- 4
+if$ -- 428
+int.to.chr$ -- 0
+int.to.str$ -- 5
+missing$ -- 0
+newline$ -- 27
+num.names$ -- 4
+pop$ -- 83
+preamble$ -- 1
+purify$ -- 12
+quote$ -- 0
+skip$ -- 118
+stack$ -- 0
+substring$ -- 25
+swap$ -- 5
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 20
+warning$ -- 3
+while$ -- 4
+width$ -- 6
+write$ -- 45
+(There were 3 warnings)

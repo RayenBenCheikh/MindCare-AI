@@ -3,8 +3,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { body, validationResult } from "express-validator";
 import multer from "multer";
-import path from "path";
 import User from "../models/User.js";
+import { sendEmail } from "../utils/emailService.js";
 
 const router = express.Router();
 
@@ -64,7 +64,7 @@ router.post("/register", async (req, res) => {
 
         // Create new user
         const newUser = new User({
-            name: username, // Use email username or provided name
+            name: username,
             email,
             password: hashedPassword
         });
@@ -78,6 +78,15 @@ router.post("/register", async (req, res) => {
             process.env.JWT_SECRET,
             { expiresIn: '1d' }
         );
+
+        // Send welcome email
+        try {
+            await sendEmail(email, 'welcome', [username, email]);
+            console.log(`✅ Welcome email sent to ${email}`);
+        } catch (emailError) {
+            console.error('⚠️ Failed to send welcome email:', emailError);
+            // Don't fail registration if email fails
+        }
 
         res.status(201).json({
             message: "Registration successful!",
@@ -97,6 +106,7 @@ router.post("/register", async (req, res) => {
     }
 });
 // 🔹 Connexion
+
 router.post(
     "/login",
     [
@@ -119,6 +129,19 @@ router.post(
             }
 
             const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+
+            // Send login notification email
+            try {
+                const loginTime = new Date().toLocaleString();
+                const deviceInfo = req.headers['user-agent'] || 'Unknown device';
+
+                await sendEmail(email, 'loginNotification', [user.name, loginTime, deviceInfo]);
+                console.log(`✅ Login notification sent to ${email}`);
+            } catch (emailError) {
+                console.error('⚠️ Failed to send login notification:', emailError);
+                // Don't fail login if email fails
+            }
+
             res.json({
                 token,
                 user: {
@@ -133,7 +156,6 @@ router.post(
         }
     }
 );
-
 // 🔹 Upload profile image
 router.post(
     "/upload-image",

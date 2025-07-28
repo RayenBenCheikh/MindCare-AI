@@ -194,6 +194,78 @@ router.get('/assessment-results', auth, async (req, res) => {
         });
     }
 });
+
+// POST endpoint for saving assessment results
+router.post('/assessment-results', auth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { 
+            responses, 
+            analysis, 
+            recommendations, 
+            stressLevel, 
+            mood, 
+            conversationId 
+        } = req.body;
+
+        // Find the conversation or create a new one
+        let conversation;
+        if (conversationId) {
+            conversation = await Conversation.findOne({
+                _id: conversationId,
+                userId: userId
+            });
+        }
+
+        if (!conversation) {
+            // Create new conversation for this assessment
+            conversation = new Conversation({
+                userId: userId,
+                topic: "Mental Health Assessment",
+                messages: [],
+                assessmentResults: {
+                    responses: responses || [],
+                    analysis: analysis || '',
+                    recommendations: recommendations || '',
+                    stressLevel: stressLevel || 0,
+                    mood: mood || 'neutral',
+                    completed: true,
+                    completedAt: new Date()
+                }
+            });
+        } else {
+            // Update existing conversation with assessment results
+            conversation.assessmentResults = {
+                responses: responses || [],
+                analysis: analysis || '',
+                recommendations: recommendations || '',
+                stressLevel: stressLevel || 0,
+                mood: mood || 'neutral',
+                completed: true,
+                completedAt: new Date()
+            };
+            conversation.lastUpdated = new Date();
+        }
+
+        await conversation.save();
+
+        res.json({
+            success: true,
+            message: 'Assessment results saved successfully',
+            conversationId: conversation._id,
+            assessmentResults: conversation.assessmentResults
+        });
+
+    } catch (error) {
+        console.error('Error saving assessment results:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error saving assessment results',
+            error: error.message
+        });
+    }
+});
+
 // Add stats endpoint for AIChatbot component
 router.get('/stats', auth, async (req, res) => {
     try {

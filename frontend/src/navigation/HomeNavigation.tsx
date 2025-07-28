@@ -13,6 +13,7 @@ import MindfulHours from "../components/home/Mindful/MindfulHours";
 import SleepQuality from "../components/home/Mindful/SleepQuality";
 import MoodTracker from "../components/home/Mindful/MoodTracker";
 import StressLevel from "./StressLevel";
+import Notifications from "../components/home/notifications/Notifications";
 
 export type HomeStackParamList = {
     home: undefined;
@@ -31,6 +32,7 @@ export type HomeStackParamList = {
     SleepQuality: undefined;
     StressLevel: undefined;
     MoodTracker: undefined;
+    Notifications: undefined;
 }
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -105,6 +107,14 @@ const HomeNavigator = () => {
                 name="MoodTracker"
                 component={MoodTracker}
                 options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="Notifications"
+                component={Notifications}
+                options={{
+                    title: 'Notifications',
+                    headerShown: false, // ou true selon votre préférence
+                }}
             />
         </Stack.Navigator>
     );

@@ -9,6 +9,10 @@ import userRoutes from "./routes/userRoutes.js";
 import medicationRoutes from './routes/MedicationRoutes.js';
 import assessmentRoutes from './routes/AssessmentRoutes.js';
 import musicRoutes from './routes/MusicRoutes.js';
+import notificationRoutes from './routes/NotificationRoutes.js';
+import { setupScheduledNotifications } from './utils/notificationTriggers.js';
+import { verifyEmailConfig } from './utils/emailService.js';
+
 // Initialize app and config
 const app = express();
 dotenv.config();
@@ -17,7 +21,7 @@ dotenv.config();
 const env = cleanEnv(process.env, {
   MONGO_URI: str({ desc: 'MongoDB connection string' }),
   PORT: port({ default: 5000, desc: 'Server port' })
-  // Include any other environment variables you're using
+
 });
 
 // CORS and middleware
@@ -69,6 +73,8 @@ app.use('/api/assessments', assessmentRoutes);
 app.use('/api/medications', medicationRoutes);
 app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/music', musicRoutes);
+app.use('/api/notifications', notificationRoutes);
+
 // MongoDB connection and server start
 mongoose
   .connect(env.MONGO_URI, {
@@ -76,10 +82,21 @@ mongoose
     useUnifiedTopology: true,
     serverSelectionTimeoutMS: 5000,
   })
-  .then(() => {
+  .then(async () => {
     console.log("✅ MongoDB connecté avec succès");
+
+    // Verify email configuration
+    const emailConfigured = await verifyEmailConfig();
+    if (!emailConfigured) {
+      console.log("⚠️ Email service not configured properly");
+    }
+
+    setupScheduledNotifications();
+    console.log("✅ Notifications programmées configurées");
+
     app.listen(env.PORT, () => console.log(`✅ Backend running on port ${env.PORT}`));
   })
   .catch((error) => console.error("❌ MongoDB Error:", error.message));
+
 
 export default app;

@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { body, validationResult } from "express-validator";
 import multer from "multer";
+import path from "path";
 import User from "../models/User.js";
 import { sendEmail } from "../utils/emailService.js";
 

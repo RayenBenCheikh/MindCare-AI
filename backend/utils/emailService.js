@@ -3,16 +3,36 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Configure nodemailer transporter - FIXED: createTransport (not createTransporter)
-const transporter = nodemailer.createTransport({
-    service: process.env.EMAIL_SERVICE || 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
-});
+const getTransporterConfig = () => {
+    const service = process.env.EMAIL_SERVICE?.toLowerCase();
 
-// Email templates
+    console.log(`🔍 Email service detected: ${service}`);
+    console.log(`📧 Email user: ${process.env.EMAIL_USER}`);
+
+    if (service === 'outlook') {
+        return {
+            service: 'hotmail', // Sometimes this works better than manual SMTP
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            },
+            debug: true
+        };
+    }
+
+    // Default Gmail config
+    return {
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+        }
+    };
+};
+
+const transporter = nodemailer.createTransport(getTransporterConfig());
+
+// Email templates (keep your existing templates)
 const emailTemplates = {
     welcome: (userName, userEmail) => ({
         subject: '🎉 Welcome to MindCare-AI!',
@@ -75,6 +95,7 @@ export const sendEmail = async (to, templateType, templateData) => {
 
         const mailOptions = {
             from: `"MindCare-AI Support" <${process.env.EMAIL_USER}>`,
+            replyTo: 'MindCare_AI@proton.me',
             to: to,
             subject: emailContent.subject,
             html: emailContent.html
@@ -92,6 +113,7 @@ export const sendEmail = async (to, templateType, templateData) => {
 // Verify email configuration
 export const verifyEmailConfig = async () => {
     try {
+        console.log(`🔧 Verifying email config for: ${process.env.EMAIL_SERVICE}`);
         await transporter.verify();
         console.log('✅ Email configuration verified');
         return true;

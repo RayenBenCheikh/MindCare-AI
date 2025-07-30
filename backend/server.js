@@ -78,8 +78,6 @@ app.use('/api/notifications', notificationRoutes);
 // MongoDB connection and server start
 mongoose
   .connect(env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
     serverSelectionTimeoutMS: 5000,
   })
   .then(async () => {

@@ -1,15 +1,16 @@
 import { colors, images } from '@/src/theme';
 import React, { useContext } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { Svg, Path } from 'react-native-svg';
-
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { WelcomeStackParamList } from '../../navigation/WelcomeNavigation';
 import { AuthContext } from '@/src/context/AuthContext';
 import { commonWelcomeStyles } from '@/src/theme/style';
 import NextButton from '@/src/components/NextButton';
-
+type NavigationProp = StackNavigationProp<WelcomeStackParamList>;
 const WelcomeScreen6 = () => {
   const { completeWelcome } = useContext(AuthContext);
-
+  const navigation = useNavigation<NavigationProp>();
   // Function to handle completing the welcome flow
   const handleComplete = () => {
     completeWelcome()
@@ -48,17 +49,10 @@ const WelcomeScreen6 = () => {
 
         {/* Navigation Button */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity 
-            style={styles.navButton} 
-            onPress={async () => {
-              await completeWelcome();
-              navigation.navigate('SignIn');
-            }}
-          >
-            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <Path d="M9 6 L15 12 L9 18" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </Svg>
-          </TouchableOpacity>
+          <NextButton onPress={() => {
+            completeWelcome();
+            navigation.navigate('SignIn');
+          }} />
         </View>
       </View>
     </View>
@@ -73,11 +67,13 @@ const styles = StyleSheet.create({
   },
   titleText: {
     fontSize: 30,
+    fontWeight: 'bold',
     color: colors.marron,
   },
   Highlighttext: {
     fontSize: 30,
     color: '#A694F5',
+    fontWeight: 'bold',
   },
 
 });

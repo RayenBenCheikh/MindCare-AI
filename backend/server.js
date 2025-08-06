@@ -8,7 +8,7 @@ import chatbotRoutes from './routes/ChatbotRoutes.js';
 import userRoutes from "./routes/userRoutes.js";
 import medicationRoutes from './routes/MedicationRoutes.js';
 import assessmentRoutes from './routes/AssessmentRoutes.js';
-import musicRoutes from './routes/MusicRoutes.js';
+import musicRoutes from './routes/musicRoutes.js';
 import notificationRoutes from './routes/NotificationRoutes.js';
 import { setupScheduledNotifications } from './utils/notificationTriggers.js';
 import { verifyEmailConfig } from './utils/emailService.js';

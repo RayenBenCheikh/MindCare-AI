@@ -62,6 +62,7 @@ const styles = StyleSheet.create({
   titleText: {
 
     fontSize: 30,
+    fontWeight: 'bold',
     color: colors.marron,
   },
   highlightedText: {

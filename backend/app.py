@@ -460,18 +460,35 @@ def get_vital_signs():
 
 @app.route('/health', methods=['GET'])
 def health_check():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'healthy',
-        'service': 'MindCare-AI Vital Signs API',
-        'timestamp': time.strftime("%Y-%m-%d %H:%M:%S"),
-        'features': {
-            'heart_rate_classification': analyzer.hr_classifier is not None,
-            'ppg_bp_estimation': True,
-            'face_detection': True,
-            'enhanced_demographics': True
-        }
-    })
+    """Health check endpoint """
+    try:
+        current_analyzer = init_analyzer()  # Initialize analyzer 
+        
+        return jsonify({
+            'status': 'healthy',
+            'service': 'MindCare-AI Vital Signs API',
+            'timestamp': time.strftime("%Y-%m-%d %H:%M:%S"),
+            'features': {
+                'heart_rate_classification': current_analyzer.hr_classifier is not None if current_analyzer else False,
+                'ppg_bp_estimation': True,
+                'face_detection': current_analyzer.face_cascade is not None if current_analyzer else False,
+                'enhanced_demographics': True
+            },
+            'analyzer_status': 'loaded' if current_analyzer else 'not_loaded'
+        })
+    except Exception as e:
+        logger.error(f"Health check error: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'service': 'MindCare-AI Vital Signs API',
+            'error': str(e),
+            'features': {
+                'heart_rate_classification': False,
+                'ppg_bp_estimation': True,
+                'face_detection': False,
+                'enhanced_demographics': True
+            }
+        }), 500
 
 @app.errorhandler(413)
 def too_large(e):
@@ -484,14 +501,20 @@ def not_found(e):
 @app.errorhandler(500)
 def internal_error(e):
     return jsonify({'error': 'Internal server error'}), 500
-
 if __name__ == '__main__':
     logger.info("🚀 Starting MindCare-AI Enhanced Vital Signs API...")
-    logger.info("✅ Features loaded:")
-    logger.info("   📊 Heart Rate Classification (Trained Model)")
-    logger.info("   🫀 Enhanced PPG-based Blood Pressure Estimation")
-    logger.info("   👤 Face Detection & ROI Extraction")
-    logger.info("   📈 Demographic-based Adjustments")
-    logger.info("   💾 MongoDB Integration")
+    
+    # Initialize analyzer at startup
+    try:
+        init_analyzer()
+        logger.info("✅ Features loaded:")
+        logger.info("   📊 Heart Rate Classification (Trained Model)")
+        logger.info("   🫀 Enhanced PPG-based Blood Pressure Estimation")
+        logger.info("   👤 Face Detection & ROI Extraction")
+        logger.info("   📈 Demographic-based Adjustments")
+        logger.info("   💾 MongoDB Integration")
+    except Exception as e:
+        logger.error(f"❌ Error initializing analyzer: {e}")
+        logger.info("⚠️ Starting with basic functionality")
     
     app.run(host='0.0.0.0', port=5001, debug=True)

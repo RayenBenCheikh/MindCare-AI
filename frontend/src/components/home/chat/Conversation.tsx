@@ -38,6 +38,7 @@ interface Conversation {
         completedAt?: string;
     };
 }
+
 const Conversations = () => {
     const navigation = useNavigation<NavigationProp>();
     const { userToken, userData } = useContext(AuthContext);
@@ -129,9 +130,13 @@ const Conversations = () => {
                         renderItem={({ item }) => (
                             <TouchableOpacity
                                 style={styles.conversationItem}
-                                onPress={() => navigation.navigate('Chatbot', {
-                                    conversationId: item._id
-                                })}
+                                onPress={() => {
+                                    console.log('🔍 Navigating to conversation:', item._id);
+                                    navigation.navigate('Chatbot', {
+                                        conversationId: item._id,
+                                        loadExisting: true
+                                    });
+                                }}
                             >
                                 <View style={styles.conversationHeader}>
                                     <Text style={styles.conversationTopic}>
@@ -147,7 +152,6 @@ const Conversations = () => {
                                 </View>
 
                                 {item.assessmentResults?.completed ? (
-                                    // Show assessment summary if available
                                     <View style={styles.assessmentSummary}>
                                         <Text style={styles.assessmentLabel}>
                                             Stress Level: <Text style={styles.assessmentValue}>
@@ -164,7 +168,6 @@ const Conversations = () => {
                                         </Text>
                                     </View>
                                 ) : (
-                                    // Show regular message preview
                                     <Text style={styles.previewText}>
                                         {item.messages && item.messages.length > 0
                                             ? (item.messages[item.messages.length - 1]?.text || "").substring(0, 60) + "..."
@@ -180,9 +183,6 @@ const Conversations = () => {
                     />
                 )}
             </View>
-
-            {/* Tab bar space */}
-            <View style={styles.tabBarSpace} />
         </SafeAreaView>
     );
 };
@@ -190,7 +190,7 @@ const Conversations = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.marron,
+        backgroundColor: '#F5F5F5', // ✅ Changed from colors.marron
     },
     header: {
         flexDirection: 'row',
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     },
     listContainer: {
         padding: 16,
-        paddingBottom: 100, // Extra padding at bottom
+        paddingBottom: 20, // ✅ Reduced padding
     },
     conversationItem: {
         backgroundColor: 'white',
@@ -346,9 +346,6 @@ const styles = StyleSheet.create({
     startChatButtonText: {
         color: 'white',
         fontWeight: 'bold',
-    },
-    tabBarSpace: {
-        height: 75, // Height for tab bar
     },
 });
 

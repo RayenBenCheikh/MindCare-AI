@@ -15,11 +15,17 @@ import { StackNavigationProp } from '@react-navigation/stack';
 
 let messageCounter = 0;
 
+interface EmotionData {
+    detected_emotion: string;
+    emotion_confidence: number;
+}
+
 interface ChatMessage {
     id: string;
     text: string;
     sender: 'user' | 'bot';
     timestamp: Date;
+    emotion?: EmotionData;
 }
 
 interface MusicRecommendation {
@@ -78,6 +84,18 @@ const getCategoryColor = (category: string): string => {
     return colors[category as keyof typeof colors] || '#8DAA6D';
 };
 
+// Add emotion colors function
+const getEmotionColor = (emotion: string): string => {
+    const emotionColors = {
+        joy: '#4CAF50',
+        sadness: '#2196F3',
+        anger: '#F44336',
+        fear: '#FF9800',
+        neutral: '#9E9E9E'
+    };
+    return emotionColors[emotion as keyof typeof emotionColors] || '#9E9E9E';
+};
+
 const MusicRecommendationCard: React.FC<{
     recommendations: MusicRecommendation[];
     onPress: () => void;
@@ -121,6 +139,7 @@ const Chatbot: React.FC = () => {
     const route = useRoute<RouteProp<HomeStackParamList, 'Chatbot'>>();
     const navigation = useNavigation<StackNavigationProp<any>>();
     const conversationId = route.params?.conversationId;
+    const loadExisting = route.params?.loadExisting;
 
     const [musicRecommendations, setMusicRecommendations] = useState<MusicRecommendation[]>([]);
     const [showMusicRecommendations, setShowMusicRecommendations] = useState(false);
@@ -130,26 +149,103 @@ const Chatbot: React.FC = () => {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [assessmentResponses, setAssessmentResponses] = useState<string[]>([]);
     const scrollViewRef = useRef<ScrollView>(null);
+    const [loadingConversation, setLoadingConversation] = useState(false);
 
     const [messages, setMessages] = useState<ChatMessage[]>(
-        [
+        !loadExisting ? [
             {
                 id: generateUniqueId(),
                 text: 'Hello! I am MindCare AI assistant. How can I help you today? Type "start assessment" to begin a mental health evaluation.',
                 sender: 'bot',
                 timestamp: new Date(),
             },
-        ]
+        ] : []
     );
 
     useEffect(() => {
-        // Scroll to bottom when messages change
+        if (conversationId && loadExisting) {
+            loadExistingConversation(conversationId);
+        }
+    }, [conversationId, loadExisting]);
+
+    useEffect(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
     }, [messages]);
 
+    // Add debug logging for user data
+    useEffect(() => {
+        console.log('🔍 User data in Chatbot:', userData);
+        console.log('🆔 User ID:', userData?.id || userData?._id);
+    }, [userData]);
+
+    const loadExistingConversation = async (convId: string) => {
+        try {
+            setLoadingConversation(true);
+            console.log('📖 Loading conversation:', convId);
+
+            const response = await axios.get(`${VITAL_SIGNS_URL}/api/conversation/${convId}`, {
+                headers: {
+                    'Authorization': `Bearer ${userToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.data.success && response.data.conversation) {
+                const conversation = response.data.conversation;
+                console.log('📖 Loaded conversation:', conversation);
+
+                const loadedMessages: ChatMessage[] = [];
+
+                if (conversation.messages && conversation.messages.length > 0) {
+                    conversation.messages.forEach((msg: any) => {
+                        const chatMessage: ChatMessage = {
+                            id: msg._id || generateUniqueId(),
+                            text: msg.text || '',
+                            sender: msg.sender || 'bot',
+                            timestamp: new Date(msg.timestamp || Date.now()),
+                        };
+                        loadedMessages.push(chatMessage);
+                    });
+                }
+
+                if (conversation.assessmentResults && conversation.assessmentResults.completed) {
+                    const assessmentSummary: ChatMessage = {
+                        id: generateUniqueId(),
+                        text: `📋 Assessment Results:\nStress Level: ${conversation.assessmentResults.stressLevel}/5\nMood: ${conversation.assessmentResults.mood}\n\n${conversation.assessmentResults.recommendations}`,
+                        sender: 'bot',
+                        timestamp: new Date(conversation.assessmentResults.completedAt || Date.now()),
+                    };
+                    loadedMessages.push(assessmentSummary);
+                }
+
+                setMessages(loadedMessages);
+
+                if (conversation.topic && conversation.topic.includes('Assessment')) {
+                    navigation.setOptions({
+                        title: 'Assessment Results'
+                    });
+                }
+
+            } else {
+                console.error('Failed to load conversation:', response.data);
+            }
+
+        } catch (error) {
+            console.error('❌ Error loading conversation:', error);
+            const errorMessage: ChatMessage = {
+                id: generateUniqueId(),
+                text: "Sorry, I couldn't load this conversation. Please try again.",
+                sender: 'bot',
+                timestamp: new Date(),
+            };
+            setMessages([errorMessage]);
+        } finally {
+            setLoadingConversation(false);
+        }
+    };
+
     const handleMusicRecommendationPress = () => {
         if (musicRecommendations && musicRecommendations.length > 0) {
-            // Navigate to music selection with recommendations
             navigation.navigate('MusicSelection' as any, {
                 existingTracks: musicRecommendations.map(rec => ({
                     id: rec.id,
@@ -187,6 +283,23 @@ const Chatbot: React.FC = () => {
         setMessages(prev => [...prev, botMessage]);
     };
 
+    const getStressLevelDescription = (level: number): string => {
+        switch (level) {
+            case 1:
+                return "Very Low Stress - You're doing great! Keep up your healthy habits.";
+            case 2:
+                return "Low Stress - Your stress levels are manageable. Continue your current self-care routine.";
+            case 3:
+                return "Moderate Stress - Consider incorporating more relaxation techniques into your daily routine.";
+            case 4:
+                return "High Stress - It would be beneficial to seek support and practice stress management techniques.";
+            case 5:
+                return "Very High Stress - Please consider speaking with a mental health professional for additional support.";
+            default:
+                return "Assessment completed.";
+        }
+    };
+
     const processAssessmentResponse = async (response: string) => {
         let processedResponse = response;
 
@@ -219,11 +332,10 @@ const Chatbot: React.FC = () => {
                 setIsTyping(false);
             }, 1000);
         } else {
-            // Assessment complete
             setIsTyping(true);
             const waitingMessage: ChatMessage = {
                 id: generateUniqueId(),
-                text: "Please wait while I analyze your responses...",
+                text: "Please wait while I analyze your responses... This may take a moment.",
                 sender: 'bot',
                 timestamp: new Date(),
             };
@@ -231,21 +343,27 @@ const Chatbot: React.FC = () => {
             setMessages(prev => [...prev, waitingMessage]);
 
             try {
+                const userId = userData?.id || userData?._id;
+                console.log('📋 Sending assessment with user ID:', userId);
+
                 const response = await axios.post(`${VITAL_SIGNS_URL}/api/assessment`, {
-                    responses: newResponses
+                    responses: newResponses,
+                    userId: userId
                 });
 
-                // Display results
+                console.log('📋 Assessment response:', response.data);
+
+                setMessages(prev => prev.slice(0, -1));
+
                 const resultMessage: ChatMessage = {
                     id: generateUniqueId(),
-                    text: response.data.message || "Assessment complete. Thank you for your responses.",
+                    text: response.data.message || `Assessment completed. Your stress level is ${response.data.severity}/5.`,
                     sender: 'bot',
                     timestamp: new Date(),
                 };
 
                 setMessages(prev => [...prev, resultMessage]);
 
-                // Display solutions
                 if (response.data.solutions) {
                     const solutionsMessage: ChatMessage = {
                         id: generateUniqueId(),
@@ -256,10 +374,22 @@ const Chatbot: React.FC = () => {
 
                     setTimeout(() => {
                         setMessages(prev => [...prev, solutionsMessage]);
-                    }, 1000);
+                    }, 1500);
                 }
 
-                // Display music recommendations
+                if (response.data.severity) {
+                    const stressMessage: ChatMessage = {
+                        id: generateUniqueId(),
+                        text: `📊 Your stress level assessment: ${response.data.severity}/5\n\n${getStressLevelDescription(response.data.severity)}`,
+                        sender: 'bot',
+                        timestamp: new Date(),
+                    };
+
+                    setTimeout(() => {
+                        setMessages(prev => [...prev, stressMessage]);
+                    }, 2500);
+                }
+
                 if (response.data.musicRecommendations && response.data.musicRecommendations.length > 0) {
                     const musicMessage: ChatMessage = {
                         id: generateUniqueId(),
@@ -272,13 +402,18 @@ const Chatbot: React.FC = () => {
                         setMessages(prev => [...prev, musicMessage]);
                         setMusicRecommendations(response.data.musicRecommendations);
                         setShowMusicRecommendations(true);
-                    }, 2000);
+                    }, 3500);
                 }
 
                 setInAssessment(false);
 
             } catch (error) {
-                console.error('Error analyzing assessment:', error);
+                console.error('❌ Error analyzing assessment:', error);
+                if (error && typeof error === 'object' && 'response' in error) {
+                    console.error('❌ Error details:', (error as any).response?.data);
+                }
+
+                setMessages(prev => prev.slice(0, -1));
 
                 const errorMessage: ChatMessage = {
                     id: generateUniqueId(),
@@ -311,14 +446,12 @@ const Chatbot: React.FC = () => {
         setInputText('');
         setIsTyping(true);
 
-        // Check for assessment start command
         if (currentInput.toLowerCase().includes('start assessment') && !inAssessment) {
             startAssessment();
             setIsTyping(false);
             return;
         }
 
-        // Check for music request
         if (currentInput.toLowerCase().includes('music') ||
             currentInput.toLowerCase().includes('listen') ||
             currentInput.toLowerCase().includes('songs')) {
@@ -342,13 +475,11 @@ const Chatbot: React.FC = () => {
             }
         }
 
-        // Handle assessment responses
         if (inAssessment) {
             processAssessmentResponse(currentInput);
             return;
         }
 
-        // Normal chat flow
         try {
             const history = messages.map(msg => ({
                 role: msg.sender === 'user' ? 'user' : 'assistant',
@@ -360,9 +491,13 @@ const Chatbot: React.FC = () => {
                 content: currentInput
             });
 
+            const userId = userData?.id || userData?._id;
+            console.log('📤 Sending message with user ID:', userId);
+
             const response = await axios.post(`${VITAL_SIGNS_URL}/api/chat`, {
                 message: currentInput,
-                history: history
+                history: history,
+                userId: userId
             });
 
             const botMessage: ChatMessage = {
@@ -372,7 +507,26 @@ const Chatbot: React.FC = () => {
                 timestamp: new Date(),
             };
 
-            setMessages((prevMessages) => [...prevMessages, botMessage]);
+            if (response.data.detected_emotion) {
+                const updatedUserMessage = {
+                    ...userMessage,
+                    emotion: {
+                        detected_emotion: response.data.detected_emotion,
+                        emotion_confidence: response.data.emotion_confidence || 0.5
+                    }
+                };
+
+                setMessages((prevMessages) => {
+                    const updatedMessages = [...prevMessages];
+                    updatedMessages[updatedMessages.length - 1] = updatedUserMessage;
+                    return [...updatedMessages, botMessage];
+                });
+
+                console.log(`🎭 Detected emotion: ${response.data.detected_emotion} (${(response.data.emotion_confidence * 100).toFixed(0)}%)`);
+            } else {
+                setMessages((prevMessages) => [...prevMessages, botMessage]);
+            }
+
         } catch (error) {
             console.error('Error getting chatbot response:', error);
 
@@ -392,7 +546,16 @@ const Chatbot: React.FC = () => {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>MindCare Assistant</Text>
+                <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => navigation.goBack()}
+                >
+                    <Ionicons name="arrow-back" size={24} color="white" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>
+                    {loadExisting ? 'Conversation' : 'MindCare Assistant'}
+                </Text>
+                <View style={styles.headerRightPlaceholder} />
             </View>
 
             <ScrollView
@@ -401,25 +564,47 @@ const Chatbot: React.FC = () => {
                 contentContainerStyle={{ paddingBottom: 180 }}
                 showsVerticalScrollIndicator={true}
             >
-                {messages.map((message) => (
-                    <View
-                        key={message.id}
-                        style={[
-                            styles.messageBubble,
-                            message.sender === 'user'
-                                ? styles.userMessage
-                                : styles.botMessage
-                        ]}
-                    >
-                        <Text style={styles.messageText}>{message.text}</Text>
-                        <Text style={styles.timestamp}>
-                            {message.timestamp.toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                            })}
-                        </Text>
+                {loadingConversation ? (
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" color="#8DAA6D" />
+                        <Text style={styles.loadingText}>Loading conversation...</Text>
                     </View>
-                ))}
+                ) : (
+                    messages.map((message) => (
+                        <View key={message.id}>
+                            <View
+                                style={[
+                                    styles.messageBubble,
+                                    message.sender === 'user'
+                                        ? styles.userMessage
+                                        : styles.botMessage
+                                ]}
+                            >
+                                <Text style={styles.messageText}>{message.text}</Text>
+                                <Text style={styles.timestamp}>
+                                    {message.timestamp.toLocaleTimeString([], {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                    })}
+                                </Text>
+                            </View>
+
+                            {message.sender === 'user' && message.emotion && (
+                                <View style={styles.emotionIndicator}>
+                                    <View
+                                        style={[
+                                            styles.emotionDot,
+                                            { backgroundColor: getEmotionColor(message.emotion.detected_emotion) }
+                                        ]}
+                                    />
+                                    <Text style={styles.emotionText}>
+                                        {message.emotion.detected_emotion} ({(message.emotion.emotion_confidence * 100).toFixed(0)}%)
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
+                    ))
+                )}
 
                 {showMusicRecommendations && musicRecommendations && musicRecommendations.length > 0 && (
                     <MusicRecommendationCard
@@ -511,18 +696,39 @@ const styles = StyleSheet.create({
         backgroundColor: colors.black,
     },
     header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         backgroundColor: colors.marron,
         padding: 16,
-        alignItems: 'center',
+    },
+    backButton: {
+        padding: 4,
     },
     headerTitle: {
         fontSize: 20,
         fontWeight: 'bold',
         color: 'white',
+        flex: 1,
+        textAlign: 'center',
+    },
+    headerRightPlaceholder: {
+        width: 32,
     },
     messagesContainer: {
         flex: 1,
         padding: 16,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    loadingText: {
+        marginTop: 12,
+        color: '#666',
+        fontSize: 16,
     },
     messageBubble: {
         maxWidth: '80%',
@@ -554,6 +760,25 @@ const styles = StyleSheet.create({
         color: '#666',
         alignSelf: 'flex-end',
         marginTop: 4,
+    },
+    emotionIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-end',
+        marginRight: 16,
+        marginTop: 4,
+        marginBottom: 8,
+    },
+    emotionDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginRight: 6,
+    },
+    emotionText: {
+        fontSize: 12,
+        color: '#666',
+        fontStyle: 'italic',
     },
     footerContainer: {
         width: '100%',
@@ -598,6 +823,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#E0E0E0',
     },
     tabBarSpace: {
+        height: 90,
     },
     numberButtonsContainer: {
         flexDirection: 'row',

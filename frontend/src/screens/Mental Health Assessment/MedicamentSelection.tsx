@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
     View,
     Text,
@@ -20,6 +20,7 @@ import { useAssessmentStore } from '@/src/store/Store';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
 import ContinueButton from '@/src/components/Continue';
+import { AuthContext } from '@/src/context/AuthContext';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -42,14 +43,23 @@ const MedicamentSelection: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
 
     const navigation = useNavigation<NavigationProp>();
+    const { userToken } = useContext(AuthContext);
     const savePrescribedMedications = useAssessmentStore(state => state.savePrescribedMedications);
     const submitAssessment = useAssessmentStore(state => state.submitAssessment);
+
     // Fetch medications by selected letter
     useEffect(() => {
         const fetchMedications = async () => {
             // Don't fetch if we're in search mode but haven't entered a query yet
             if (searchMode && !searchQuery.trim()) {
                 setMedications([]);
+                return;
+            }
+
+            // Don't fetch if no token
+            if (!userToken) {
+                console.log("No user token available");
+                setError("Authentication required");
                 return;
             }
 
@@ -69,7 +79,14 @@ const MedicamentSelection: React.FC = () => {
                     console.log(`Fetching medications for letter: ${selectedLetter}`);
                 }
 
-                const response = await axios.get(url);
+                console.log("Making request with token:", userToken.substring(0, 20) + "...");
+
+                const response = await axios.get(url, {
+                    headers: {
+                        'Authorization': `Bearer ${userToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
 
                 if (response.data && Array.isArray(response.data)) {
                     const mappedMedications = response.data.map((med: any) => ({
@@ -83,7 +100,14 @@ const MedicamentSelection: React.FC = () => {
                 }
             } catch (err: any) {
                 console.error('Error fetching medications:', err);
-                setError(`Failed to load medications: ${err.message}`);
+                console.error('Error response:', err.response?.data);
+                console.error('Error status:', err.response?.status);
+
+                if (err.response?.status === 401) {
+                    setError("Authentication failed. Please log in again.");
+                } else {
+                    setError(`Failed to load medications: ${err.message}`);
+                }
                 setMedications([]);
             } finally {
                 setIsLoading(false);
@@ -95,7 +119,7 @@ const MedicamentSelection: React.FC = () => {
         }, searchMode ? 500 : 0); // Add debounce for search typing
 
         return () => clearTimeout(debounceTimeout);
-    }, [selectedLetter, searchMode, searchQuery]);
+    }, [selectedLetter, searchMode, searchQuery, userToken]);
 
     const handleSelectLetter = (letter: string) => {
         if (letter === "🔍") {
@@ -137,7 +161,7 @@ const MedicamentSelection: React.FC = () => {
                 console.log('Assessment submitted successfully:', response);
 
                 // Navigate to next screen on success
-                navigation.navigate('Home');
+                navigation.navigate('TabNavigator');
             } catch (error: any) {
                 console.error('Error submitting assessment:', error);
 
@@ -147,6 +171,8 @@ const MedicamentSelection: React.FC = () => {
                 if (error.response) {
                     if (error.response.status === 404) {
                         errorMessage = 'Server endpoint not found. Please contact support.';
+                    } else if (error.response.status === 401) {
+                        errorMessage = 'Authentication failed. Please log in again.';
                     } else {
                         errorMessage = `Server error (${error.response.status}): ${error.response.data?.message || 'Unknown error'}`;
                     }
@@ -185,6 +211,17 @@ const MedicamentSelection: React.FC = () => {
             </TouchableOpacity>
         );
     };
+
+    // Show auth error if no token
+    if (!userToken) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>Authentication required. Please log in.</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.container}>
@@ -317,6 +354,7 @@ const MedicamentSelection: React.FC = () => {
         </SafeAreaView>
     );
 };
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,

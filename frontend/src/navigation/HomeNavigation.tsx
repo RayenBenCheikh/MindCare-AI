@@ -17,7 +17,10 @@ import Notifications from "../components/home/notifications/Notifications";
 
 export type HomeStackParamList = {
     home: undefined;
-    Chatbot: { conversationId?: string };
+    Chatbot: {
+        conversationId?: string;
+        loadExisting?: boolean;
+    };
     conversation: undefined;
     settings: undefined;
     ArticleSelection: undefined;
@@ -25,7 +28,10 @@ export type HomeStackParamList = {
         articleId: string;
         articleUrl?: string;
     };
-    MusicSelection: undefined;
+    MusicSelection: {
+        existingTracks?: any[];
+        autoPlay?: boolean;
+    };
     MindfulDashboard: undefined;
     AssessmentHistory: undefined;
     MindfulHours: undefined;
@@ -37,7 +43,6 @@ export type HomeStackParamList = {
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 
-// Change this name from WelcomeNavigator to HomeNavigator
 const HomeNavigator = () => {
     return (
         <Stack.Navigator>
@@ -59,7 +64,8 @@ const HomeNavigator = () => {
             <Stack.Screen
                 name="settings"
                 component={LLMSettings}
-                options={{ headerShown: false }} />
+                options={{ headerShown: false }}
+            />
             <Stack.Screen
                 name="ArticleSelection"
                 component={ArticleSelection}
@@ -113,7 +119,7 @@ const HomeNavigator = () => {
                 component={Notifications}
                 options={{
                     title: 'Notifications',
-                    headerShown: false, // ou true selon votre préférence
+                    headerShown: false,
                 }}
             />
         </Stack.Navigator>

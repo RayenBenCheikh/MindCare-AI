@@ -79,6 +79,7 @@ const styles = StyleSheet.create({
   titleText: {
     fontSize: 30,
     color: colors.marron,
+    fontWeight: 'bold',
   },
 }
 );

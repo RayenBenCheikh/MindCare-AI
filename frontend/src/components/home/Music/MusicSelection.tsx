@@ -21,6 +21,7 @@ import LocalMusicAPI, { MusicTrack } from '@/src/service/MusicApi';
 import MusicPlayer from './CustomAudio';
 import Modal from 'react-native-modal';
 import { API_BASE_URL } from '@/src/api/config';
+
 interface MusicSelectionProps {
     route?: {
         params?: {
@@ -30,6 +31,7 @@ interface MusicSelectionProps {
         };
     };
 }
+
 const MUSIC_CATEGORIES = [
     { id: 'all', name: 'All', color: '#8DAA6D', icon: 'musical-notes-outline' },
     { id: 'meditation', name: 'Meditation', color: '#8DAA6D', icon: 'flower-outline' },
@@ -53,12 +55,12 @@ const MusicSelection: React.FC<MusicSelectionProps> = ({ route }) => {
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [activeTab, setActiveTab] = useState<'all' | 'tracks'>('all');
     const navigation = useNavigation();
+    const [categoryFilteredTracks, setCategoryFilteredTracks] = useState<MusicTrack[]>([]);
 
     // Check for passed data
     const passedTracks = route?.params?.existingTracks;
     const passedSelectedTrack = route?.params?.selectedTrack;
     const shouldAutoPlay = route?.params?.autoPlay;
-
 
     // Helper functions
     const formatDuration = (seconds: number): string => {
@@ -113,29 +115,38 @@ const MusicSelection: React.FC<MusicSelectionProps> = ({ route }) => {
         }
     }, [passedSelectedTrack, shouldAutoPlay]);
 
+    // Fixed filtering logic
     useEffect(() => {
-        let filtered = musicTracks;
+        console.log('🎵 Starting filter process...');
+        console.log('🎵 Total tracks:', musicTracks.length);
+        console.log('🎵 Selected category:', selectedCategory);
+        console.log('🎵 Search query:', searchQuery);
 
-        // Filter by category
+        // Step 1: Filter by category first
+        let categoryFiltered = musicTracks;
         if (selectedCategory !== 'all') {
-            filtered = filtered.filter(track => track.category === selectedCategory);
+            categoryFiltered = musicTracks.filter(track => {
+                console.log(`🎵 Track "${track.title}" has category: "${track.category}"`);
+                return track.category === selectedCategory;
+            });
         }
 
-        // Filter by search query
+        console.log('🎵 Category filtered tracks:', categoryFiltered.length);
+        setCategoryFilteredTracks(categoryFiltered);
+
+        // Step 2: Apply search filter on the category-filtered results
+        let finalFiltered = categoryFiltered;
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(track =>
+            finalFiltered = categoryFiltered.filter(track =>
                 track.title.toLowerCase().includes(query) ||
                 track.artist.toLowerCase().includes(query) ||
                 track.album.toLowerCase().includes(query)
             );
         }
 
-        console.log(`🎵 MusicSelection: Filtered ${filtered.length} tracks from ${musicTracks.length} total`);
-        console.log('🎵 Selected category:', selectedCategory);
-        console.log('🎵 Search query:', searchQuery);
-
-        setFilteredTracks(filtered);
+        console.log('🎵 Final filtered tracks:', finalFiltered.length);
+        setFilteredTracks(finalFiltered);
     }, [musicTracks, selectedCategory, searchQuery]);
 
     // Refresh when screen comes into focus
@@ -166,7 +177,6 @@ const MusicSelection: React.FC<MusicSelectionProps> = ({ route }) => {
         }
     };
 
-
     // Add this function to close the player
     const handleClosePlayer = () => {
         setShowMusicPlayer(false);
@@ -187,7 +197,10 @@ const MusicSelection: React.FC<MusicSelectionProps> = ({ route }) => {
                 { backgroundColor: item.color },
                 selectedCategory === item.id && styles.categorySelected
             ]}
-            onPress={() => setSelectedCategory(item.id)}
+            onPress={() => {
+                console.log('🎵 Category selected:', item.id);
+                setSelectedCategory(item.id);
+            }}
         >
             <Ionicons name={item.icon as any} size={16} color="#FFF" />
             <Text style={styles.categoryText}>{item.name}</Text>
@@ -265,7 +278,7 @@ const MusicSelection: React.FC<MusicSelectionProps> = ({ route }) => {
                 onPress={() => setActiveTab('all')}
             >
                 <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
-                    All ({musicTracks.length})
+                    All ({categoryFilteredTracks.length})
                 </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -273,7 +286,7 @@ const MusicSelection: React.FC<MusicSelectionProps> = ({ route }) => {
                 onPress={() => setActiveTab('tracks')}
             >
                 <Text style={[styles.tabText, activeTab === 'tracks' && styles.activeTabText]}>
-                    Tracks ({musicTracks.length})
+                    Tracks ({categoryFilteredTracks.length})
                 </Text>
             </TouchableOpacity>
         </View>
@@ -387,15 +400,6 @@ const MusicSelection: React.FC<MusicSelectionProps> = ({ route }) => {
                     </View>
                 }
             />
-
-            {/* Results count */}
-            {filteredTracks.length > 0 && (
-                <View style={styles.resultsCount}>
-                    <Text style={styles.resultsText}>
-                        {filteredTracks.length} result{filteredTracks.length !== 1 ? 's' : ''} found
-                    </Text>
-                </View>
-            )}
             <Modal
                 isVisible={showMusicPlayer}
                 animationIn="slideInUp"
@@ -622,17 +626,6 @@ const styles = StyleSheet.create({
         marginTop: 8,
         textAlign: 'center',
     },
-    resultsCount: {
-        padding: 12,
-        backgroundColor: '#F8F8F8',
-        borderTopWidth: 1,
-        borderTopColor: '#EFEFEF',
-    },
-    resultsText: {
-        fontSize: 14,
-        color: '#666',
-        textAlign: 'center',
-    },
     playerModal: {
         justifyContent: 'flex-end',
         margin: 0,
@@ -655,7 +648,8 @@ const styles = StyleSheet.create({
     },
     playButtonSpotify: {
         backgroundColor: '#1DB954',
-    }, noPreviewBadge: {
+    },
+    noPreviewBadge: {
         backgroundColor: '#888',
     },
 });

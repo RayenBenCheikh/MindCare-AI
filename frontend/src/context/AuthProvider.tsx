@@ -69,6 +69,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 const token = await AsyncStorage.getItem("userToken");
                 const userDataString = await AsyncStorage.getItem("userData");
                 const welcomeComplete = await AsyncStorage.getItem('hasSeenWelcome');
+
                 // Check if token exists and is valid
                 if (token) {
                     if (isTokenExpired(token)) {
@@ -76,6 +77,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         await AsyncStorage.removeItem("userToken");
                         await AsyncStorage.removeItem("userData");
                     } else {
+                        console.log("Setting token from storage:", token.substring(0, 20) + "...");
                         setUserToken(token);
                         setAuthToken(token);
 
@@ -84,7 +86,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         }
                     }
                 }
-                // await AsyncStorage.clear(); // Clear any existing data
+
+                // Don't clear AsyncStorage here - this was removing the token!
+                // await AsyncStorage.clear(); // Remove this line
+
                 setHasSeenWelcome(welcomeComplete === 'true');
             } catch (e) {
                 console.error("Error loading auth state:", e);

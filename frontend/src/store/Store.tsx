@@ -4,11 +4,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError } from 'axios';
 import { Platform } from 'react-native';
 
-// Define API base URL based on platform - fixed the syntax error (removed slash)
 const API_BASE_URL = __DEV__
     ? Platform.OS === 'ios'
-        ? 'http://localhost:5000' // Removed /api
-        : 'http://10.0.2.2:5000'  // Removed /api
+        ? 'http://localhost:5000'
+        : 'http://10.0.2.2:5000'
     : 'https://your-production-api.com';
 
 // Define the assessment data types
@@ -182,72 +181,101 @@ export const useAssessmentStore = create<AssessmentStore>()(
                 set({ isLoading: true, error: null });
 
                 try {
-                    const { assessmentData } = get();
+                    const state = get();
 
-                    // Mark as submitted
+                    // Get the auth token from AsyncStorage
+                    const token = await AsyncStorage.getItem('userToken');
+
+                    if (!token) {
+                        throw new Error('No authentication token found. Please login again.');
+                    }
+
+                    // Convert prescribedMedications array to string format expected by backend
+                    let prescribedMedicationsString = '';
+                    if (state.assessmentData.prescribedMedications && state.assessmentData.prescribedMedications.length > 0) {
+                        // Create a comma-separated string of medication names
+                        prescribedMedicationsString = state.assessmentData.prescribedMedications
+                            .map(med => med.name)
+                            .join(', ');
+                    }
+
+                    // Prepare assessment data with converted medications
+                    const assessmentData = {
+                        healthGoal: state.assessmentData.healthGoal,
+                        gender: state.assessmentData.gender,
+                        age: state.assessmentData.age,
+                        weight: state.assessmentData.weight,
+                        height: state.assessmentData.height,
+                        mood: state.assessmentData.mood,
+                        sleepQuality: state.assessmentData.sleepQuality,
+                        professionalHelp: state.assessmentData.professionalHelp,
+                        medication: state.assessmentData.medication,
+                        // Convert array to string for backend compatibility
+                        prescribedMedications: prescribedMedicationsString,
+                        // Also send the raw array for future use (optional)
+                        prescribedMedicationsArray: state.assessmentData.prescribedMedications,
+                        completedAt: new Date().toISOString(),
+                        isSubmitted: true
+                    };
+
+                    console.log('Submitting assessment to:', `${API_BASE_URL}/api/assessments`);
+                    console.log('Assessment data:', assessmentData);
+                    console.log('Prescribed medications string:', prescribedMedicationsString);
+                    console.log('Using token:', token.substring(0, 20) + '...');
+
+                    // Make the API request with proper headers
+                    const response = await axios.post(
+                        `${API_BASE_URL}/api/assessments`,
+                        assessmentData,
+                        {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        }
+                    );
+
+                    console.log('Assessment submitted successfully:', response.data);
+
+                    // Mark as submitted in state
                     set(state => ({
                         assessmentData: {
                             ...state.assessmentData,
                             isSubmitted: true,
-                            completedAt: assessmentData.completedAt || new Date().toISOString()
-                        }
+                            completedAt: assessmentData.completedAt
+                        },
+                        isLoading: false
                     }));
 
-                    // Get token if available
-                    let token = null;
-                    try {
-                        token = await AsyncStorage.getItem('@auth_token');
-                    } catch (e) {
-                        console.log('No auth token available');
-                    }
-
-                    // Set up request config
-                    const config = {
-                        headers: {
-                            'Content-Type': 'application/json'
-                        } as Record<string, string>
-                    };
-
-                    // Add authorization header if token exists
-                    if (token) {
-                        config.headers.Authorization = `Bearer ${token}`;
-                    }
-
-                    console.log('Submitting assessment to:', `${API_BASE_URL}/api/assessments`);
-                    console.log('Assessment data:', JSON.stringify(assessmentData, null, 2));
-
-                    try {
-                        // Try to submit to the primary endpoint
-                        const response = await axios.post(
-                            `${API_BASE_URL}/api/assessments`,
-                            assessmentData,
-                            config
-                        );
-                        console.log('Submission response:', response.data);
-                        set({ isLoading: false });
-                        return response.data;
-                    } catch (error) {
-                        const apiError = error as AxiosError;
-                        console.error('API error:', apiError);
-
-                        if (apiError.response) {
-                            console.error('Error data:', apiError.response.data);
-                            console.error('Error status:', apiError.response.status);
-                        }
-
-                        // Simulate success for development
-                        console.log('DEVELOPMENT MODE: Simulating successful submission');
-                        set({ isLoading: false });
-                        return { success: true, message: "Simulated successful submission" };
-                    }
-
+                    return response.data;
                 } catch (error) {
-                    console.error('Error in submitAssessment:', error);
-                    set({ isLoading: false, error: 'Failed to submit assessment' });
+                    console.error('Error submitting assessment:', error);
 
-                    // Simulate success in development mode
-                    console.log('DEVELOPMENT MODE: Simulating successful submission after error');
-                    return { success: true, message: "Simulated successful submission" };
+                    if (axios.isAxiosError(error)) {
+                        console.error('API error:', error);
+                        console.error('Error data:', error.response?.data);
+                        console.error('Error status:', error.response?.status);
+
+                        // Handle specific error cases
+                        if (error.response?.status === 401) {
+                            set({ isLoading: false, error: 'Authentication failed. Please login again.' });
+                            throw new Error('Authentication failed. Please login again.');
+                        } else if (error.response?.status === 400) {
+                            const errorMsg = error.response?.data?.error || 'Invalid assessment data. Please check your inputs.';
+                            set({ isLoading: false, error: errorMsg });
+                            throw new Error(errorMsg);
+                        } else if (error.response?.status === 500) {
+                            const errorMsg = error.response?.data?.error || 'Server error. Please try again later.';
+                            set({ isLoading: false, error: errorMsg });
+                            throw new Error(errorMsg);
+                        } else if (error.response && error.response.status >= 500) {
+                            set({ isLoading: false, error: 'Server error. Please try again later.' });
+                            throw new Error('Server error. Please try again later.');
+                        }
+                    }
+
+                    set({ isLoading: false, error: 'Failed to submit assessment' });
+                    throw error;
                 }
             }
         }),

@@ -1,19 +1,23 @@
 \babel@toc {french}{}\relax 
 \addvspace {10\p@ }
 \contentsline {figure}{\numberline {1.1}{\ignorespaces Logo de Mobelite}}{5}{figure.caption.7}%
-\contentsline {figure}{\numberline {1.2}{\ignorespaces Processus Scrum}}{10}{figure.caption.8}%
-\contentsline {figure}{\numberline {1.3}{\ignorespaces Étapes de la méthodologie CRISP-DM appliquées à MindCare-AI}}{12}{figure.caption.9}%
-\contentsline {figure}{\numberline {1.4}{\ignorespaces Diagramme de Gantt}}{13}{figure.caption.10}%
+\contentsline {figure}{\numberline {1.2}{\ignorespaces application binah}}{8}{figure.caption.8}%
+\contentsline {figure}{\numberline {1.3}{\ignorespaces VitalSigns Philips}}{8}{figure.caption.9}%
+\contentsline {figure}{\numberline {1.4}{\ignorespaces Woebot Health}}{10}{figure.caption.13}%
+\contentsline {figure}{\numberline {1.5}{\ignorespaces Woebot Health}}{10}{figure.caption.14}%
+\contentsline {figure}{\numberline {1.6}{\ignorespaces Processus Scrum}}{13}{figure.caption.18}%
+\contentsline {figure}{\numberline {1.7}{\ignorespaces Étapes de la méthodologie CRISP-DM appliquées à MindCare-AI}}{16}{figure.caption.19}%
+\contentsline {figure}{\numberline {1.8}{\ignorespaces Diagramme de Gantt}}{17}{figure.caption.20}%
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {2.1}{\ignorespaces Modèle–Vue–Contrôleur}}{22}{figure.caption.13}%
-\contentsline {figure}{\numberline {2.2}{\ignorespaces Logo-UML}}{24}{figure.caption.14}%
-\contentsline {figure}{\numberline {2.3}{\ignorespaces Diagramme de cas d'utilisation global}}{25}{figure.caption.15}%
-\contentsline {figure}{\numberline {2.4}{\ignorespaces Diagramme de séquence global}}{27}{figure.caption.17}%
-\contentsline {figure}{\numberline {2.5}{\ignorespaces Logo Figma}}{28}{figure.caption.18}%
-\contentsline {figure}{\numberline {2.6}{\ignorespaces Inscription utilisateur}}{29}{figure.caption.19}%
-\contentsline {figure}{\numberline {2.7}{\ignorespaces Connexion utilisateur}}{30}{figure.caption.20}%
+\contentsline {figure}{\numberline {2.1}{\ignorespaces Modèle–Vue–Contrôleur}}{25}{figure.caption.23}%
+\contentsline {figure}{\numberline {2.2}{\ignorespaces Logo-UML}}{27}{figure.caption.24}%
+\contentsline {figure}{\numberline {2.3}{\ignorespaces Diagramme de cas d'utilisation global}}{28}{figure.caption.25}%
+\contentsline {figure}{\numberline {2.4}{\ignorespaces Diagramme de séquence global}}{30}{figure.caption.27}%
+\contentsline {figure}{\numberline {2.5}{\ignorespaces Logo Figma}}{31}{figure.caption.28}%
+\contentsline {figure}{\numberline {2.6}{\ignorespaces Inscription utilisateur}}{32}{figure.caption.29}%
+\contentsline {figure}{\numberline {2.7}{\ignorespaces Connexion utilisateur}}{33}{figure.caption.30}%
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {3.1}{\ignorespaces Tableau de bord de la distribution des variables du dataset PPG+Dalia : fréquence cardiaque, durée d’enregistrement, catégories}}{35}{figure.caption.27}%
-\contentsline {figure}{\numberline {3.2}{\ignorespaces Distribution initiale des classes d’émotions dans le dataset d’entraînement}}{36}{figure.caption.29}%
-\contentsline {figure}{\numberline {3.3}{\ignorespaces Matrice de confusion Gradient Boosting HR}}{40}{figure.caption.36}%
-\contentsline {figure}{\numberline {3.4}{\ignorespaces Matrice de confusion du modèle de classification des émotions}}{41}{figure.caption.40}%
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Tableau de bord de la distribution des variables du dataset PPG+Dalia : fréquence cardiaque, durée d’enregistrement, catégories}}{38}{figure.caption.37}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Distribution initiale des classes d’émotions dans le dataset d’entraînement}}{39}{figure.caption.39}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Matrice de confusion Gradient Boosting HR}}{43}{figure.caption.46}%
+\contentsline {figure}{\numberline {3.4}{\ignorespaces Matrice de confusion du modèle de classification des émotions}}{44}{figure.caption.50}%

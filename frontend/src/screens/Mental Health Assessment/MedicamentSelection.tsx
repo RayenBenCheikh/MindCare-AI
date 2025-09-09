@@ -41,11 +41,13 @@ const MedicamentSelection: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [searchMode, setSearchMode] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const navigation = useNavigation<NavigationProp>();
     const { userToken } = useContext(AuthContext);
     const savePrescribedMedications = useAssessmentStore(state => state.savePrescribedMedications);
     const submitAssessment = useAssessmentStore(state => state.submitAssessment);
+    const storeIsLoading = useAssessmentStore(state => state.isLoading);
 
     // Fetch medications by selected letter
     useEffect(() => {
@@ -148,36 +150,49 @@ const MedicamentSelection: React.FC = () => {
 
     const handleContinue = async () => {
         try {
+            // Check if user is authenticated
+            if (!userToken) {
+                Alert.alert(
+                    'Authentication Required',
+                    'Please login to save your assessment.',
+                    [{ text: 'OK' }]
+                );
+                return;
+            }
+
+            setIsSubmitting(true);
+
             // Save selected medications to store
             savePrescribedMedications(selectedMeds);
 
-            // Show loading state
-            setIsLoading(true);
-            setError(null);
+            console.log('Starting assessment submission...');
+            console.log('User token available:', !!userToken);
+            console.log('Selected medications count:', selectedMeds.length);
 
             try {
                 // Submit the assessment
                 const response = await submitAssessment();
                 console.log('Assessment submitted successfully:', response);
 
-                // Navigate to next screen on success
-                navigation.navigate('TabNavigator');
+                // Show success message
+                Alert.alert(
+                    'Assessment Completed! 🎉',
+                    'Your mental health assessment has been saved successfully. You can now view your personalized dashboard.',
+                    [
+                        {
+                            text: 'View Dashboard',
+                            onPress: () => navigation.navigate('TabNavigator')
+                        }
+                    ]
+                );
             } catch (error: any) {
                 console.error('Error submitting assessment:', error);
 
                 // Improved error message
                 let errorMessage = 'There was a problem saving your assessment.';
 
-                if (error.response) {
-                    if (error.response.status === 404) {
-                        errorMessage = 'Server endpoint not found. Please contact support.';
-                    } else if (error.response.status === 401) {
-                        errorMessage = 'Authentication failed. Please log in again.';
-                    } else {
-                        errorMessage = `Server error (${error.response.status}): ${error.response.data?.message || 'Unknown error'}`;
-                    }
-                } else if (error.message) {
-                    errorMessage += ' ' + error.message;
+                if (error.message) {
+                    errorMessage = error.message;
                 }
 
                 setError(errorMessage);
@@ -185,14 +200,23 @@ const MedicamentSelection: React.FC = () => {
                 Alert.alert(
                     'Submission Error',
                     errorMessage,
-                    [{ text: 'OK' }]
+                    [
+                        {
+                            text: 'Try Again',
+                            onPress: () => setError(null)
+                        },
+                        {
+                            text: 'Skip for Now',
+                            onPress: () => navigation.navigate('TabNavigator')
+                        }
+                    ]
                 );
-            } finally {
-                setIsLoading(false);
             }
         } catch (error) {
             console.error('Error saving medications:', error);
             setError('Error saving medications. Please try again.');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -203,8 +227,11 @@ const MedicamentSelection: React.FC = () => {
             <TouchableOpacity
                 style={[styles.medicationItem, isSelected && styles.selectedMedicationItem]}
                 onPress={() => handleSelectMedication(item)}
+                disabled={isSubmitting || storeIsLoading}
             >
-                <Text style={styles.medicationName}>{item.name}</Text>
+                <Text style={[styles.medicationName, isSelected && styles.selectedMedicationName]}>
+                    {item.name}
+                </Text>
                 <View style={[styles.radioButton, isSelected && styles.radioButtonSelected]}>
                     {isSelected && <View style={styles.radioButtonInner} />}
                 </View>
@@ -222,6 +249,8 @@ const MedicamentSelection: React.FC = () => {
             </SafeAreaView>
         );
     }
+
+    const isButtonDisabled = isSubmitting || storeIsLoading;
 
     return (
         <SafeAreaView style={styles.container}>
@@ -252,6 +281,7 @@ const MedicamentSelection: React.FC = () => {
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         autoFocus
+                        editable={!isSubmitting && !storeIsLoading}
                     />
                     <TouchableOpacity
                         style={styles.clearButton}
@@ -260,6 +290,7 @@ const MedicamentSelection: React.FC = () => {
                             setSearchMode(false);
                             setSelectedLetter('A');
                         }}
+                        disabled={isSubmitting || storeIsLoading}
                     >
                         <Icon name="close-circle" size={20} color="#9E9E9E" />
                     </TouchableOpacity>
@@ -279,6 +310,7 @@ const MedicamentSelection: React.FC = () => {
                                 selectedLetter === letter && !searchMode && styles.selectedLetterButton
                             ]}
                             onPress={() => handleSelectLetter(letter)}
+                            disabled={isSubmitting || storeIsLoading}
                         >
                             <Text
                                 style={[
@@ -300,34 +332,48 @@ const MedicamentSelection: React.FC = () => {
                 </View>
             )}
 
-            {/* Medications List */}
-            {isLoading ? (
+            {/* Loading or submitting indicator */}
+            {(isSubmitting || storeIsLoading) && (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#5D4037" />
+                    <Text style={styles.loadingText}>
+                        {isSubmitting ? 'Submitting assessment...' : 'Loading...'}
+                    </Text>
                 </View>
-            ) : (
-                <FlatList
-                    data={medications}
-                    renderItem={renderMedicationItem}
-                    keyExtractor={item => item.id}
-                    style={styles.medicationsList}
-                    contentContainerStyle={styles.medicationsListContent}
-                    showsVerticalScrollIndicator={true}
-                    ListEmptyComponent={
-                        <View style={styles.emptyContainer}>
-                            <Text style={styles.emptyText}>No medications found</Text>
-                            <Text style={styles.emptySubText}>
-                                {searchMode
-                                    ? "Try a different search term"
-                                    : "Try a different letter"}
-                            </Text>
+            )}
+
+            {/* Medications List */}
+            {!isSubmitting && !storeIsLoading && (
+                <>
+                    {isLoading ? (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="large" color="#5D4037" />
                         </View>
-                    }
-                />
+                    ) : (
+                        <FlatList
+                            data={medications}
+                            renderItem={renderMedicationItem}
+                            keyExtractor={item => item.id}
+                            style={styles.medicationsList}
+                            contentContainerStyle={styles.medicationsListContent}
+                            showsVerticalScrollIndicator={true}
+                            ListEmptyComponent={
+                                <View style={styles.emptyContainer}>
+                                    <Text style={styles.emptyText}>No medications found</Text>
+                                    <Text style={styles.emptySubText}>
+                                        {searchMode
+                                            ? "Try a different search term"
+                                            : "Try a different letter"}
+                                    </Text>
+                                </View>
+                            }
+                        />
+                    )}
+                </>
             )}
 
             {/* Selected Medications */}
-            {selectedMeds.length > 0 && (
+            {selectedMeds.length > 0 && !isSubmitting && !storeIsLoading && (
                 <View style={styles.selectedContainer}>
                     <Text style={styles.selectedLabel}>Selected:</Text>
                     <ScrollView
@@ -350,7 +396,11 @@ const MedicamentSelection: React.FC = () => {
                 </View>
             )}
 
-            <ContinueButton onPress={handleContinue} />
+            <ContinueButton
+                onPress={handleContinue}
+                disabled={isButtonDisabled}
+                style={isButtonDisabled ? styles.disabledButton : undefined}
+            />
         </SafeAreaView>
     );
 };
@@ -359,220 +409,233 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F8F5F0',
-        paddingHorizontal: 20,
     },
     headerContainer: {
         flexDirection: 'row',
-        alignItems: 'center',
         justifyContent: 'space-between',
-        marginTop: 10,
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        marginTop: 20,
         marginBottom: 20,
     },
     headerText: {
-        fontSize: 24,
+        fontSize: 18,
         fontWeight: '600',
         color: '#5D4037',
     },
     progressPill: {
-        backgroundColor: '#E6DED5',
-        paddingHorizontal: 12,
+        backgroundColor: '#E8DDD9',
         paddingVertical: 6,
-        borderRadius: 20,
+        paddingHorizontal: 12,
+        borderRadius: 15,
     },
     progressText: {
         fontSize: 14,
-        color: '#5D4037',
+        color: '#926247',
     },
     titleText: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: '#5D4037',
         textAlign: 'center',
         marginBottom: 40,
+        color: '#5D4037',
+        lineHeight: 40,
+        paddingHorizontal: 20,
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        marginHorizontal: 20,
+        marginBottom: 20,
+        borderRadius: 12,
+        paddingHorizontal: 15,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    searchIcon: {
+        marginRight: 10,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 16,
+        color: '#5D4037',
+        paddingVertical: 15,
+    },
+    clearButton: {
+        padding: 5,
     },
     alphabetContainer: {
-        maxHeight: 60,
-        marginBottom: 15,
+        marginBottom: 20,
     },
     alphabetContent: {
-        paddingHorizontal: 5,
+        paddingHorizontal: 20,
     },
     letterButton: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#E6DED5',
+        backgroundColor: '#FFFFFF',
         justifyContent: 'center',
         alignItems: 'center',
-        marginHorizontal: 4,
+        marginRight: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
     },
     selectedLetterButton: {
-        backgroundColor: '#E67E22',
+        backgroundColor: '#5D4037',
     },
     letterText: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: '600',
         color: '#5D4037',
     },
     selectedLetterText: {
-        color: 'white',
+        color: '#FFFFFF',
     },
     medicationsList: {
         flex: 1,
+        paddingHorizontal: 20,
     },
     medicationsListContent: {
         paddingBottom: 20,
     },
     medicationItem: {
         flexDirection: 'row',
-        backgroundColor: 'white',
-        borderRadius: 25,
-        paddingVertical: 15,
-        paddingHorizontal: 20,
-        marginBottom: 12,
         alignItems: 'center',
         justifyContent: 'space-between',
+        backgroundColor: '#FFFFFF',
+        padding: 15,
+        marginBottom: 10,
+        borderRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
     },
     selectedMedicationItem: {
-        backgroundColor: '#A3B18A',
+        backgroundColor: '#E8F5E8',
+        borderWidth: 2,
+        borderColor: '#5D4037',
     },
     medicationName: {
-        fontSize: 18,
-        fontWeight: '600',
+        flex: 1,
+        fontSize: 16,
         color: '#5D4037',
+        fontWeight: '500',
+    },
+    selectedMedicationName: {
+        fontWeight: '600',
     },
     radioButton: {
         width: 24,
         height: 24,
         borderRadius: 12,
         borderWidth: 2,
-        borderColor: '#5D4037',
+        borderColor: '#BDBDBD',
         justifyContent: 'center',
         alignItems: 'center',
     },
     radioButtonSelected: {
-        borderColor: 'white',
+        borderColor: '#5D4037',
     },
     radioButtonInner: {
         width: 12,
         height: 12,
         borderRadius: 6,
-        backgroundColor: 'white',
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    emptyContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 50,
-    },
-    emptyText: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#5D4037',
-    },
-    emptySubText: {
-        fontSize: 14,
-        color: '#9E9E9E',
-        marginTop: 5,
+        backgroundColor: '#5D4037',
     },
     selectedContainer: {
-        marginTop: 10,
-        marginBottom: 15,
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        backgroundColor: '#F8F5F0',
+        borderTopWidth: 1,
+        borderTopColor: '#E8DDD9',
     },
     selectedLabel: {
         fontSize: 16,
         fontWeight: '600',
         color: '#5D4037',
-        marginBottom: 8,
+        marginBottom: 10,
     },
     selectedScrollContent: {
         flexDirection: 'row',
-        paddingRight: 20,
     },
     selectedPill: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#E6DED5',
+        backgroundColor: '#5D4037',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         borderRadius: 20,
-        paddingVertical: 8,
-        paddingLeft: 15,
-        paddingRight: 10,
         marginRight: 8,
     },
     selectedPillText: {
-        color: '#5D4037',
+        color: '#FFFFFF',
         fontSize: 14,
-        marginRight: 5,
+        fontWeight: '500',
     },
     removeButton: {
-        width: 20,
-        height: 20,
+        marginLeft: 6,
+        width: 18,
+        height: 18,
+        borderRadius: 9,
+        backgroundColor: 'rgba(255,255,255,0.3)',
         justifyContent: 'center',
         alignItems: 'center',
     },
     removeButtonText: {
-        color: '#5D4037',
-        fontSize: 20,
+        color: '#FFFFFF',
+        fontSize: 14,
         fontWeight: 'bold',
     },
-    errorContainer: {
-        backgroundColor: '#FFEBEE',
-        padding: 10,
-        borderRadius: 8,
-        marginBottom: 15,
-    },
-    errorText: {
-        color: '#D32F2F',
-        fontSize: 14,
-    },
-    continueButton: {
-        backgroundColor: '#5D4037',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 18,
-        borderRadius: 30,
-        marginBottom: 30,
-    },
-    continueButtonText: {
-        color: 'white',
-        fontSize: 18,
-        fontWeight: '600',
-        marginRight: 5,
-    },
-    continueArrow: {
-        color: 'white',
-        fontSize: 20,
-        fontWeight: '600',
-    },
-    searchContainer: {
-        flexDirection: 'row',
-        backgroundColor: '#E6DED5',
-        borderRadius: 20,
-        paddingHorizontal: 15,
-        alignItems: 'center',
-        marginBottom: 15,
-        height: 48,
-    },
-    searchIcon: {
-        marginRight: 8,
-    },
-    searchInput: {
+    loadingContainer: {
         flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 40,
+    },
+    loadingText: {
+        marginTop: 10,
         fontSize: 16,
         color: '#5D4037',
-        paddingVertical: 8,
+        textAlign: 'center',
     },
-    clearButton: {
-        padding: 5,
+    errorContainer: {
+        padding: 20,
+        alignItems: 'center',
     },
-
-
+    errorText: {
+        fontSize: 16,
+        color: '#E74C3C',
+        textAlign: 'center',
+    },
+    emptyContainer: {
+        padding: 40,
+        alignItems: 'center',
+    },
+    emptyText: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#5D4037',
+        textAlign: 'center',
+        marginBottom: 8,
+    },
+    emptySubText: {
+        fontSize: 14,
+        color: '#666',
+        textAlign: 'center',
+    },
+    disabledButton: {
+        opacity: 0.5,
+    },
 });
 
 export default MedicamentSelection;
-

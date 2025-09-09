@@ -39,6 +39,115 @@ Les troubles mentaux, tels que la dépression, l’anxiété, le stress chroniqu
     \item \textbf{Barrières technologiques et économiques} : Les solutions existantes nécessitent parfois des équipements coûteux ou une expertise technique, ce qui limite leur accessibilité pour le grand public.
 \end{itemize}
 Dans ce contexte, il nous a semblé crucial de repenser les approches traditionnelles et de tirer parti des avancées technologiques, notamment de l’intelligence artificielle, pour proposer des outils innovants, accessibles, continus et personnalisés, capables d’accompagner efficacement les patients dans la gestion de leur santé mentale.
+\section{Etude d'existance}
+
+\subsection{Solutions existantes pour l'analyse des signaux vitaux}
+
+L'analyse des signaux vitaux à distance a connu un développement significatif ces dernières années, particulièrement avec l'essor de la photopléthysmographie à distance (rPPG). Plusieurs solutions commerciales et académiques proposent des approches variées pour cette problématique.Par exemple 
+
+\textbf{Binah.ai} représente l'une des solutions les plus avancées du marché. Cette plateforme utilise l'intelligence artificielle pour extraire les signaux vitaux à partir de caméras standards. Elle propose une API capable de mesurer la fréquence cardiaque, la variabilité cardiaque, la fréquence respiratoire, et même d'estimer la pression artérielle. Cependant, cette solution présente des limitations importantes : son coût élevé (plusieurs milliers d'euros par mois), sa dépendance à une connexion internet stable, et ses restrictions d'utilisation dans des environnements contrôlés.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.4]{Figures/binah.png}
+    \caption{application binah}
+    \label{fig:my_label}
+\end{figure}
+
+\textbf{VitalSigns  Philips} constitue une solution hospitalière robuste. Intégrée dans les systèmes de surveillance médicale, elle permet un monitoring continu des patients sans contact. Cette solution excelle dans les environnements cliniques contrôlés mais n'est pas adaptée aux applications grand public en raison de sa complexité et de son coût prohibitif.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.1]{Figures/Philips.png}
+    \caption{VitalSigns  Philips}
+    \label{fig:my_label}
+\end{figure}
+
+\subsubsection{Tableau comparatif des solutions d'analyse des signaux vitaux}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|p{2.5cm}|p{2cm}|p{2cm}|p{2cm}|p{2.5cm}|}
+\hline
+\textbf{Solution} & \textbf{Type} & \textbf{Coût} & \textbf{Précision} & \textbf{Paramètres mesurés} \\
+\hline
+Binah.ai & Commercial & Très élevé & Très élevée (< 3\%) & FC,FR, PA \\
+\hline
+VitalSigns Philips  & Hospitalier & Très élevé & Très élevée & FC, FR, SpO2 , PA, Temperature \\
+\hline
+\textbf{MindCare-AI} & \textbf{Intégré} & \textbf{Gratuit} & \textbf{Élevée} & \textbf{FC, PA, état émotionnel}  \\
+\hline
+\end{tabular}
+\caption{Comparaison des solutions d'analyse des signaux vitaux}
+\label{tab:vitalsigns_comparison}
+\end{table}
+
+\textbf{Légende :}
+\begin{itemize}
+    \item FC : Fréquence Cardiaque 
+    \item FR : Fréquence Respiratoire
+    \item PA : Pression Artérielle
+    \item SpO2 : Saturation en Oxygène
+\end{itemize}
+
+
+\subsection{Solutions existantes pour les chatbots thérapeutiques}
+
+Le domaine des chatbots thérapeutiques et d'accompagnement en santé mentale a connu une croissance exponentielle, particulièrement depuis la pandémie de COVID-19. Ces solutions visent à démocratiser l'accès aux soins psychologiques et à offrir un soutien 24/7 aux personnes en détresse.
+
+\subsubsection{Chatbots thérapeutiques établis}
+
+\textbf{Woebot} figure parmi les pionniers du secteur. Développé par des psychologues de Stanford, ce chatbot utilise la thérapie cognitivo-comportementale (TCC) pour aider les utilisateurs à gérer leur anxiété et leur dépression. Woebot propose des conversations structurées, des exercices de réflexion et un suivi de l'humeur. Les études cliniques montrent une efficacité significative dans la réduction des symptômes dépressifs. Cependant, Woebot présente des limitations : interactions parfois rigides, manque de personnalisation avancée, et coût d'abonnement mensuel.
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.4]{Figures/logo.png}
+    \caption{Woebot Health}
+    \label{fig:my_label}
+\end{figure}
+
+\textbf{Replika} propose une approche différente en tant que "compagnon IA" personnalisé. Utilisant des modèles de langage avancés, Replika apprend des conversations avec l'utilisateur pour développer une personnalité unique. Bien que non spécifiquement thérapeutique, cette application offre un soutien émotionnel et une écoute active. Ses forces incluent une personnalisation poussée et des conversations naturelles, mais elle manque de fondements thérapeutiques validés scientifiquement.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.2]{Figures/replika.png}
+    \caption{Woebot Health}
+    \label{fig:my_label}
+\end{figure}
+
+
+
+\subsubsection{Tableau comparatif des solutions}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|p{2.5cm}|p{2cm}|p{2cm}|p{2cm}|p{2.5cm}|p{2cm}|}
+\hline
+\textbf{Solution}  & \textbf{Coût} & \textbf{Personnalisation} & \textbf{Intégration} \\
+\hline
+Woebot  & Payant & Moyenne  & Limitée \\
+
+\hline
+Replika  & Payant & Élevée & Faible \\
+
+\hline
+
+\textbf{MindCare-AI} & \textbf{Gratuit} & \textbf{Élevée} & \textbf{Multimodale} \\
+\hline
+\end{tabular}
+\caption{Comparaison des solutions de chatbots thérapeutiques}
+\label{tab:chatbot_comparison}
+\end{table}
+\subsubsection{Analyse critique et positionnement}
+
+L'analyse de ces solutions révèle plusieurs lacunes que MindCare-AI ambitionne de combler :
+
+\begin{itemize}
+    \item \textbf{Intégration multimodale} : Aucune solution n'intègre efficacement l'analyse des signaux vitaux avec l'interaction conversationnelle
+    \item \textbf{Personnalisation avancée} : La plupart des chatbots proposent des approches standardisées sans adaptation fine aux profils individuels
+    \item \textbf{Accessibilité complète} : Beaucoup de solutions proposent des versions gratuites limitées ou des coûts d'abonnement élevés
+    \item \textbf{Validation scientifique} : Peu de solutions combinent approches conversationnelles naturelles et fondements thérapeutiques rigoureux
+\end{itemize}
+Cette analyse comparative confirme la pertinence de l'approche MindCare-AI, qui se positionne comme une solution intégrée combinant l'analyse physiologique, l'intelligence conversationnelle et l'approche thérapeutique validée, tout en maintenant une accessibilité optimale pour les utilisateurs.
 
 \section{Solution proposée}
 Pour répondre à ces défis, nous avons conçu le projet MindCare-AI comme une solution technologique complète et innovante, articulée autour de plusieurs axes complémentaires :
@@ -56,10 +165,18 @@ Pour répondre à ces défis, nous avons conçu le projet MindCare-AI comme une 
 \end{enumerate}
 
 En résumé, avec MindCare-AI, nous ambitionnons de démocratiser l’accès au suivi de la santé mentale, de faciliter la prévention et la détection précoce des troubles, et d’offrir un accompagnement personnalisé, réactif et non invasif, adapté aux besoins de chaque utilisateur. Grâce à l’intégration de l’IA, de l’analyse physiologique et d’un chatbot thérapeutique, notre projet vise à améliorer la qualité de vie et le bien-être des patients, tout en soutenant les professionnels de santé dans leur mission.
-
 \section{Méthodologie du projet}
 
-La réussite d’un projet repose en grande partie sur la méthodologie choisie pour sa conduite. Une approche méthodologique rigoureuse favorise une progression structurée, une meilleure gestion des imprévus et l’assurance de livrables de qualité. Dans le contexte de ce projet, qui associe la mise en œuvre de modèles d’intelligence artificielle et le développement mobile, il est primordial d’adopter des méthodologies adaptées à chaque domaine. Ainsi, deux approches complémentaires ont été retenues : la méthodologie CRISP-DM pour les étapes relevant de la Data Science, et l’approche Agile pour le développement logiciel.
+La réussite d'un projet repose en grande partie sur la méthodologie choisie pour sa conduite. Une approche méthodologique rigoureuse favorise une progression structurée, une meilleure gestion des imprévus et l'assurance de livrables de qualité. 
+
+Dans le contexte de ce projet, qui associe le développement d'une application mobile et la mise en œuvre de modèles d'intelligence artificielle, il est primordial d'adopter des méthodologies adaptées à chaque domaine. Ainsi, **deux approches complémentaires et imbriquées** ont été retenues : 
+
+\begin{itemize}
+    \item La méthodologie \textbf{CRISP-DM} pour les aspects relevant de la Data Science et de l'IA
+    \item L'approche \textbf{Agile avec Scrum} pour le développement logiciel de l'application
+\end{itemize}
+
+Cette approche hybride permet de bénéficier des avantages spécifiques de chaque méthodologie tout en maintenant une cohérence globale dans la gestion du projet.
 
 \subsection{Méthodologie Agile avec Scrum pour le développement de l'application mobile}
 

@@ -558,10 +558,11 @@ const Chatbot: React.FC = () => {
                 <View style={styles.headerRightPlaceholder} />
             </View>
 
+            {/* Messages Container - adjust bottom padding to account for footer */}
             <ScrollView
                 ref={scrollViewRef}
                 style={styles.messagesContainer}
-                contentContainerStyle={{ paddingBottom: 180 }}
+                contentContainerStyle={{ paddingBottom: 20 }} // Reduced padding
                 showsVerticalScrollIndicator={true}
             >
                 {loadingConversation ? (
@@ -620,72 +621,72 @@ const Chatbot: React.FC = () => {
                 )}
             </ScrollView>
 
-            <View style={styles.footerContainer}>
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    keyboardVerticalOffset={120}
-                    style={styles.keyboardAvoidContainer}
-                >
-                    <View style={styles.inputContainer}>
-                        {inAssessment && (
-                            <View style={styles.numberButtonsContainer}>
-                                {[1, 2, 3, 4, 5].map((num) => (
-                                    <TouchableOpacity
-                                        key={`num-${num}`}
-                                        style={styles.numberButton}
-                                        onPress={() => {
-                                            setInputText(num.toString());
-                                            setTimeout(() => {
-                                                handleSendMessage();
-                                            }, 300);
-                                        }}
-                                    >
-                                        <Text style={styles.numberButtonText}>{num}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        )}
-                        <TextInput
-                            style={styles.input}
-                            value={inputText}
-                            onChangeText={(text) => {
-                                if (inAssessment) {
-                                    const filtered = text.replace(/[^1-5]/g, '');
-                                    if (filtered.length > 1) {
-                                        setInputText(filtered.charAt(0));
-                                    } else {
-                                        setInputText(filtered);
-                                    }
-                                } else {
-                                    setInputText(text);
-                                }
-                            }}
-                            placeholder={inAssessment ? "Enter a number (1-5)..." : "Type your message..."}
-                            placeholderTextColor="#999"
-                            onSubmitEditing={handleSendMessage}
-                            returnKeyType="send"
-                            keyboardType={inAssessment ? "number-pad" : "default"}
-                            maxLength={inAssessment ? 1 : undefined}
-                        />
-                        <TouchableOpacity
-                            style={[
-                                styles.sendButton,
-                                inputText.trim() === '' ? styles.disabledButton : {}
-                            ]}
-                            onPress={handleSendMessage}
-                            disabled={inputText.trim() === ''}
-                        >
-                            <Ionicons
-                                name="send"
-                                size={24}
-                                color={inputText.trim() === '' ? "#CCC" : "#FFF"}
-                            />
-                        </TouchableOpacity>
+            {/* Footer Container - Fixed at bottom */}
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                keyboardVerticalOffset={0}
+                style={styles.footerContainer}
+            >
+                {/* Number buttons for assessment */}
+                {inAssessment && (
+                    <View style={styles.numberButtonsContainer}>
+                        {[1, 2, 3, 4, 5].map((num) => (
+                            <TouchableOpacity
+                                key={`num-${num}`}
+                                style={styles.numberButton}
+                                onPress={() => {
+                                    setInputText(num.toString());
+                                    setTimeout(() => {
+                                        handleSendMessage();
+                                    }, 300);
+                                }}
+                            >
+                                <Text style={styles.numberButtonText}>{num}</Text>
+                            </TouchableOpacity>
+                        ))}
                     </View>
-                </KeyboardAvoidingView>
+                )}
 
-                <View style={styles.tabBarSpace} />
-            </View>
+                {/* Input Container */}
+                <View style={styles.inputContainer}>
+                    <TextInput
+                        style={styles.input}
+                        value={inputText}
+                        onChangeText={(text) => {
+                            if (inAssessment) {
+                                const filtered = text.replace(/[^1-5]/g, '');
+                                if (filtered.length > 1) {
+                                    setInputText(filtered.charAt(0));
+                                } else {
+                                    setInputText(filtered);
+                                }
+                            } else {
+                                setInputText(text);
+                            }
+                        }}
+                        placeholder={inAssessment ? "Enter a number (1-5)..." : "Type your message..."}
+                        placeholderTextColor="#999"
+                        onSubmitEditing={handleSendMessage}
+                        returnKeyType="send"
+                        keyboardType={inAssessment ? "number-pad" : "default"}
+                        maxLength={inAssessment ? 1 : undefined}
+                    />
+                    <TouchableOpacity
+                        style={[
+                            styles.sendButton,
+                            inputText.trim() === '' ? styles.disabledButton : {}
+                        ]}
+                        onPress={handleSendMessage}
+                        disabled={inputText.trim() === ''}
+                    >
+                        <Ionicons
+                            name="send"
+                            size={24}
+                            color={inputText.trim() === '' ? "#CCC" : "#FFF"}
+                        />
+                    </TouchableOpacity>
+                </View>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };
@@ -718,6 +719,7 @@ const styles = StyleSheet.create({
     messagesContainer: {
         flex: 1,
         padding: 16,
+        marginBottom: 0, // Remove margin to connect with footer
     },
     loadingContainer: {
         flex: 1,
@@ -780,56 +782,24 @@ const styles = StyleSheet.create({
         color: '#666',
         fontStyle: 'italic',
     },
+    // Updated footer styles
     footerContainer: {
-        width: '100%',
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        backgroundColor: 'transparent',
-    },
-    keyboardAvoidContainer: {
-        width: '100%',
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        padding: 12,
         backgroundColor: 'white',
         borderTopWidth: 1,
         borderTopColor: '#EEE',
-        zIndex: 100,
-        elevation: 5,
+        paddingBottom: Platform.OS === 'ios' ? 34 : 16, // Account for home indicator on iOS
+        elevation: 8,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -2 },
         shadowOpacity: 0.1,
-        shadowRadius: 3,
-    },
-    input: {
-        flex: 1,
-        backgroundColor: '#F5F5F5',
-        borderRadius: 24,
-        padding: 12,
-        marginRight: 8,
-        color: '#333',
-    },
-    sendButton: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: '#8DAA6D',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    disabledButton: {
-        backgroundColor: '#E0E0E0',
-    },
-    tabBarSpace: {
-        height: 90,
+        shadowRadius: 4,
     },
     numberButtonsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        padding: 10,
-        backgroundColor: '#F5F5F5',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        backgroundColor: '#F8F9FA',
         borderBottomWidth: 1,
         borderBottomColor: '#EEE',
     },
@@ -840,13 +810,60 @@ const styles = StyleSheet.create({
         backgroundColor: '#8DAA6D',
         justifyContent: 'center',
         alignItems: 'center',
-        marginHorizontal: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
     },
     numberButtonText: {
-        fontSize: 20,
-        fontWeight: 'bold',
+        fontSize: 18,
+        fontWeight: '600',
         color: 'white',
     },
+    inputContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        alignItems: 'center',
+    },
+    input: {
+        flex: 1,
+        backgroundColor: '#F5F5F5',
+        borderRadius: 24,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        marginRight: 12,
+        color: '#333',
+        fontSize: 16,
+        borderWidth: 1,
+        borderColor: '#E0E0E0',
+    },
+    sendButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#8DAA6D',
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+        elevation: 3,
+    },
+    disabledButton: {
+        backgroundColor: '#E0E0E0',
+        shadowOpacity: 0,
+        elevation: 0,
+    },
+    // Remove these old styles as they're no longer needed
+    // tabBarSpace: {
+    //     height: 90,
+    // },
+    // keyboardAvoidContainer: {
+    //     width: '100%',
+    // },
     musicRecommendationCard: {
         backgroundColor: '#F8F9FA',
         borderRadius: 12,

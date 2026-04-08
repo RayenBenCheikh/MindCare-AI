@@ -11,7 +11,7 @@ const getTransporterConfig = () => {
 
     if (service === 'outlook') {
         return {
-            service: 'hotmail', // Sometimes this works better than manual SMTP
+            service: 'hotmail',
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS
@@ -32,7 +32,6 @@ const getTransporterConfig = () => {
 
 const transporter = nodemailer.createTransport(getTransporterConfig());
 
-// Email templates (keep your existing templates)
 const emailTemplates = {
     welcome: (userName, userEmail) => ({
         subject: '🎉 Welcome to MindCare-AI!',

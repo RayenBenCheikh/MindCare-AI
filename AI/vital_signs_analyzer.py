@@ -4,8 +4,7 @@ import base64
 import logging
 import pickle
 import os
-import scipy.stats
-from scipy.signal import find_peaks, butter, filtfilt
+from scipy.signal import find_peaks
 from sklearn.preprocessing import StandardScaler
 from sklearn.feature_selection import SelectKBest, f_classif
 
@@ -262,7 +261,7 @@ class VitalSignsAnalyzer:
         """Extract face regions"""
         if image is None:
             return None
-            
+                # Utilise les cascades Haar d'OpenCV
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         faces = self.face_cascade.detectMultiScale(gray, 1.1, 4)
         
@@ -271,7 +270,7 @@ class VitalSignsAnalyzer:
         
         x, y, w, h = faces[0]
         
-        # Extract regions
+        # Extraction des régions d'intérêt (ROI)
         forehead_height = h // 3
         forehead_roi = image[y:y+forehead_height, x:x+w]
         
@@ -372,7 +371,7 @@ class VitalSignsAnalyzer:
             else:
                 features.extend([0.3, 0.4, 0.5])
             
-            # 3. Enhanced demographic features - FIXED
+            # 3. Enhanced demographic features 
             if demographic_info:
                 age = self._extract_numeric_value(demographic_info.get('age', 35), 35)
                 weight = self._extract_numeric_value(demographic_info.get('weight', 70), 70)

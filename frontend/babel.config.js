@@ -10,7 +10,9 @@ module.exports = function (api) {
                 "whitelist": null,
                 "safe": false,
                 "allowUndefined": true
-            }]
+            }],
+            // ✅ Ajouter react-native-reanimated/plugin EN DERNIER
+            'react-native-reanimated/plugin'
         ]
     };
 };

@@ -119,7 +119,19 @@ const Statistic: React.FC<StatisticProps> = ({ userId }) => {
             console.log('API Response:', data);
 
             if (data.success) {
-                const sortedData = data.vitalSigns.sort((a: VitalSign, b: VitalSign) => a.timestamp - b.timestamp);
+                // ✅ Sort by timestamp DESC (latest first) - IMPORTANT!
+                const sortedData = [...data.vitalSigns].sort((a: VitalSign, b: VitalSign) =>
+                    b.timestamp - a.timestamp
+                );
+
+                console.log('📊 Sorted vital signs (latest first):', {
+                    total: sortedData.length,
+                    latest: sortedData[0] ? {
+                        hr: sortedData[0].heartRate,
+                        time: new Date(sortedData[0].timestamp * 1000).toLocaleString()
+                    } : 'none'
+                });
+
                 setVitalSigns(sortedData);
                 calculateStatsSummary(sortedData);
             } else {
@@ -139,14 +151,30 @@ const Statistic: React.FC<StatisticProps> = ({ userId }) => {
             return;
         }
 
+        // ✅ Data is already sorted DESC, so data[0] is the latest
+        const latestReading = data[0];
+
         const summary: StatsSummary = {
             avgHeartRate: Math.round(data.reduce((sum, item) => sum + item.heartRate, 0) / data.length),
             avgSystolic: Math.round(data.reduce((sum, item) => sum + item.systolicBP, 0) / data.length),
             avgDiastolic: Math.round(data.reduce((sum, item) => sum + item.diastolicBP, 0) / data.length),
             avgConfidence: Math.round(data.reduce((sum, item) => sum + item.confidence, 0) / data.length),
             totalReadings: data.length,
-            lastReading: data[data.length - 1]
+            lastReading: latestReading  // ✅ This is now guaranteed to be the latest
         };
+
+        console.log('📊 Stats Summary:', {
+            latest: {
+                hr: latestReading.heartRate,
+                bp: `${latestReading.systolicBP}/${latestReading.diastolicBP}`,
+                time: new Date(latestReading.timestamp * 1000).toLocaleString()
+            },
+            averages: {
+                hr: summary.avgHeartRate,
+                systolic: summary.avgSystolic,
+                diastolic: summary.avgDiastolic
+            }
+        });
 
         setStatsSummary(summary);
     };
@@ -158,32 +186,29 @@ const Statistic: React.FC<StatisticProps> = ({ userId }) => {
         let chartWidth = screenWidth - 40;
 
         if (chartViewMode === 'latest') {
-            // Show latest 7 readings
-            dataToUse = vitalSigns.slice(-7);
+            // ✅ Get latest 7 readings (already sorted DESC, so take first 7 and reverse for chart)
+            dataToUse = vitalSigns.slice(0, 7).reverse();
         } else {
-            // Show all readings - calculate dynamic width
-            const pointsPerScreen = 7; // Number of points that fit on screen nicely
+            // ✅ Reverse the entire sorted array for chronological chart display
+            dataToUse = [...vitalSigns].reverse();
+            const pointsPerScreen = 7;
             const minWidth = screenWidth - 40;
-            const calculatedWidth = Math.max(minWidth, (vitalSigns.length / pointsPerScreen) * minWidth);
+            const calculatedWidth = Math.max(minWidth, (dataToUse.length / pointsPerScreen) * minWidth);
             chartWidth = calculatedWidth;
         }
 
         const labels = dataToUse.map((item, index) => {
             if (chartViewMode === 'all' && dataToUse.length > 10) {
-                // For many points, show date in short format
                 const date = new Date(item.timestamp * 1000);
                 return `${date.getMonth() + 1}/${date.getDate()}`;
             } else {
-                // For fewer points, show reading number
-                return `R${dataToUse.length > 7 ?
-                    vitalSigns.indexOf(item) + 1 :
-                    index + 1}`;
+                return `R${index + 1}`;
             }
         });
 
-        const heartRateData = dataToUse.map(item => item.heartRate);
-        const systolicData = dataToUse.map(item => item.systolicBP);
-        const diastolicData = dataToUse.map(item => item.diastolicBP);
+        const heartRateData = dataToUse.map(item => Math.round(item.heartRate));
+        const systolicData = dataToUse.map(item => Math.round(item.systolicBP));
+        const diastolicData = dataToUse.map(item => Math.round(item.diastolicBP));
 
         return {
             labels,

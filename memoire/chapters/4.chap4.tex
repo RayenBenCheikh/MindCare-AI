@@ -1,15 +1,375 @@
-\chapter{Réalisation }
+\chapter{Release 2 : Intégration de l'Intelligence Artificielle}
 \begingroup
-%\parindent=0.2em
 \etocsettocstyle{\rule{\linewidth}{\tocrulewidth}\vskip0.5\baselineskip }{\rule{\linewidth}{\tocrulewidth}}
 \localtableofcontents 
 \endgroup
 \newpage
-\section{Introduction}
 
-\section{Environnement du developpement }
-\section{Présentation des interfaces du générateur des test unitaires}
-\section{Exemple d'exécutions }
+\section{Introduction}
+Après avoir établi un socle applicatif solide et fonctionnel avec la Release 1, nous entrons maintenant dans la phase la plus innovante de notre projet : l'intégration ciblée de l'intelligence artificielle dans MindCare-AI. Cette Release 2 se concentre exclusivement sur deux axes stratégiques qui transforment notre application mobile en véritable assistant intelligent d'accompagnement en santé mentale : l'analyse des signes vitaux par photopléthysmographie à distance (rPPG) et l'évolution du chatbot vers un assistant émotionnel adaptatif.
+
+Notre approche s'appuie sur la méthodologie CRISP-DM, reconnue dans le domaine de la science des données, pour assurer un développement rigoureux et scientifique de ces deux modules d'intelligence artificielle complémentaires. Cette méthodologie nous guide depuis la compréhension initiale des besoins cliniques jusqu'au déploiement des modèles en production, en passant par la préparation minutieuse des données, la modélisation avancée et la validation exhaustive des performances.
+
+\section{Identification des objectifs}
+
+\subsection{Objectifs cliniques }
+Cette Release 2 vise à enrichir MindCare-AI avec deux fonctionnalités cliniques avancées :
+\begin{itemize}
+    \item \textbf{Détection physiologique non-invasive} : Permettre l'estimation de la fréquence cardiaque à partir d'une simple image faciale via la technologie rPPG, offrant ainsi un suivi des signes vitaux accessible et sans contact.
+    
+    \item \textbf{Accompagnement émotionnel adaptatif} : Transformer le chatbot existant en assistant empathique capable de détecter automatiquement les émotions exprimées dans les messages utilisateur et d'adapter ses réponses en conséquence pour un soutien personnalisé et contextualisé.
+      
+    \item \textbf{Suivi longitudinal enrichi} : Offrir un historique enrichi intégrant les états émotionnels détectés, le niveau de stress physiologique et les interactions conversationnelles pour un meilleur suivi de l'évolution du bien-être mental.
+\end{itemize}
+
+\subsection{Objectifs de la science des données}
+Les objectifs data science spécifiques à cette Release 2 sont :
+\begin{itemize}
+    \item \textbf{Collecte et préparation de datasets spécialisés} : Utiliser le dataset PPG+Dalia pour l'entraînement des modèles d'estimation de fréquence cardiaque et le dataset Emotions pour la classification émotionnelle textuelle.
+    
+    \item \textbf{Développement de deux modèles d'IA robustes} :
+    \begin{itemize}
+        \item Modèle d'estimation de la fréquence cardiaque à partir de signaux rPPG extraits d'images faciales.
+        \item Modèle de classification des émotions (joie, tristesse, colère, peur) à partir de textes conversationnels.
+    \end{itemize}
+    
+    \item \textbf{Intégration transparente dans l'application existante} : Déployer les modèles pour une utilisation temps réel sans dégrader l'expérience utilisateur établie dans la Release 1.
+    
+    \item \textbf{Évaluation rigoureuse des performances} : Mettre en place des métriques de performance (précision, rappel, F1-score, matrices de confusion) pour valider la fiabilité des estimations et classifications.
+\end{itemize}
+
+\subsection{Sources de données}
+\subsubsection*{Dataset PPG+Dalia pour l'analyse des signes vitaux}
+\begin{itemize}
+    \item \textbf{Nom du dataset :} PPG-DaLiA
+    \item \textbf{Lien :} \\
+    \url{https://archive.ics.uci.edu/dataset/495/ppg+dalia}
+    \item \textbf{Description :} Ce jeu de données comprend des signaux physiologiques PPG (photopléthysmographie) et fréquence cardiaque (HR) collectés auprès de 15 participants dans différentes conditions d'activité (repos, marche, course). Il constitue un benchmark reconnu pour l'estimation de la fréquence cardiaque à partir de signaux rPPG dans des conditions réalistes.
+\end{itemize}
+
+\subsubsection*{Dataset Emotions pour la détection émotionnelle}
+\begin{itemize}
+    \item \textbf{Nom du dataset :} Emotions Dataset for NLP
+    \item \textbf{Lien :} \\
+    \url{https://www.kaggle.com/datasets/praveengovi/emotions-dataset-for-nlp}
+    \item \textbf{Description :} Ce jeu de données contient des phrases annotées avec six émotions principales (joie, tristesse, colère, peur, amour, surprise). Il est utilisé pour entraîner et évaluer le modèle de classification d'émotions qui permettra l'adaptation contextuelle du chatbot.
+\end{itemize}
+
+\section{Sprint 1 : Analyse rPPG des Signes Vitaux}
+
+\subsection{Objectifs du sprint}
+Ce premier sprint de la Release 2 se concentre exclusivement sur le développement et l'intégration du module d'analyse rPPG pour l'estimation non-invasive de la fréquence cardiaque :
+\begin{itemize}
+    \item Collecter et préparer le dataset PPG+Dalia pour l'entraînement des modèles.
+    \item Analyser la distribution des données physiologiques et identifier les caractéristiques pertinentes.
+    \item Développer les algorithmes d'extraction de signaux rPPG à partir d'images faciales.
+    \item Entraîner et optimiser les modèles d'estimation de la fréquence cardiaque.
+    \item Valider les performances avec des métriques rigoureuses (précision, matrices de confusion).
+    \item Intégrer le module dans l'architecture backend existante (Node.js/Express + Python/Flask).
+    \item Connecter l'interface de capture d'image de la Release 1 au module d'analyse rPPG.
+    \item Effectuer des tests de robustesse avec des données réelles pour garantir la fiabilité.
+\end{itemize}
+
+\subsection{Collection et analyse du dataset PPG+DaLiA}
+
+Le choix s'est porté sur le PPG+DaLiA dataset, un benchmark reconnu pour l'analyse des signaux PPG et l'estimation de la fréquence cardiaque dans des conditions réelles. Ce jeu de données comprend les enregistrements de 15 sujets, réalisés lors d'activités variées, avec des capteurs portés au poignet (PPG) et une référence ECG thoracique.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{cccccccc}
+        \hline
+        \textbf{Subject ID} & \textbf{Gender} & \textbf{Age [years]} & \textbf{Height [cm]} & \textbf{Weight [kg]} & \textbf{Skin Type} & \textbf{Fitness} \\
+        \hline
+        S1  & m & 34 & 182 & 78  & 3 & 6 \\
+        S2  & m & 28 & 189 & 80  & 3 & 5 \\
+        S3  & m & 25 & 170 & 60  & 3 & 5 \\
+        S4  & m & 25 & 168 & 57  & 4 & 5 \\
+        S5  & f & 21 & 180 & 70  & 3 & 4 \\
+        S6  & f & 37 & 176 & 70  & 3 & 1 \\
+        S7  & f & 21 & 168 & 58  & 3 & 2 \\
+        S8  & m & 43 & 179 & 70  & 3 & 5 \\
+        S9  & f & 28 & 167 & 60  & 4 & 5 \\
+        S10 & f & 55 & 164 & 56  & 4 & 5 \\
+        S11 & f & 24 & 168 & 62  & 3 & 5 \\
+        S12 & m & 43 & 195 & 105 & 3 & 5 \\
+        S13 & f & 21 & 170 & 63  & 3 & 6 \\
+        S14 & f & 26 & 170 & 67  & 3 & 4 \\
+        S15 & m & 28 & 183 & 79  & 2 & 5 \\
+        \hline
+        \multicolumn{2}{c}{\textbf{Moyenne ± écart-type}} & 30.60±9.59 & 175.27±8.78 & 69.00±12.35 & & \\
+        \hline
+    \end{tabular}
+    \caption{Caractéristiques démographiques du dataset PPG+DaLiA}
+\end{table}
+
+L'analyse de la distribution des caractéristiques démographiques et physiologiques des sujets du dataset PPG+DaLiA révèle une diversité en termes d'âge, de sexe, de taille, de condition physique et de fréquence cardiaque, assurant la robustesse du modèle d'estimation.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Figures/Distribution PPG.png}
+    \caption{Dashboard d'analyse des données PPG+DaLiA}
+    \label{fig:ppg_dashboard}
+\end{figure}
+
+Le dashboard présenté en Figure \ref{fig:ppg_dashboard} offre une vue d'ensemble complète des caractéristiques du dataset PPG+DaLiA à travers six visualisations complémentaires qui révèlent la richesse et la diversité des données physiologiques collectées.
+
+\textbf{Distribution de la fréquence cardiaque globale}
+L'histogramme en haut à gauche présente la distribution de la fréquence cardiaque pour l'ensemble des 15 sujets, révélant une distribution quasi-normale centrée autour de 89.2 BPM. Cette distribution s'étend de 40 à 180 BPM, démontrant la capture d'un large spectre d'états physiologiques allant du repos à l'effort intense, essentiel pour la robustesse du modèle d'estimation rPPG.
+
+\textbf{Variabilité inter-sujets de la fréquence cardiaque}
+Le graphique central supérieur illustre la fréquence cardiaque moyenne par sujet avec les écarts-types associés. Cette visualisation révèle une variabilité significative entre les participants, avec des moyennes allant de 70 BPM (S12) à 125 BPM (S5), confirmant la diversité physiologique nécessaire pour un modèle généralisable.
+
+\textbf{Durée des enregistrements par sujet}
+Le graphique en haut à droite montre les durées d'enregistrement pour chaque participant, variant de 85 à 180 minutes. Cette hétérogénéité temporelle, bien qu'introduisant une complexité supplémentaire, enrichit le dataset en fournissant des perspectives longitudinales diverses sur les variations physiologiques individuelles.
+
+\textbf{Amplitude de variation cardiaque individuelle}
+L'histogramme en bas à gauche présente l'étendue (max-min) de la fréquence cardiaque pour chaque sujet, révélant des variations importantes entre 70 et 120 BPM. Cette métrique est cruciale car elle indique la capacité du dataset à capturer des transitions physiologiques importantes, particulièrement pertinentes pour l'entraînement de modèles d'estimation rPPG robustes.
+
+\textbf{Répartition des catégories de fréquence cardiaque}
+Le diagramme circulaire central présente la distribution des trois classes d'estimation définies : fréquence cardiaque normale (70-100 BPM) représentant 56.7\% des données, fréquence élevée ($\geq$100 BPM) pour 25.6\% et fréquence basse ($<$70 BPM) pour 17.7\%. Cette répartition relativement équilibrée, bien que favorisant légèrement la classe normale, assure une représentation suffisante de chaque état physiologique pour l'entraînement supervisé.
+
+\textbf{Distribution détaillée par boîtes à moustaches}
+Les box plots en bas à droite offrent une analyse statistique fine de la distribution cardiaque pour les premiers sujets, révélant des profils physiologiques distincts. Les médianes, quartiles et valeurs aberrantes (cercles) illustrent la variabilité intra et inter-sujets, confirmant la richesse du dataset pour la modélisation de l'estimation rPPG dans des conditions physiologiques diversifiées.
+
+Cette analyse graphique confirme que le dataset PPG+DaLiA présente les caractéristiques idéales pour l'entraînement de modèles d'estimation de fréquence cardiaque robustes : diversité démographique, variabilité physiologique importante, distribution équilibrée des classes cibles et capture de transitions dynamiques réalistes.
+
+\subsection{Préparation et prétraitement des données PPG}
+
+\paragraph{Pipeline de prétraitement optimisé pour l'estimation rPPG :}
+\begin{itemize}
+    \item \textbf{Chargement automatisé} : Classe dédiée (\texttt{PPGDaliaDataExplorer}) pour parcourir et charger les fichiers .pkl du dataset.
+    \item \textbf{Extraction des signaux bruts} : Récupération des signaux PPG (BVP), ECG de référence, et métadonnées démographiques associées.
+    \item \textbf{Synchronisation temporelle} : Alignement précis des signaux PPG avec les mesures ECG de référence pour garantir la validité des labels.
+    \item \textbf{Nettoyage des données} : Gestion des valeurs manquantes, suppression des signaux aberrants et correction des artefacts de mouvement.
+    \item \textbf{Segmentation en fenêtres} : Découpage en fenêtres temporelles de 10 secondes (640 échantillons à 64 Hz) pour l'analyse et l'entraînement.
+    \item \textbf{Filtrage passe-bande optimisé} : Application d'un filtre numérique (0.5–4 Hz) pour isoler la bande de fréquence cardiaque et éliminer le bruit.
+    \item \textbf{Extraction de caractéristiques} : Calcul de descripteurs temporels (variance, amplitude, périodicité) et fréquentiels (FFT, puissance spectrale) pour chaque fenêtre.
+    \item \textbf{Enrichissement démographique} : Intégration des variables démographiques (âge, sexe, IMC, condition physique) pour améliorer la précision d'estimation.
+    \item \textbf{Construction des labels de classification} : Catégorisation en trois classes de fréquence cardiaque (basse <70 BPM, normale 70-100 BPM, élevée >=100 BPM) basée sur la médiane HR.
+    \item \textbf{Équilibrage des classes} : Application de techniques de rééchantillonnage pour obtenir une distribution équilibrée entre les trois classes cibles.
+\end{itemize}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Figures/pretraitementppg.png}
+    \caption{Distribution Équilibrage du Dataset PPG+Dalia après Prétraitement}
+    \label{fig:smart_balanced_dataset}
+\end{figure}
+
+\subsection{Modélisation pour l'estimation de la fréquence cardiaque}
+
+\paragraph{Choix des modèles et stratégie d'évaluation}
+Plusieurs algorithmes d'apprentissage automatique ont été systématiquement évalués pour la tâche d'estimation de la fréquence cardiaque : \textit{Random Forest}, \textit{Gradient Boosting}, \textit{XGBoost}, \textit{SVM}, et \textit{Decision Tree}. Le pipeline complet inclut la normalisation des caractéristiques extraites, la sélection des variables les plus pertinentes, l'entraînement avec validation croisée et l'optimisation des hyperparamètres pour chaque modèle.
+
+\paragraph{Entraînement et validation croisée rigoureuse}
+Les modèles ont été entraînés sur un jeu d'entraînement équilibré du dataset PPG+Dalia, avec une validation croisée k-fold (k=5) pour évaluer la robustesse de l'estimation et éviter le surapprentissage. Les métriques utilisées incluent la précision (accuracy), le rappel (recall), le F1-score et la matrice de confusion pour chaque classe d'estimation (basse, normale, élevée fréquence cardiaque).
+
+\paragraph{Résultats d'estimation obtenus et sélection du modèle}
+L'évaluation comparative révèle que le modèle \textbf{Gradient Boosting} atteint les meilleures performances avec une précision de \textbf{96.7\%} sur le jeu de test, un F1-score de 0.967 et un taux de surapprentissage minimal de 3.3\%, démontrant une excellente capacité à estimer et distinguer les trois classes de fréquence cardiaque à partir des signaux rPPG extraits.
+
+\begin{table}[H]
+    \centering
+    \caption{Performances comparatives des modèles d'estimation rPPG}
+    \begin{tabular}{lcccc}
+        \hline
+        \textbf{Modèle} & \textbf{Accuracy} & \textbf{F1-score} & \textbf{Overfit} \\
+        \hline
+        Gradient Boosting & 0.967 & 0.967 & 0.033 \\
+        XGBoost           & 0.933 & 0.933 & 0.067 \\
+        Random Forest     & 0.867 & 0.867 & 0.112 \\
+        SVM               & 0.8 & 0.81 & 0.112 \\
+        Decision Tree     & 0.683 & 0.689 & 0.183 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{Figures/confusion matrix.png}
+    \caption{Matrice de confusion du modèle Gradient Boosting pour l'estimation rPPG}
+\end{figure}
+
+\subsection{Intégration technique du module rPPG dans l'architecture existante}
+
+\paragraph{Architecture d'intégration développée :}
+\begin{itemize}
+    \item \textbf{Module Python Flask spécialisé} : \texttt{AI/vital\_signs\_analyzer.py} intégré au backend principal pour l'analyse des signaux rPPG.
+    \item \textbf{Modèle pré-entraîné optimisé} : \texttt{tuned\_high\_performance\_hr\_classifier.pkl} déployé avec \texttt{joblib} pour des inférences rapides.
+    \item \textbf{API REST d'inférence} : Extension de \texttt{backend/app.py} avec routes dédiées (\texttt{/api/analyze-vitals}) pour les appels depuis l'application mobile.
+    \item \textbf{Communication temps réel} : Interface fluide entre frontend React Native et backend hybride Node.js/Python via requêtes HTTP optimisées.
+    \item \textbf{Stockage enrichi MongoDB} : Extension de la collection \texttt{VitalSigns} pour sauvegarder les résultats d'analyse avec métadonnées (timestamp, niveau de confiance, classification).
+\end{itemize}
+
+\paragraph{Pipeline d'analyse rPPG intégré dans l'application :}
+\begin{itemize}
+    \item \textbf{Capture d'image} : Utilisation de l'interface caméra développée dans la Release 1 pour capturer l'image faciale.
+    \item \textbf{Transmission sécurisée} : Envoi de l'image vers le backend via l'API REST avec authentification JWT.
+    \item \textbf{Détection faciale automatique} : Localisation du visage sur l'image avec OpenCV et vérification de la qualité (éclairage, orientation).
+    \item \textbf{Extraction des ROI optimisées} : Sélection automatique des régions d'intérêt (front, joues) pour maximiser le signal rPPG.
+    \item \textbf{Extraction du signal rPPG} : Analyse des variations de couleur temporelles dans les ROI pour obtenir le signal photopléthysmographique.
+    \item \textbf{Prétraitement du signal} : Application du pipeline de filtrage et d'extraction de caractéristiques développé pendant l'entraînement.
+    \item \textbf{Estimation de la fréquence cardiaque} : Application du modèle Gradient Boosting optimisé pour obtenir la classification (basse, normale, élevée) et l'estimation précise en BPM.
+    \item \textbf{Validation de la confiance} : Calcul d'un score de confiance pour l'estimation et vérification des seuils de qualité.
+    \item \textbf{Sauvegarde et retour} : Stockage des résultats dans MongoDB et envoi de la réponse JSON vers l'application mobile pour affichage.
+\end{itemize}
+
+\subsection{Tests de robustesse et validation du module rPPG}
+
+\paragraph{Tests de performance réalisés :}
+\begin{itemize}
+    \item \textbf{Latence d'estimation} : Temps de réponse moyen < 6 secondes pour le pipeline complet (réception image → estimation → retour résultat).
+    \item \textbf{Précision sur données réelles} : Validation de l'accuracy de 96.7\% maintenue sur des images capturées avec différents smartphones.
+   \item \textbf{Gestion des cas limites} : Validation du comportement avec visages partiellement visibles, images floues ou éclairage insuffisant (rejet avec message explicatif).
+\end{itemize}
+
+\subsection{Bilan du Sprint 1}
+Ce premier sprint a permis de développer et d'intégrer avec succès le module d'analyse rPPG pour l'estimation non-invasive de la fréquence cardiaque. Le modèle Gradient Boosting sélectionné atteint une précision de 96.7\%, garantissant une estimation fiable des signes vitaux à partir d'une simple image faciale. L'intégration transparente dans l'architecture existante assure une expérience utilisateur fluide sans dégradation des performances de l'application. Les tests de robustesse confirment la capacité du module à fonctionner dans des conditions réelles variées, posant ainsi des fondations solides pour le développement du Sprint 2.
+
+\section{Sprint 2 : Chatbot Émotionnel Adaptatif}
+
+\subsection{Objectifs du sprint}
+Ce second sprint de la Release 2 se concentre exclusivement sur le développement et l'intégration des capacités de détection émotionnelle et d'adaptation contextuelle du chatbot existant :
+\begin{itemize}
+    \item Collecter et préparer le dataset Emotions pour l'entraînement du modèle de classification émotionnelle.
+    \item Analyser la distribution des émotions et traiter le déséquilibre des classes identifié.
+    \item Développer le modèle de deep learning pour la classification des émotions textuelles.
+    \item Entraîner et optimiser le modèle avec validation rigoureuse des performances.
+    \item Intégrer le module de détection émotionnelle dans l'architecture backend existante.
+    \item Enrichir le chatbot de la Release 1 avec des capacités d'adaptation contextuelle.
+    \item Implémenter la logique de génération de réponses adaptées à l'état émotionnel détecté.
+    \item Intégrer le contexte physiologique (données rPPG du Sprint 1) pour un accompagnement holistique.
+    \item Effectuer des tests conversationnels pour valider la pertinence et l'empathie des réponses.
+\end{itemize}
+
+\subsection{Collection et analyse du dataset Emotions}
+
+Pour le développement du chatbot adaptatif, nous utilisons le dataset Emotions qui contient des phrases annotées avec six émotions principales. L'analyse de la distribution révèle un déséquilibre important qui nécessite un traitement spécifique :
+
+\begin{itemize}
+    \item \textbf{Joy (Joie)} : 5362 exemples (33.6\%)
+    \item \textbf{Sadness (Tristesse)} : 4666 exemples (29.2\%)
+    \item \textbf{Anger (Colère)} : 2159 exemples (13.5\%)
+    \item \textbf{Fear (Peur)} : 1937 exemples (12.1\%)
+    \item \textbf{Love (Amour)} : 1304 exemples (8.2\%)
+    \item \textbf{Surprise (Surprise)} : 572 exemples (3.6\%)
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{Figures/emtion_train_distribution.png}
+    \caption{Distribution des classes d'émotions dans le dataset}
+    \label{fig:emotion_distribution}
+\end{figure}
+
+\textbf{Analyse du déséquilibre et stratégie de traitement}
+La Figure \ref{fig:emotion_distribution} révèle un déséquilibre significatif entre les classes d'émotions, avec une surreprésentation des émotions positives (joy) et négatives (sadness) par rapport aux émotions plus spécifiques comme la surprise et l'amour. Cette distribution nécessite une stratégie de traitement adaptée pour garantir une détection émotionnelle robuste et non biaisée vers les classes majoritaires.
+
+Pour adresser cette problématique, nous avons adopté une approche en deux étapes pragmatiques : premièrement, l'élimination des classes très minoritaires (love, surprise) qui risquent de dégrader les performances globales et de créer de la confusion dans la classification ; deuxièmement, l'application de techniques de sous-échantillonnage pour équilibrer les quatre classes principales retenues (joy, sadness, anger, fear) et garantir un apprentissage équitable pour chaque état émotionnel pertinent dans le contexte d'accompagnement en santé mentale.
+
+\subsection{Préparation et prétraitement des données textuelles}
+
+\paragraph{Pipeline de prétraitement optimisé pour la classification émotionnelle :}
+\begin{itemize}
+    \item \textbf{Chargement des données} : Import des fichiers CSV d'entraînement, validation et test dans des DataFrames pandas pour manipulation efficace.
+    \item \textbf{Filtrage des classes minoritaires} : Suppression des émotions peu représentées (love, surprise) pour se concentrer sur les quatre émotions principales (joy, sadness, anger, fear).
+    \item \textbf{Équilibrage du dataset} : Application de techniques de sous-échantillonnage pour obtenir le même nombre d'exemples par émotion principale, garantissant un entraînement équilibré.
+    \item \textbf{Nettoyage textuel} : Suppression des caractères spéciaux, normalisation de la casse, et traitement des contractions pour standardiser le texte.
+    \item \textbf{Tokenisation Keras} : Utilisation du Tokenizer Keras avec un vocabulaire de 10,000 mots les plus fréquents pour convertir les textes en séquences numériques.
+    \item \textbf{Padding des séquences} : Uniformisation de la longueur des séquences à 50 tokens pour permettre le traitement par lots (batch processing).
+    \item \textbf{Encodage des labels} : Conversion des labels émotionnels en représentation one-hot pour l'entraînement du réseau de neurones.
+    \item \textbf{Séparation train/validation/test} : Division du dataset équilibré en ensembles d'entraînement (70\%), validation (15\%) et test (15\%) pour évaluation rigoureuse.
+\end{itemize}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{Figures/emotion_balanced_distribution.png}
+    \caption{Distribution du dataset Emotions après prétraitement}
+\end{figure}
+\subsection{Modélisation pour la classification émotionnelle}
+
+\paragraph{Architecture du modèle de deep learning}
+Un modèle de réseau de neurones convolutionnel (CNN) a été développé spécifiquement pour la classification des émotions dans le contexte conversationnel. L'architecture comprend :
+\begin{itemize}
+    \item \textbf{Couche d'embedding} : Représentation vectorielle dense des mots (dimension 128) apprise pendant l'entraînement.
+    \item \textbf{Couches convolutionnelles} : Extraction de patterns contextuels locaux dans les séquences textuelles avec filtres de tailles variées.
+    \item \textbf{Couches de pooling} : Réduction de dimensionnalité pour conserver uniquement les caractéristiques les plus pertinentes.
+    \item \textbf{Couches denses} : Classification finale avec activation softmax pour obtenir les probabilités des quatre émotions.
+    \item \textbf{Dropout} : Régularisation pour éviter le surapprentissage et améliorer la généralisation.
+\end{itemize}
+
+\paragraph{Entraînement et optimisation du modèle}
+Le modèle a été entraîné sur l'ensemble d'entraînement du dataset Emotions équilibré, avec validation sur un ensemble séparé pour surveiller les performances et arrêter l'entraînement au moment optimal (early stopping). Les hyperparamètres ont été optimisés par recherche systématique pour maximiser les performances de classification. La fonction de perte utilisée est la categorical cross-entropy, adaptée aux problèmes de classification multi-classes, avec l'optimiseur Adam pour une convergence rapide.
+
+\paragraph{Résultats de classification obtenus}
+Le modèle CNN optimisé atteint une précision de \textbf{94.24\%} sur le jeu de test, avec un F1-score moyen de 0.94 sur les quatre émotions principales, démontrant une excellente capacité à distinguer les états émotionnels (joie, tristesse, colère, peur) dans les messages textuels des utilisateurs. La matrice de confusion révèle une distinction claire entre les émotions, avec très peu de confusions inter-classes.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{Figures/matrice_emotion.png}
+    \caption{Matrice de confusion du modèle de classification émotionnelle}
+\end{figure}
+
+\subsection{Développement du chatbot adaptatif enrichi}
+
+\paragraph{Nouvelles capacités d'adaptation développées :}
+\begin{itemize}
+    \item \textbf{Analyse émotionnelle temps réel} : Détection automatique et instantanée de l'émotion dominante dans chaque message utilisateur via le modèle CNN entraîné.
+    \item \textbf{Réponses empathiques adaptatives} : Modulation du ton, du vocabulaire et du contenu des réponses selon l'état émotionnel détecté (joyeux, triste, en colère, apeuré).
+    \item \textbf{Intégration du contexte physiologique} : Utilisation des données rPPG récentes (fréquence cardiaque) pour enrichir la compréhension de l'état global de l'utilisateur.
+    \item \textbf{Recommandations contextuelles personnalisées} : Suggestions de techniques de relaxation, exercices de respiration, ou contenu musical adaptées à l'analyse multimodale (émotionnelle + physiologique).
+    \item \textbf{Mémoire conversationnelle enrichie} : Maintien du contexte émotionnel et physiologique sur plusieurs échanges pour assurer la cohérence et la continuité de l'accompagnement.
+    \item \textbf{Détection de situations critiques} : Identification de messages indiquant une détresse importante et proposition de ressources d'aide appropriées.
+\end{itemize}
+
+
+\subsection{Intégration technique de l'IA conversationnelle dans l'architecture}
+
+\paragraph{Architecture conversationnelle enrichie développée :}
+\begin{itemize}
+    \item \textbf{Frontend React Native} : Interface chat existante enrichie avec indicateurs d'émotion discrets et visualisations de l'état global (émotionnel + physiologique).
+    \item \textbf{API Backend hybride étendue} : Routes Node.js/Express étendues (\texttt{/api/chat/send}) pour la communication temps réel multimodale avec gestion du contexte.
+    \item \textbf{Module de détection émotionnelle} : \texttt{AI/emotion\_detector\_dl.py} intégré au backend Python Flask pour classification temps réel.
+    \item \textbf{Module chatbot adaptatif} : \texttt{AI/Chatbot.py} enrichi avec logique d'adaptation contextuelle basée sur les émotions et la physiologie.
+    \item \textbf{Base de données enrichie} : Collection \texttt{Conversations} étendue avec champs pour émotion détectée, score de confiance, et référence aux données rPPG contextuelles.
+    \item \textbf{Système de recommandations} : Module de génération de suggestions personnalisées basé sur l'analyse multimodale de l'état utilisateur.
+\end{itemize}
+
+
+\subsection{Bilan du Sprint 2}
+Ce second sprint a permis de transformer avec succès le chatbot de base de la Release 1 en assistant conversationnel véritablement empathique et adaptatif. Le modèle de détection émotionnelle atteint une précision de 94.24\%, garantissant une compréhension fine des états émotionnels exprimés dans les messages utilisateur. L'intégration du contexte physiologique (données rPPG du Sprint 1) permet un accompagnement holistique qui prend en compte à la fois les aspects émotionnels et physiques du bien-être mental. Les tests conversationnels confirment la pertinence et l'empathie des réponses adaptées, positionnant MindCare-AI comme un assistant intelligent véritablement centré sur l'utilisateur.
+
+\section{Bilan de la Release 2 : Transformation IA Ciblée Réussie}
+
+\subsection{Objectifs atteints et résultats mesurables}
+La Release 2 transforme avec succès MindCare-AI en solution véritablement intelligente en intégrant deux modules d'IA complémentaires et performants :
+\begin{itemize}
+    \item \textbf{Module rPPG opérationnel (Sprint 1)} : Estimation précise de la fréquence cardiaque (accuracy 96.7\%) par simple analyse d'image faciale, offrant un suivi non-invasif des signes vitaux.
+    
+    \item \textbf{Intelligence émotionnelle conversationnelle (Sprint 2)} : Détection fine des émotions (accuracy 94.24\%) et adaptation empathique des réponses du chatbot selon l'état émotionnel détecté.
+    
+    \item \textbf{Accompagnement holistique multimodal} : Fusion réussie des données physiologiques (rPPG) et émotionnelles (NLP) pour un accompagnement complet prenant en compte tous les aspects du bien-être mental.
+    
+    \item \textbf{Expérience utilisateur enrichie et fluide} : Intégration transparente des modules d'IA dans l'interface native existante sans dégradation des performances (temps de réponse < 7s pour rPPG, < 3s pour chat).
+    
+    \item \textbf{Architecture évolutive et modulaire} : Séparation claire des modules permettant l'amélioration continue et l'ajout de nouvelles capacités IA futures.
+\end{itemize}
+
+\subsection{Innovation technologique réalisée}
+L'architecture IA développée pendant cette Release 2 combine avec succès plusieurs domaines avancés de l'intelligence artificielle :
+\begin{itemize}
+    \item \textbf{Computer Vision appliquée à la santé} : Analyse rPPG non-contact pour estimation des signes vitaux via smartphone, démocratisant l'accès au suivi physiologique.
+    
+    \item \textbf{NLP conversationnel avancé} : Détection émotionnelle fine (4 émotions) et génération de réponses adaptatives empathiques contextualisées par l'état physio-émotionnel global.
+    
+    \item \textbf{Machine Learning multimodal} : Fusion intelligente de données hétérogènes (images faciales, textes conversationnels, données démographiques) pour une compréhension holistique.
+    
+    \item \textbf{Système de recommandation contextualisé} : Algorithmes adaptatifs basés sur l'analyse multimodale temps réel pour suggestions personnalisées (musique, techniques de relaxation).
+    
+    \item \textbf{Intégration architecturale hybride optimisée} : Fusion harmonieuse React Native (frontend), Node.js/Express (backend principal) et Python/Flask (modules IA) pour une expérience native optimale et évolutive.
+\end{itemize}
+
 
 \section{Conclusion}
-In this chapter, we proposed two novel approaches ...
+La Release 2 de MindCare-AI représente l'aboutissement technique de notre vision d'une solution intelligente d'accompagnement en santé mentale, transformant avec succès le socle applicatif de la Release 1 en écosystème d'intelligence artificielle avancé grâce à deux sprints ciblés et complémentaires. Le Sprint 1 a permis de développer et d'intégrer un module d'analyse rPPG performant pour l'estimation non-invasive de la fréquence cardiaque, tandis que le Sprint 2 a enrichi le chatbot existant avec des capacités de détection émotionnelle fine  et d'adaptation contextuelle empathique.
+
+L'innovation technologique réalisée combine avec succès Computer Vision pour l'analyse physiologique non-contact, NLP avancé pour la compréhension émotionnelle, et fusion multimodale pour une expérience utilisateur cohérente et holistique. En s'appuyant rigoureusement sur la méthodologie CRISP-DM, nous avons assuré la qualité scientifique et la robustesse de chaque module développé, depuis la préparation minutieuse des datasets jusqu'à la validation rigoureuse des performances en conditions réelles.
+
+L'architecture modulaire développée facilite non seulement l'évolution continue du système mais ouvre également des perspectives prometteuses pour l'enrichissement futur des capacités d'accompagnement personnalisé (analyse vocale, détection faciale émotionnelle, modèles prédictifs avancés). La transformation réussie de MindCare-AI d'application mobile classique en assistant intelligent empathique démontre concrètement le potentiel révolutionnaire de l'intelligence artificielle appliquée au bien-être mental, offrant ainsi une nouvelle référence dans le domaine de la santé mentale digitale personnalisée, accessible et scientifiquement validée.

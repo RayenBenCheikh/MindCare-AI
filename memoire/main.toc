@@ -1,10 +1,11 @@
 \@ifundefined {etoctocstyle}{\let \etoc@startlocaltoc \@gobble \let \etoc@settocdepth \@gobble \let \etoc@depthtag \@gobble \let \etoc@setlocaltop \@gobble }{}
 \babel@toc {french}{}\relax 
-\contentsline {chapter}{Résumé}{i}{chapter*.1}%
-\contentsline {chapter}{Abstract}{ii}{chapter*.2}%
-\contentsline {chapter}{Liste des figures}{vii}{etoc@tocid.1}%
-\contentsline {chapter}{Liste des tableaux}{1}{chapter*.4}%
-\contentsline {chapter}{Introduction générale}{2}{chapter*.6}%
+\contentsline {chapter}{Dédicaces}{i}{Doc-Start}%
+\contentsline {chapter}{Remerciements}{ii}{chapter*.1}%
+\contentsline {chapter}{Liste des abréviations}{iii}{chapter*.2}%
+\contentsline {chapter}{Liste des figures}{viii}{etoc@tocid.1}%
+\contentsline {chapter}{Liste des tableaux}{x}{etoc@tocid.1}%
+\contentsline {chapter}{Introduction générale}{1}{chapter*.4}%
 \contentsline {chapter}{\numberline {1}Cadre général du projet}{4}{chapter.1}%
 \etoc@startlocaltoc {2}
 \contentsline {section}{\numberline {1.1}Introduction}{5}{section.1.1}%
@@ -12,64 +13,100 @@
 \contentsline {section}{\numberline {1.3}Contexte du projet}{6}{section.1.3}%
 \contentsline {section}{\numberline {1.4}Problématique}{6}{section.1.4}%
 \contentsline {section}{\numberline {1.5}Etude d'existance}{7}{section.1.5}%
-\contentsline {subsection}{\numberline {1.5.1}Solutions existantes pour l'analyse des signaux vitaux}{7}{subsection.1.5.1}%
-\contentsline {subsubsection}{Tableau comparatif des solutions d'analyse des signaux vitaux}{9}{section*.10}%
-\contentsline {subsection}{\numberline {1.5.2}Solutions existantes pour les chatbots thérapeutiques}{9}{subsection.1.5.2}%
-\contentsline {subsubsection}{Chatbots thérapeutiques établis}{9}{section*.12}%
-\contentsline {subsubsection}{Tableau comparatif des solutions}{10}{section*.15}%
-\contentsline {subsubsection}{Analyse critique et positionnement}{10}{section*.17}%
+\contentsline {subsection}{\numberline {1.5.1}Analyse des signaux vitaux}{7}{subsection.1.5.1}%
+\contentsline {subsection}{\numberline {1.5.2}Chatbots thérapeutiques}{9}{subsection.1.5.2}%
 \contentsline {section}{\numberline {1.6}Solution proposée}{11}{section.1.6}%
 \contentsline {section}{\numberline {1.7}Méthodologie du projet}{12}{section.1.7}%
-\contentsline {subsection}{\numberline {1.7.1}Méthodologie Agile avec Scrum pour le développement de l'application mobile}{13}{subsection.1.7.1}%
-\contentsline {subsection}{\numberline {1.7.2}Méthodologie pour la Data Science}{14}{subsection.1.7.2}%
-\contentsline {section}{\numberline {1.8}Planification du projet}{15}{section.1.8}%
-\contentsline {section}{\numberline {1.9}Conclusion}{17}{section.1.9}%
-\contentsline {chapter}{\numberline {2}Identification des Objectifs et Conception du Système}{18}{chapter.2}%
+\contentsline {subsection}{\numberline {1.7.1}Méthodologie suivie pour le développement logiciel}{13}{subsection.1.7.1}%
+\contentsline {subsection}{\numberline {1.7.2}Méthodologie pour la partie IA}{14}{subsection.1.7.2}%
+\contentsline {section}{\numberline {1.8}Conclusion}{16}{section.1.8}%
+\contentsline {chapter}{\numberline {2}Initialisation du projet}{17}{chapter.2}%
 \etoc@startlocaltoc {3}
-\contentsline {section}{\numberline {2.1}Introduction}{20}{section.2.1}%
-\contentsline {section}{\numberline {2.2}Identification des objectifs}{20}{section.2.2}%
-\contentsline {subsection}{\numberline {2.2.1}Objectifs cliniques}{20}{subsection.2.2.1}%
-\contentsline {subsection}{\numberline {2.2.2}Objectifs de la science des données}{20}{subsection.2.2.2}%
-\contentsline {section}{\numberline {2.3}Identification des acteurs}{22}{section.2.3}%
-\contentsline {section}{\numberline {2.4}Spécification des besoins}{22}{section.2.4}%
-\contentsline {subsection}{\numberline {2.4.1}Besoins fonctionnels}{22}{subsection.2.4.1}%
-\contentsline {subsection}{\numberline {2.4.2}Besoins non fonctionnels}{23}{subsection.2.4.2}%
-\contentsline {section}{\numberline {2.5}Architecture logicielle}{23}{section.2.5}%
-\contentsline {subsection}{\numberline {2.5.1}Principe de l’architecture MVC}{24}{subsection.2.5.1}%
-\contentsline {subsection}{\numberline {2.5.2}Application du MVC dans MindCare-AI}{24}{subsection.2.5.2}%
-\contentsline {section}{\numberline {2.6}Architecture globale}{25}{section.2.6}%
-\contentsline {subsection}{\numberline {2.6.1}Vue d’ensemble}{25}{subsection.2.6.1}%
-\contentsline {subsection}{\numberline {2.6.2}Schéma d’architecture}{26}{subsection.2.6.2}%
-\contentsline {subsection}{\numberline {2.6.3}Description des échanges}{26}{subsection.2.6.3}%
-\contentsline {section}{\numberline {2.7}Conception détaillée : langage UML}{27}{section.2.7}%
-\contentsline {subsection}{\numberline {2.7.1}Diagramme de cas d’utilisation global}{27}{subsection.2.7.1}%
-\contentsline {subsection}{\numberline {2.7.2}Diagramme des séquences}{29}{subsection.2.7.2}%
-\contentsline {section}{\numberline {2.8}Conception préliminaire des interfaces-maquettes}{31}{section.2.8}%
-\contentsline {subsection}{\numberline {2.8.1}Inscription de l'utilisateur}{31}{subsection.2.8.1}%
-\contentsline {subsection}{\numberline {2.8.2}Connexion de l'utilisateur}{32}{subsection.2.8.2}%
-\contentsline {section}{\numberline {2.9}Conclusion}{33}{section.2.9}%
-\contentsline {chapter}{\numberline {3}Processus global : de la compréhension des données à l’évaluation des modèles}{34}{chapter.3}%
-\contentsline {section}{\numberline {3.1}Introduction}{35}{section.3.1}%
-\contentsline {section}{\numberline {3.2}Collection et préparation des données}{35}{section.3.2}%
-\contentsline {subsection}{\numberline {3.2.1}Collection du jeu de données}{35}{subsection.3.2.1}%
-\contentsline {subsubsection}{Choix du jeu de données}{35}{section*.31}%
-\contentsline {subsubsection}{Description des jeux de données}{36}{section*.32}%
-\contentsline {subsubsection}{PPG+Dalia}{36}{section*.33}%
-\contentsline {subsubsection}{Emotions dataset for NLP }{37}{section*.35}%
-\contentsline {subsection}{\numberline {3.2.2}Analyse de distribution}{37}{subsection.3.2.2}%
-\contentsline {subsubsection}{PPG+Dalia}{37}{section*.36}%
-\contentsline {subsubsection}{Emotions dataset for NLP}{38}{section*.38}%
-\contentsline {subsection}{\numberline {3.2.3}Préparation et prétraitement des données}{39}{subsection.3.2.3}%
-\contentsline {paragraph}{Pour le dataset PPG+Dalia :}{39}{section*.40}%
-\contentsline {paragraph}{Pour le dataset Emotions (NLP) :}{40}{section*.41}%
-\contentsline {section}{\numberline {3.3}Modélisation et évaluation}{41}{section.3.3}%
-\contentsline {subsection}{\numberline {3.3.1}Modélisation pour la classification de la fréquence cardiaque (PPG+Dalia)}{42}{subsection.3.3.1}%
-\contentsline {paragraph}{Choix des modèles et pipeline}{42}{section*.42}%
-\contentsline {paragraph}{Entraînement et validation croisée}{42}{section*.43}%
-\contentsline {paragraph}{Résultats}{42}{section*.44}%
-\contentsline {subsection}{\numberline {3.3.2}Modélisation pour la classification des émotions (NLP)}{43}{subsection.3.3.2}%
-\contentsline {paragraph}{Architecture du modèle}{43}{section*.47}%
-\contentsline {paragraph}{Entraînement et évaluation}{43}{section*.48}%
-\contentsline {paragraph}{Résultats}{43}{section*.49}%
-\contentsline {subsection}{\numberline {3.3.3}Intégration et évaluation dans le chatbot}{44}{subsection.3.3.3}%
-\contentsline {paragraph}{Limites et perspectives}{44}{section*.51}%
+\contentsline {section}{\numberline {2.1}Introduction}{18}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Analyse des besoins}{18}{section.2.2}%
+\contentsline {subsection}{\numberline {2.2.1}Identification des acteurs}{18}{subsection.2.2.1}%
+\contentsline {subsection}{\numberline {2.2.2}Spécification des besoins}{18}{subsection.2.2.2}%
+\contentsline {subsubsection}{Besoins fonctionnels }{18}{section*.17}%
+\contentsline {subsubsection}{Besoins non fonctionnels}{19}{section*.18}%
+\contentsline {section}{\numberline {2.3}Technologies et outils utilisés}{20}{section.2.3}%
+\contentsline {section}{\numberline {2.4}Product Backlog}{22}{section.2.4}%
+\contentsline {section}{\numberline {2.5}Conclusion}{24}{section.2.5}%
+\contentsline {chapter}{\numberline {3}Analyse et spécification des besoins}{25}{chapter.3}%
+\etoc@startlocaltoc {4}
+\contentsline {section}{\numberline {3.1}Introduction}{26}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Architecture logicielle}{26}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Architecture MVC}{26}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}Flux d'interaction }{27}{subsection.3.2.2}%
+\contentsline {section}{\numberline {3.3}Architecture globale}{27}{section.3.3}%
+\contentsline {subsection}{\numberline {3.3.1}Composants principaux du système}{27}{subsection.3.3.1}%
+\contentsline {subsection}{\numberline {3.3.2}Schéma d'architecture}{28}{subsection.3.3.2}%
+\contentsline {section}{\numberline {3.4}Conception détaillée : langage UML}{28}{section.3.4}%
+\contentsline {subsection}{\numberline {3.4.1}Diagramme de cas d'utilisation global}{29}{subsection.3.4.1}%
+\contentsline {subsection}{\numberline {3.4.2}Diagramme de classe général}{32}{subsection.3.4.2}%
+\contentsline {section}{\numberline {3.5}Conclusion}{34}{section.3.5}%
+\contentsline {chapter}{\numberline {4}Release 1 : Application mobile}{35}{chapter.4}%
+\etoc@startlocaltoc {5}
+\contentsline {section}{\numberline {4.1}Introduction}{37}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Sprint 1 : Fondations et authentification}{37}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}Objectifs}{37}{subsection.4.2.1}%
+\contentsline {subsection}{\numberline {4.2.2}Conception}{38}{subsection.4.2.2}%
+\contentsline {subsection}{\numberline {4.2.3}Implémentation}{40}{subsection.4.2.3}%
+\contentsline {subsection}{\numberline {4.2.4}Défis et solutions}{42}{subsection.4.2.4}%
+\contentsline {section}{\numberline {4.3}Sprint 2 : Interface HomeScreen et profile}{42}{section.4.3}%
+\contentsline {subsection}{\numberline {4.3.1}Objectifs}{43}{subsection.4.3.1}%
+\contentsline {subsection}{\numberline {4.3.2}Conception}{43}{subsection.4.3.2}%
+\contentsline {subsection}{\numberline {4.3.3}Implémentation}{45}{subsection.4.3.3}%
+\contentsline {subsection}{\numberline {4.3.4}Défis et solutions}{47}{subsection.4.3.4}%
+\contentsline {section}{\numberline {4.4}Sprint 3 : Assistant conversationnel}{47}{section.4.4}%
+\contentsline {subsection}{\numberline {4.4.1}Objectifs}{48}{subsection.4.4.1}%
+\contentsline {subsection}{\numberline {4.4.2}Conception}{48}{subsection.4.4.2}%
+\contentsline {subsection}{\numberline {4.4.3}Implémentation}{51}{subsection.4.4.3}%
+\contentsline {subsection}{\numberline {4.4.4}Défis et solutions}{52}{subsection.4.4.4}%
+\contentsline {section}{\numberline {4.5}Sprint 4 : Analyse rPPG des signes vitaux et visualisations}{52}{section.4.5}%
+\contentsline {subsection}{\numberline {4.5.1}Objectifs}{52}{subsection.4.5.1}%
+\contentsline {subsection}{\numberline {4.5.2}Conception}{52}{subsection.4.5.2}%
+\contentsline {subsection}{\numberline {4.5.3}Implémentation}{56}{subsection.4.5.3}%
+\contentsline {subsection}{\numberline {4.5.4}Défis et solutions}{57}{subsection.4.5.4}%
+\contentsline {section}{\numberline {4.6}Conclusion}{58}{section.4.6}%
+\contentsline {chapter}{\numberline {5}Release 2 : Intégration de l'Intelligence Artificielle}{59}{chapter.5}%
+\etoc@startlocaltoc {6}
+\contentsline {section}{\numberline {5.1}Introduction}{61}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Identification des objectifs}{61}{section.5.2}%
+\contentsline {subsection}{\numberline {5.2.1}Objectifs cliniques }{61}{subsection.5.2.1}%
+\contentsline {subsection}{\numberline {5.2.2}Objectifs de la science des données}{62}{subsection.5.2.2}%
+\contentsline {subsection}{\numberline {5.2.3}Sources de données}{62}{subsection.5.2.3}%
+\contentsline {section}{\numberline {5.3}Sprint 1 : Analyse rPPG des Signes Vitaux}{63}{section.5.3}%
+\contentsline {subsection}{\numberline {5.3.1}Objectifs du sprint}{63}{subsection.5.3.1}%
+\contentsline {subsection}{\numberline {5.3.2}Collection et analyse du dataset PPG+DaLiA}{63}{subsection.5.3.2}%
+\contentsline {subsection}{\numberline {5.3.3}Préparation et prétraitement des données PPG}{66}{subsection.5.3.3}%
+\contentsline {paragraph}{Pipeline de prétraitement optimisé pour l'estimation rPPG :}{66}{section*.71}%
+\contentsline {subsection}{\numberline {5.3.4}Modélisation pour l'estimation de la fréquence cardiaque}{67}{subsection.5.3.4}%
+\contentsline {paragraph}{Choix des modèles et stratégie d'évaluation}{67}{section*.73}%
+\contentsline {paragraph}{Entraînement et validation croisée rigoureuse}{68}{section*.74}%
+\contentsline {paragraph}{Résultats d'estimation obtenus et sélection du modèle}{68}{section*.75}%
+\contentsline {subsection}{\numberline {5.3.5}Intégration technique du module rPPG dans l'architecture existante}{69}{subsection.5.3.5}%
+\contentsline {paragraph}{Architecture d'intégration développée :}{69}{section*.78}%
+\contentsline {paragraph}{Pipeline d'analyse rPPG intégré dans l'application :}{69}{section*.79}%
+\contentsline {subsection}{\numberline {5.3.6}Tests de robustesse et validation du module rPPG}{70}{subsection.5.3.6}%
+\contentsline {paragraph}{Tests de performance réalisés :}{70}{section*.80}%
+\contentsline {subsection}{\numberline {5.3.7}Bilan du Sprint 1}{70}{subsection.5.3.7}%
+\contentsline {section}{\numberline {5.4}Sprint 2 : Chatbot Émotionnel Adaptatif}{71}{section.5.4}%
+\contentsline {subsection}{\numberline {5.4.1}Objectifs du sprint}{71}{subsection.5.4.1}%
+\contentsline {subsection}{\numberline {5.4.2}Collection et analyse du dataset Emotions}{71}{subsection.5.4.2}%
+\contentsline {subsection}{\numberline {5.4.3}Préparation et prétraitement des données textuelles}{73}{subsection.5.4.3}%
+\contentsline {paragraph}{Pipeline de prétraitement optimisé pour la classification émotionnelle :}{73}{section*.82}%
+\contentsline {subsection}{\numberline {5.4.4}Modélisation pour la classification émotionnelle}{74}{subsection.5.4.4}%
+\contentsline {paragraph}{Architecture du modèle de deep learning}{74}{section*.84}%
+\contentsline {paragraph}{Entraînement et optimisation du modèle}{75}{section*.85}%
+\contentsline {paragraph}{Résultats de classification obtenus}{75}{section*.86}%
+\contentsline {subsection}{\numberline {5.4.5}Développement du chatbot adaptatif enrichi}{75}{subsection.5.4.5}%
+\contentsline {paragraph}{Nouvelles capacités d'adaptation développées :}{75}{section*.88}%
+\contentsline {subsection}{\numberline {5.4.6}Intégration technique de l'IA conversationnelle dans l'architecture}{76}{subsection.5.4.6}%
+\contentsline {paragraph}{Architecture conversationnelle enrichie développée :}{76}{section*.89}%
+\contentsline {subsection}{\numberline {5.4.7}Bilan du Sprint 2}{77}{subsection.5.4.7}%
+\contentsline {section}{\numberline {5.5}Bilan de la Release 2 : Transformation IA Ciblée Réussie}{77}{section.5.5}%
+\contentsline {subsection}{\numberline {5.5.1}Objectifs atteints et résultats mesurables}{77}{subsection.5.5.1}%
+\contentsline {subsection}{\numberline {5.5.2}Innovation technologique réalisée}{78}{subsection.5.5.2}%
+\contentsline {section}{\numberline {5.6}Conclusion}{78}{section.5.6}%
+\contentsline {chapter}{Conclusion générale}{80}{chapter*.90}%
+\contentsline {chapter}{Bibliographie}{81}{chapter*.90}%

@@ -88,11 +88,22 @@ router.get('/', auth, async (req, res) => {
             read: false
         });
 
+        // ✅ Mapper _id vers id pour le frontend
+        const mappedNotifications = notifications.map(n => ({
+            id: n._id.toString(),
+            title: n.title,
+            message: n.message,
+            type: mapBackendTypeToFrontend(n.type),
+            read: n.read,
+            timestamp: n.createdAt.getTime(),
+            metadata: n.data || {}
+        }));
+
         res.json({
             success: true,
-            notifications,
+            notifications: mappedNotifications,
             unreadCount,
-            total: notifications.length
+            total: mappedNotifications.length
         });
 
     } catch (error) {
@@ -104,8 +115,20 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
+// ✅ Helper function pour mapper les types
+function mapBackendTypeToFrontend(backendType) {
+    const typeMap = {
+        'assessment_reminder': 'reminder',
+        'music_update': 'system',
+        'vital_signs_alert': 'health_alert',
+        'app_update': 'system',
+        'wellness_tip': 'achievement',
+        'chat_suggestion': 'system'
+    };
+    return typeMap[backendType] || 'system';
+}
 // Marquer une notification comme lue
-router.post('/:id/read', auth, async (req, res) => {
+router.put('/:id/read', auth, async (req, res) => {
     try {
         const notification = await Notification.findOneAndUpdate(
             { _id: req.params.id, userId: req.user.id },
@@ -135,7 +158,7 @@ router.post('/:id/read', auth, async (req, res) => {
 });
 
 // Marquer toutes les notifications comme lues
-router.post('/mark-all-read', auth, async (req, res) => {
+router.put('/mark-all-read', auth, async (req, res) => {
     try {
         await Notification.updateMany(
             { userId: req.user.id, read: false },

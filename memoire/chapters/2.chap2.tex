@@ -1,137 +1,51 @@
-\chapter{Identification des Objectifs et Conception du Système}
+\chapter{Analyse et spécification des besoins}
 \begingroup
 \etocsettocstyle{\rule{\linewidth}{\tocrulewidth}\vskip0.5\baselineskip }{\rule{\linewidth}{\tocrulewidth}}
-\localtableofcontents 
+\localtableofcontents
 \endgroup
 \newpage
-
 \section{Introduction}
-Après avoir posé le cadre général du projet, ce chapitre présente la plateforme intelligente \textbf{MindCare-AI}, conçue pour améliorer le suivi et l’accompagnement de la santé mentale grâce à l’intelligence artificielle. Nous détaillons ici l’identification des objectifs, la spécification des besoins, la conception du système, le choix des jeux de données, ainsi qu’une synthèse des éléments clés.
+ Après avoir défini le périmètre fonctionnel et établi la planification stratégique dans le chapitre précédent, nous abordons maintenant la phase d'analyse et de spécification technique qui transforme les besoins identifiés en architecture logicielle concrète. Ce chapitre constitue le pont essentiel entre les exigences métier et l'implémentation technique, en structurant notre vision à travers des modèles architecturaux et des diagrammes UML précis.
 
-\section{Identification des objectifs}
-Cette section s’inscrit dans la première phase de la méthode CRISP-DM, qui consiste à comprendre les objectifs métiers et data science afin de guider le développement de \textbf{MindCare-AI}.
-
-\subsection{Objectifs cliniques}
-Le projet \textbf{MindCare-AI} vise à proposer une application mobile intelligente pour la prise en charge de la santé mentale. Les principaux objectifs cliniques sont :
-\begin{itemize}
-    \item \textbf{Détection précoce du stress et des troubles émotionnels} à partir de signaux physiologiques (fréquence cardiaque, PPG) et d’analyses textuelles.
-    \item \textbf{Accompagnement personnalisé} des utilisateurs via un chatbot, capable de fournir conseils, soutien et recommandations adaptés à l’état émotionnel détecté.
-    \item \textbf{Accessibilité} : permettre à un large public d’accéder à un suivi de santé mentale, même en l’absence de professionnels spécialisés.
-    \item \textbf{Suivi longitudinal} : offrir un historique des états émotionnels et du stress pour un meilleur suivi de l’évolution de l’utilisateur.
-\end{itemize}
-
-\subsection{Objectifs de la science des données}
-Les objectifs data science du projet sont :
-\begin{itemize}
-    \item \textbf{Collecte et préparation des données} : Utiliser des jeux de données pertinents pour entraîner les modèles de détection des émotions et pour l’analyse des signaux vitaux.
-    \item \textbf{Développement de modèles robustes} : Concevoir et entraîner des modèles d’apprentissage automatique et profond pour :
-    \begin{itemize}
-        \item La classification des émotions à partir de textes (NLP).
-        \item La détection du stress à partir de signaux physiologiques.
-    \end{itemize}
-    \item \textbf{Intégration dans l’application mobile} : Déployer les modèles pour une utilisation en temps réel via l’application mobile.
-    \item \textbf{Évaluation et amélioration continue} : Mettre en place des métriques de performance (précision, rappel, F1-score) et améliorer les modèles selon les retours utilisateurs et les résultats obtenus.
-\end{itemize}
-
-\subsubsection*{Critères de réussite}
-\begin{itemize}
-    \item Précision élevée des modèles de détection d’émotions et de stress sur les jeux de données de test.
-    \item Réactivité : Temps de réponse rapide pour l’analyse et le retour utilisateur.
-    \item Satisfaction utilisateur : Retours positifs sur l’utilité du chatbot et la pertinence des recommandations.
-    \item Robustesse : Modèles capables de s’adapter à différents profils et contextes d’utilisation.
-\end{itemize}
-
-\subsubsection*{Sources de données}
-\begin{itemize}
-    \item \textbf{Détection des émotions} : 
-    \begin{itemize}
-        \item \textbf{Nom du dataset :} Emotions Dataset for NLP
-        \item \textbf{Lien :} \url{https://www.kaggle.com/datasets/praveengovi/emotions-dataset-for-nlp}
-        \item \textbf{Description :} Ce jeu de données contient des phrases annotées avec différentes émotions (joie, tristesse, colère, peur, amour, surprise). Il est utilisé pour entraîner et évaluer les modèles de classification d’émotions à partir de textes.\cite{Emotion_Data}
-    \end{itemize}
-    \item \textbf{Signaux physiologiques} :
-    \begin{itemize}
-        \item \textbf{Nom du dataset :} PPG-DaLiA
-        \item \textbf{Lien :} \url{https://archive.ics.uci.edu/dataset/495/ppg+dalia}
-        \item \textbf{Description :} Ce jeu de données comprend des signaux physiologiques tels que le PPG (photopléthysmographie) et la fréquence cardiaque (HR), collectés auprès de participants dans différentes conditions de stress. Il est utilisé pour la détection automatique du stress à partir de signaux vitaux.\cite{PPG-DaLiA}
-    \end{itemize}
-\end{itemize}
-
-\section{Identification des acteurs}
-Les principaux acteurs du système \textbf{MindCare-AI} sont :
-\begin{itemize}
-    \item \textbf{Utilisateur} : Toute personne souhaitant surveiller ses signes vitaux et bénéficier d’un accompagnement psychologique personnalisé via l’application mobile.
-\end{itemize}
-
-\section{Spécification des besoins}
-Cette section présente les besoins fonctionnels et non fonctionnels nécessaires à la réalisation du projet \textbf{MindCare-AI}, qui combine l’analyse des signes vitaux à partir d’images et l’accompagnement psychologique via un chatbot intelligent.
-
-\subsection{Besoins fonctionnels}
-\begin{itemize}
-    \item \textbf{Analyse des signes vitaux à partir d'une image} : L'application permet à l'utilisateur de soumettre une image (photo du visage) afin d'estimer la fréquence cardiaque (HR) et la pression artérielle (BP) grâce à des modèles d'apprentissage automatique.
-    \item \textbf{Détection automatique du visage et extraction des régions d'intérêt} : Le système détecte automatiquement le visage sur l'image et extrait les régions pertinentes (front, joues) pour l'analyse des signaux physiologiques.
-    \item \textbf{Prise en compte des informations démographiques} : L'utilisateur peut renseigner son âge, son sexe, son poids et sa taille pour améliorer la précision de l'estimation des signes vitaux.
-    \item \textbf{Enregistrement et suivi des mesures} : Les résultats des analyses (HR, BP, confiance, etc.) sont sauvegardés dans une base de données MongoDB, associés à l'utilisateur et à l'évaluation en cours.
-    \item \textbf{Chatbot d'accompagnement psychologique} : Un chatbot interactif permet à l'utilisateur de discuter, de répondre à des questionnaires d'auto-évaluation du stress, et de recevoir des conseils personnalisés.
-    \item \textbf{Détection des émotions à partir du texte} : Le chatbot analyse les messages de l'utilisateur pour détecter les émotions exprimées et adapter ses réponses.
-    \item \textbf{Recommandations musicales personnalisées} : Selon le niveau de stress détecté, l'application propose des musiques adaptées pour favoriser la détente ou la concentration.
-    \item \textbf{Visualisation de l'historique} : L'utilisateur peut consulter l'historique de ses mesures physiologiques et de ses évaluations psychologiques.
-    \item \textbf{Gestion sécurisée des utilisateurs et des données} : Authentification, gestion des droits d'accès et protection des données personnelles et médicales.
-\end{itemize}
-
-\subsection{Besoins non fonctionnels}
-\begin{itemize}
-    \item \textbf{Sécurité et confidentialité} : Les données personnelles et médicales des utilisateurs doivent être protégées conformément aux normes en vigueur.
-    \item \textbf{Performance} : Les analyses (détection d’émotions, stress) doivent être réalisées en temps réel ou quasi-réel pour garantir une expérience utilisateur fluide.
-    \item \textbf{Compatibilité} : L’application doit être compatible avec les principaux systèmes d’exploitation mobiles (Android, iOS).
-    \item \textbf{Scalabilité} : Le système doit pouvoir gérer un nombre croissant d’utilisateurs sans dégradation des performances.
-    \item \textbf{Ergonomie} : L’interface utilisateur doit être intuitive et facile à utiliser pour tous les profils d’utilisateurs.
-\end{itemize}
-
+Nous présentons d'abord l'architecture logicielle retenue, basée sur le pattern MVC qui sépare clairement les responsabilités tout en facilitant l'intégration des modules d'intelligence artificielle. Ensuite, nous détaillons l'architecture globale du système avec ses composants principaux et leurs interactions. Enfin, nous formalisons la conception détaillée à travers une modélisation UML complète incluant diagrammes de cas d'utilisation et diagramme de classes, offrant ainsi une vision structurée et partagée qui guidera l'implémentation des releases .
 \section{Architecture logicielle}
-L’application \textbf{MindCare-AI} est conçue selon le modèle d’architecture \textbf{MVC} (Modèle–Vue–Contrôleur), qui permet de séparer la gestion des données, la logique métier et l’interface utilisateur. Cette approche facilite la maintenance, l’évolution et la réutilisation des composants du système.
+Nous avons opté pour le modèle d'architecture \textbf{MVC}  qui nous permet de structurer clairement notre application en séparant les responsabilités. Cette approche s'avère particulièrement adaptée à notre contexte de développement mobile avec modules d'IA intégrés.
 
-\subsection{Principe de l’architecture MVC}
+\subsection{Architecture MVC}
 \begin{itemize}
-    \item \textbf{Modèle (Model)} : Gère les données, la logique métier et l’accès à la base de données (par exemple, enregistrement des mesures physiologiques, des conversations et des profils utilisateurs).
-    \item \textbf{Vue (View)} : Correspond à l’interface utilisateur de l’application mobile, permettant la saisie des données, l’affichage des résultats et l’interaction avec le chatbot.
-    \item \textbf{Contrôleur (Controller)} : Fait le lien entre la vue et le modèle, traite les requêtes de l’utilisateur, appelle les modules d’analyse (signes vitaux, émotions) et orchestre les réponses à afficher.
+    \item \textbf{Modèle (Model)} : Gère toutes les données de l'application (profils utilisateurs, mesures physiologiques, historique des conversations, résultats d'analyses IA) et orchestre l'accès à la base de données MongoDB.
+    \item \textbf{Vue (View)} : Représente l'interface utilisateur React Native, incluant les écrans d'authentification, le tableau de bord personnalisé, l'interface de chat avec l'assistant, et les visualisations de données.
+    \item \textbf{Contrôleur (Controller)} : Coordonne les interactions entre la vue et le modèle, traite les requêtes utilisateur, sollicite les modules d'IA (rPPG, détection d'émotions, recommandations) et formate les réponses.
 \end{itemize}
 
-\subsection{Application du MVC dans MindCare-AI}
-\begin{itemize}
-    \item L’utilisateur interagit avec la \textbf{Vue} (application mobile) pour soumettre des images ou discuter avec le chatbot.
-    \item Le \textbf{Contrôleur} (serveur backend/API) reçoit les requêtes, traite les données, sollicite les modules d’intelligence artificielle et met à jour le \textbf{Modèle}.
-    \item Le \textbf{Modèle} gère la persistance des données dans la base MongoDB et fournit les informations nécessaires au contrôleur.
-    \item Les résultats sont renvoyés à la vue pour affichage à l’utilisateur.
-\end{itemize}
-Cette architecture garantit une séparation claire des responsabilités et une meilleure évolutivité du système.\cite{MVC}
+\subsection{Flux d'interaction }
+Le parcours utilisateur s'articule autour de ce modèle : l'utilisateur interagit avec la \textbf{Vue} mobile pour soumettre une image ou envoyer un message, le \textbf{Contrôleur} backend traite la requête en sollicitant les modules d'IA appropriés et met à jour le \textbf{Modèle}, puis les résultats personnalisés sont renvoyés à la vue pour afficher. Cette séparation claire facilite la maintenance et permet une évolution agile de chaque composant.~\cite{MVC}
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{Figures/Modèle–Vue–Contrôleur.png}
-    \caption{Modèle–Vue–Contrôleur}
+    \caption{Architecture MVC }
 \end{figure}
 
-\newpage
 \section{Architecture globale}
-L’architecture logicielle du système \textbf{MindCare-AI} est conçue de manière modulaire afin de séparer les différentes fonctionnalités et de faciliter la maintenance, l’évolutivité et l’intégration de nouveaux modules.
+Notre architecture globale privilégie une approche modulaire qui sépare clairement les responsabilités tout en facilitant l'intégration harmonieuse des différents composants d'intelligence artificielle.
 
-\subsection{Vue d’ensemble}
-Le système est composé des modules principaux suivants :
+\subsection{Composants principaux du système}
+Le système MindCare-AI s'articule autour de quatre modules principaux :
 \begin{itemize}
-    \item \textbf{Application mobile} : Interface utilisateur permettant la saisie des données, la capture d’images, l’interaction avec le chatbot et la visualisation des résultats.
-    \item \textbf{Serveur backend (API REST)} : Gère la logique métier, l’analyse des images, la communication avec les modèles d’IA, la gestion des utilisateurs et l’accès à la base de données.
-    \item \textbf{Modules d’intelligence artificielle} : 
+    \item \textbf{Application mobile React Native} : Interface utilisateur moderne offrant authentification, capture d'images, chat intelligent, et visualisations personnalisées.
+    \item \textbf{API REST Node.js/Express} : Serveur backend qui orchestre la logique métier, gère l'authentification JWT, coordonne les appels aux modules d'IA, et assure la persistance des données.
+    \item \textbf{Modules d'intelligence artificielle }: 
     \begin{itemize}
-        \item \textbf{Analyse des signes vitaux} : Extraction des caractéristiques physiologiques à partir des images et estimation de la fréquence cardiaque et de la pression artérielle.
-        \item \textbf{Détection des émotions} : Analyse des textes pour identifier les émotions de l’utilisateur.
-        \item \textbf{Chatbot} : Fournit un accompagnement psychologique personnalisé et des recommandations.
+        \item Module rPPG pour l'estimation des signes vitaux par analyse d'image faciale.
+        \item Analyseur d'émotions pour la classification des sentiments dans les textes.
+        \item Assistant conversationnel adaptatif avec génération de réponses empathiques.
+        \item Système de recommandations personnalisées basé sur l'état psychophysiologique.
     \end{itemize}
-    \item \textbf{Base de données (MongoDB)} : Stocke les informations des utilisateurs, les mesures physiologiques, les historiques de conversations et les résultats d’analyses.
+    \item \textbf{Base de données } : Stockage sécurisé et structuré des profils utilisateurs, mesures physiologiques, conversations, et historiques d'analyses.
 \end{itemize}
 
-\subsection{Schéma d’architecture}
+\subsection{Schéma d'architecture}
 \begin{center}
 \begin{tikzpicture}[node distance=2cm, auto]
     % Nodes
@@ -147,81 +61,101 @@ Le système est composé des modules principaux suivants :
 \end{tikzpicture}
 \end{center}
 
-\subsection{Description des échanges}
-\begin{itemize}
-    \item L’utilisateur interagit avec l’application mobile pour soumettre des images, répondre aux questionnaires ou discuter avec le chatbot.
-    \item L’application envoie les données au serveur backend via des requêtes API sécurisées.
-    \item Le backend traite les données, sollicite les modules d’IA pour l’analyse des signes vitaux ou des émotions, puis enregistre les résultats dans la base de données.
-    \item Les résultats et recommandations sont renvoyés à l’application mobile pour affichage à l’utilisateur.
-\end{itemize}
-
 \section{Conception détaillée : langage UML}
-Nous avons utilisé UML pour modéliser notre système MindCare-AI, qui intègre à la fois l’analyse intelligente des signes vitaux à partir d’images faciales et un module chatbot d’accompagnement. Cette modélisation permet d’organiser les interactions entre les utilisateurs et le système, de structurer la gestion des données médicales et des dialogues, et de clarifier les échanges entre les différents composants. Les diagrammes de cas d’utilisation, de séquence et de classes facilitent la compréhension de l’architecture, la communication entre les parties prenantes et garantissent une conception cohérente ainsi qu’une mise en œuvre efficace du projet.\cite{uml}
+La modélisation UML nous a accompagnés tout au long de la conception pour structurer et clarifier les interactions complexes de notre système intégrant à la fois l'analyse physiologique par IA et l'accompagnement conversationnel personnalisé.~\cite{uml}
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{Figures/UML_logo.png}
-    \caption{Logo-UML}
+    \caption{ langage de modélisation unifié}
 \end{figure}
+\subsection{Diagramme de cas d'utilisation global}
+Ce diagramme illustre l'ensemble des interactions possibles entre l'utilisateur et notre système intelligent, mettant en évidence la richesse fonctionnelle de MindCare-AI et les relations entre les différents cas d'utilisation.
 
-\subsection{Diagramme de cas d’utilisation global}
-Ce diagramme présente les principales fonctionnalités du système, en mettant en évidence les interactions entre les utilisateurs (utilisateur) et le système IA.
-
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=1.1\textwidth]{Figures/useCase.png}
-    \caption{Diagramme de cas d'utilisation global}
+    \caption{Diagramme de cas d'utilisation global }
 \end{figure}
 
-\section*{Description générale du diagramme de cas d'utilisation}
-Le diagramme de cas d’utilisation ci-dessus modélise les principales interactions entre l’utilisateur et le système \textbf{MindCare\_AI}.  
-Il met en évidence les fonctionnalités offertes par la plateforme, qui se compose d’un module d’analyse des signes vitaux à partir d’images et d’un module d’assistance intelligente (chatbot).
+\subsubsection*{Description détaillée du diagramme de cas d'utilisation}
 
-L’utilisateur peut tout d’abord s’authentifier, créer ou mettre à jour son profil. Il a ensuite la possibilité d’analyser ses signes vitaux en envoyant une photo et en saisissant ses informations personnelles. Le système IA traite ces données pour fournir une analyse détaillée.
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\linewidth}{|p{4cm}|X|}
+\hline
+\textbf{Titre} & Système MindCare-AI \\
+\hline
+\textbf{Acteur(s)} & Utilisateur \\
+\hline
+\textbf{Description} & 
+Le système MindCare-AI offre un ensemble complet de fonctionnalités pour l'accompagnement en santé mentale. L'utilisateur peut gérer son profil, analyser ses signes vitaux via rPPG, dialoguer avec un assistant conversationnel empathique, consulter son historique avec visualisations, et recevoir des recommandations personnalisées de bien-être. \\
+\hline
+\textbf{Préconditions} & 
+\begin{itemize}
+    \item L'application mobile est installée sur le smartphone de l'utilisateur.
+    \item L'utilisateur dispose d'une connexion internet active.
+    \item Pour l'analyse rPPG : l'appareil dispose d'une caméra fonctionnelle et d'un éclairage suffisant.
+\end{itemize} \\
+\hline
+\textbf{Postconditions} & 
+\begin{itemize}
+    \item L'utilisateur est authentifié et peut accéder à toutes les fonctionnalités de l'application.
+    \item Toutes les données générées (analyses, conversations, évaluations) sont sauvegardées dans l'historique personnel.
+    \item L'utilisateur peut consulter ses tendances et évolutions via des visualisations graphiques.
+    \item Le système adapte continuellement ses recommandations en fonction de l'état psychophysiologique détecté.
+\end{itemize} \\
+\hline
+\textbf{Scénario principal} & 
+\begin{enumerate}
+    \item L'utilisateur lance l'application et s'authentifie.
+    \item L'utilisateur configure son profil avec ses informations personnelles.
+    \item L'utilisateur accède au tableau de bord principal.
+    \item L'utilisateur sélectionne une fonctionnalité (analyse des signes vitaux, dialogue avec le chatbot, ou consultation des résultats).
+    \item Le système traite la demande et retourne les résultats appropriés.
+    \item L'utilisateur reçoit des recommandations personnalisées selon son état détecté.
+    \item Les données sont sauvegardées pour un suivi ultérieur.
+\end{enumerate} \\
+\hline
+\end{tabularx}
+\end{table}
 
-L’utilisateur peut également consulter ses résultats, ce qui nécessite une authentification préalable.  
-Le module chatbot permet à l’utilisateur de poser des questions et de recevoir des réponses personnalisées ou des conseils santé, grâce à l’intelligence artificielle intégrée.
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\linewidth}{|p{4cm}|X|}
+\hline
+\textbf{Scénarios alternatifs} & 
+\begin{itemize}
+    \item Échec d'authentification : affichage d'un message d'erreur et possibilité de réessayer.
+    \item Problème technique (détection faciale, communication IA, connexion) : affichage d'un message d'erreur explicatif avec proposition de réessai.
+    \item Données insuffisantes : le système invite l'utilisateur à effectuer une première analyse ou à compléter son profil.
+    \item Résultats avec faible niveau de confiance : le système affiche un avertissement et suggère de refaire l'analyse dans de meilleures conditions.
+\end{itemize} \\
+\hline
+\end{tabularx}
+\caption{Description générale du diagramme de cas d'utilisation global}
+\end{table}
 
-\subsection{Diagramme des séquences}
-Un diagramme de séquence est un diagramme d'interaction UML, entre un ou plusieurs participants, qui modélise les messages transmis entre les participants, comme les objets ou les rôles, ainsi que les structures conditionnelles et de commande. Nous pouvons créer de nouveaux diagrammes de séquence, remplir des diagrammes de séquence existants avec des éléments source et ajouter des lignes de vie, des messages et des fragments combinés aux diagrammes de séquence.
+
+Cette organisation modulaire et cohérente garantit une expérience utilisateur fluide tout en préparant l'intégration progressive des capacités d'intelligence artificielle avancées dans les releases futures.
+
+Le parcours d'analyse des signes vitaux permet à l'utilisateur de soumettre une photo de son visage et de recevoir en retour une estimation précise de sa fréquence cardiaque et de sa pression artérielle. Le module conversationnel offre un accompagnement empathique avec un assistant capable de détecter les émotions et d'adapter ses réponses en conséquence.
+\subsection{Diagramme de classe général}
+
+Ce diagramme de classe illustre l'architecture orientée objet de MindCare-AI, centrée autour de l'entité \textbf{User} qui coordonne l'ensemble des fonctionnalités du système. L'utilisateur \textit{réalise} des évaluations psychométriques (\textbf{Assessment}) pour le suivi de son bien-être mental, et \textit{effectue} des analyses de signes vitaux (\textbf{VitalSigns}) via la technologie rPPG intégrée. Il \textit{effectue} également des conversations empathiques avec l'assistant IA (\textbf{Conversation}) qui génère des réponses personnalisées selon son état émotionnel. Le système \textit{recommande} intelligemment du contenu musical thérapeutique (\textbf{Music}) adapté au profil psychophysiologique de chaque utilisateur.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=1.1\textwidth]{Figures/sequence.png}
-    \caption{Diagramme de séquence global}
+    \includegraphics[angle=90, width=0.6\textheight]{Figures/class.png}
+    \caption{Diagramme de classe général}
 \end{figure}
 
-\newpage
-\section{Conception préliminaire des interfaces-maquettes}
-Avant d’entamer cette étape, nous avons choisi le nom de notre application : « MindCare-AI ». Ce nom a été sélectionné afin de refléter la vocation principale de l’application, tout en mettant en avant son aspect innovant lié à l’intelligence artificielle appliquée au domaine de la santé.
-
-Dans cette phase, nous avons débuté par la conception des interfaces utilisateur (UI) à l’aide de l’outil Figma. Figma est une plateforme de conception collaborative basée sur le cloud, qui permet de créer des maquettes interactives et modernes en temps réel. Nous avons privilégié cet outil pour sa simplicité d’utilisation, sa flexibilité et ses fonctionnalités avancées, facilitant la création de prototypes ergonomiques et intuitifs\cite{figma}.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{Figures/figma.png}
-    \caption{Logo Figma}
-\end{figure}
-
-L’objectif principal de ces prototypes interactifs était de recenser et d’explorer l’ensemble des fonctionnalités attendues, tout en mettant l’accent sur l’ergonomie et le parcours utilisateur. Ces maquettes ont constitué une base solide pour affiner progressivement le design et s’assurer de la couverture des besoins fonctionnels identifiés. Elles ont également intégré les attentes spécifiques des utilisateurs finaux.
-
-\subsection{Inscription de l'utilisateur}
-Le design suivant est celui de l'inscription d'utilisateur. Elle permet à l'utilisateur de créer un compte en renseignant ses coordonnées. Un bouton de soumission est présent pour finaliser l'inscription.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.4\textwidth]{Figures/sign Up.png}
-    \caption{Inscription utilisateur}
-\end{figure}
-
-\subsection{Connexion de l'utilisateur}
-Le design suivant est celui de la connexion utilisateur. Elle permet à l'utilisateur de se connecter à un compte en renseignant ses coordonnées.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.4\textwidth]{Figures/Sign In.png}
-    \caption{Connexion utilisateur}
-\end{figure}
 
 \section{Conclusion}
-Ce chapitre a permis de définir les objectifs cliniques et data science du projet MindCare-AI, d’identifier les besoins fonctionnels et non fonctionnels, de présenter l’architecture logicielle et globale, ainsi que la modélisation UML et les premières maquettes d’interface. Cette base solide permettra d’aborder la phase de développement avec une vision claire et structurée du système à réaliser.
+Ce chapitre a posé les fondations architecturales et conceptuelles essentielles pour le développement de MindCare-AI. L'adoption du pattern MVC nous offre une séparation claire des responsabilités qui facilite la maintenance et l'évolution du système, tandis que l'architecture modulaire garantit une intégration harmonieuse des composants d'intelligence artificielle avec le socle applicatif.
+
+La modélisation UML complète, incluant le diagramme de cas d'utilisation global et le diagramme de classes, constitue un référentiel de conception partagé qui assure la cohérence entre la vision fonctionnelle et l'implémentation technique. Ces modèles formalisent précisément les interactions utilisateur-système et la structure orientée objet des données, offrant ainsi une base solide pour la réalisation concrète du projet.
+
+Le chapitre suivant entame concrètement l'implémentation de la Release 1 avec le développement progressif du socle applicatif selon la méthodologie agile définie.

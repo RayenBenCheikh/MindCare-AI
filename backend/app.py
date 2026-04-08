@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify
 import numpy as np
 import time
-import cv2
 import os
 import logging
 import json
@@ -187,7 +186,7 @@ def analyze_vital_signs():
         else:
             is_male = data.get('is_male', True)
         
-        # Log demographic data (FIXED)
+        # Log demographic data 
         logger.info(f"📊 Using demographics - Age: {age}, Weight: {weight_kg}kg, Height: {height_cm}cm, Gender: {'male' if is_male else 'female'}")
  
         if 'image' not in data:
@@ -296,7 +295,7 @@ def model_status():
         
         status = {
             'hr_classifier_loaded': classifier_status,
-            'ppg_bp_enhancement': True,  # New PPG-based BP estimation
+            'ppg_bp_enhancement': True,  
             'face_detection': analyzer.face_cascade is not None,
             'features_extracted': 18,
             'bp_estimation_method': 'ppg_enhanced' if classifier_status else 'improved_formula',

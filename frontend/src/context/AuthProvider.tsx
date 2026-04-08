@@ -87,8 +87,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     }
                 }
 
-                // Don't clear AsyncStorage here - this was removing the token!
-                // await AsyncStorage.clear(); // Remove this line
+                //  clear AsyncStorage :removing the token!
+                // await AsyncStorage.clear(); 
 
                 setHasSeenWelcome(welcomeComplete === 'true');
             } catch (e) {

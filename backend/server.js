@@ -16,7 +16,6 @@ import { verifyEmailConfig } from './utils/emailService.js';
 // Initialize app and config
 const app = express();
 dotenv.config();
-
 // Environment validation
 const env = cleanEnv(process.env, {
   MONGO_URI: str({ desc: 'MongoDB connection string' }),

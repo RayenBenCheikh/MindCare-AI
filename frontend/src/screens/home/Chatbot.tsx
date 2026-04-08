@@ -302,15 +302,50 @@ const Chatbot: React.FC = () => {
 
     const processAssessmentResponse = async (response: string) => {
         let processedResponse = response;
+        let isValidResponse = false;
 
+        // Check if response is a valid number (1-5)
         if (/^[1-5]$/.test(response)) {
             const optionIndex = parseInt(response) - 1;
             const options = ASSESSMENT_OPTIONS[currentQuestionIndex];
             if (optionIndex >= 0 && optionIndex < options.length) {
                 processedResponse = options[optionIndex];
+                isValidResponse = true;
+            }
+        } else {
+            // Check if response matches one of the text options
+            const options = ASSESSMENT_OPTIONS[currentQuestionIndex];
+            const responseMatch = options.find(opt =>
+                opt.toLowerCase().includes(response.toLowerCase()) ||
+                response.toLowerCase().includes(opt.toLowerCase())
+            );
+
+            if (responseMatch) {
+                processedResponse = responseMatch;
+                isValidResponse = true;
             }
         }
 
+        // If invalid response, show error and repeat the question
+        if (!isValidResponse) {
+            const errorMessage: ChatMessage = {
+                id: generateUniqueId(),
+                text: `⚠️ Invalid response. Please enter a number between 1-${ASSESSMENT_OPTIONS[currentQuestionIndex].length}.\n\n` +
+                    ASSESSMENT_QUESTIONS[currentQuestionIndex] + "\n" +
+                    ASSESSMENT_OPTIONS[currentQuestionIndex].map((opt, i) => `${i + 1}. ${opt}`).join('\n'),
+                sender: 'bot',
+                timestamp: new Date(),
+            };
+
+            setTimeout(() => {
+                setMessages(prev => [...prev, errorMessage]);
+                setIsTyping(false);
+            }, 500);
+
+            return; // Don't proceed, wait for valid response
+        }
+
+        // Continue with valid response
         const newResponses = [...assessmentResponses, processedResponse];
         setAssessmentResponses(newResponses);
 
@@ -332,6 +367,7 @@ const Chatbot: React.FC = () => {
                 setIsTyping(false);
             }, 1000);
         } else {
+            // Rest of the completion logic...
             setIsTyping(true);
             const waitingMessage: ChatMessage = {
                 id: generateUniqueId(),

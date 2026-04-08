@@ -1,0 +1,448 @@
+\chapter{Initialisation du projet}
+\begingroup
+\etocsettocstyle{\rule{\linewidth}{\tocrulewidth}\vskip0.5\baselineskip}{\rule{\linewidth}{\tocrulewidth}}
+\localtableofcontents
+\endgroup
+\newpage
+
+\section{Introduction}
+Après avoir établi le contexte général de notre projet dans le chapitre précédent, ce chapitre marque le passage de la vision stratégique à la planification opérationnelle de MindCare-AI. Il pose les fondations méthodologiques et techniques en définissant précisément le périmètre fonctionnel, les acteurs impliqués, ainsi que les exigences de qualité qui guideront l'ensemble du développement.
+
+Nous présentons d'abord l'analyse des besoins qui identifie les utilisateurs cibles et spécifie leurs attentes fonctionnelles et non fonctionnelles. Ensuite, nous détaillons l'écosystème technologique soigneusement sélectionné pour garantir performance, évolutivité et maintenabilité. Enfin, nous structurons le travail à travers un Product Backlog hiérarchisé et une planification stratégique.
+
+\section{Analyse des besoins}
+
+\subsection{Identification des acteurs}
+Notre analyse a permis d'identifier les acteurs principaux du système :
+\begin{itemize}
+    \item \textbf{Utilisateur} : Acteur principal qui surveille sa santé mentale, capture des images faciales pour l'analyse rPPG, interagit avec l'assistant conversationnel, consulte son historique et reçoit des recommandations personnalisées.
+    \item \textbf{Système IA} : Ensemble des modules d'intelligence artificielle (rPPG, détection émotionnelle, chatbot adaptatif) qui analysent les données et génèrent des recommandations.
+\end{itemize}
+
+\subsection{Spécification des besoins}
+
+\subsubsection{Besoins fonctionnels }
+\begin{itemize}
+    \item \textbf{Authentification et gestion de profil}
+    \begin{itemize}
+        \item Créer un compte sécurisé avec validation email
+        \item Se connecter via authentification JWT
+        \item Gérer les informations démographiques de base
+    \end{itemize}
+    
+    \item \textbf{Analyse des signes vitaux}
+    \begin{itemize}
+        \item Capturer une image faciale via la caméra du smartphone
+        \item Déclencher l'analyse rPPG pour estimation de la fréquence cardiaque
+        \item Visualiser les résultats d'analyse en temps réel
+        \item Consulter l'historique des mesures effectuées
+    \end{itemize}
+    
+    \item \textbf{Accompagnement conversationnel}
+    \begin{itemize}
+        \item Dialoguer avec l'assistant intelligent empathique
+        \item Recevoir des réponses adaptées à l'état émotionnel détecté
+        \item Consulter l'historique des conversations
+        \item Bénéficier d'un suivi contextuel des échanges
+    \end{itemize}
+    
+    \item \textbf{Suivi et visualisations}
+    \begin{itemize}
+        \item Consulter les tableaux de bord (qualité du sommeil, niveau de stress, temps d'usage)
+        \item Accéder aux statistiques hebdomadaires et mensuelles
+    \end{itemize}
+    
+    \item \textbf{Recommandations personnalisées}
+    \begin{itemize}
+        \item Recevoir des suggestions de musique adaptées à l'état émotionnel
+        \item Obtenir des conseils de bien-être basés sur l'analyse multimodale
+   \end{itemize}
+\end{itemize}
+\subsubsection{Besoins non fonctionnels}
+Les exigences de qualité identifiées pour assurer une expérience utilisateur optimale :
+\begin{itemize}
+    \item \textbf{Sécurité et confidentialité} : Protection stricte des données personnelles et médicales conformément aux réglementations en vigueur, avec chiffrement des communications et stockage sécurisé.
+    \item \textbf{Performance temps réel} : Les analyses d'IA (détection d'émotions, estimation rPPG) s'exécutent en moins de 7 secondes pour garantir une expérience fluide et engageante.
+    \item \textbf{Compatibilité multiplateforme} : L'application fonctionne de manière native sur les principaux systèmes mobiles (Android, iOS) avec une interface adaptative.
+    \item \textbf{Évolutivité} : L'architecture modulaire permet l'ajout de nouvelles fonctionnalités d'IA et le passage à l'échelle pour un grand nombre d'utilisateurs.
+    \item \textbf{Ergonomie intuitive} : Interface utilisateur moderne et accessible, conçue pour tous les profils d'âge et de compétence technologique.
+\end{itemize}
+
+\section{Technologies et outils utilisés}
+Le développement de MindCare-AI s'appuie sur un écosystème technologique soigneusement sélectionné pour optimiser les performances, la maintenabilité et l'évolutivité du système. Les tableaux suivants présentent l'ensemble des technologies et outils utilisés, organisés par domaine d'application.
+
+\begin{table}[H]\centering
+\small
+\renewcommand{\arraystretch}{2.5}
+\begin{tabularx}{\linewidth}{|p{3cm}|>{\centering\arraybackslash}p{4cm}|>{\centering\arraybackslash}X|}
+\hline
+\textbf{Domaine} & \textbf{Technologie/Outil} & \textbf{Description} \\
+\hline
+\multicolumn{3}{|l|}{\textbf{Langages de Programmation}}\\
+\hline
+ Backend & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/js.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Langage de programmation dynamique pour applications web et mobiles~\cite{javaScript}.
+\end{minipage} \\
+\hline
+Frontend & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/ts.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Surcouche typée de JavaScript pour améliorer la robustesse du code~\cite{typescript}.
+\end{minipage} \\
+\hline
+IA & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/Python.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Langage spécialisé en science des données et intelligence artificielle~\cite{python}.
+\end{minipage} \\
+\hline
+\multicolumn{3}{|l|}{\textbf{Frontend Mobile}}\\
+\hline
+Framework & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/react native.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Framework multiplateforme pour développement d'applications natives~\cite{react_native}.
+\end{minipage} \\
+\hline
+Plateforme & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/expo.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Plateforme de développement React Native avec déploiement simplifié~\cite{expo}.
+\end{minipage} \\
+\hline
+Navigation & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/react navigation.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Bibliothèque de navigation avec animations fluides pour applications mobiles~\cite{react_navigation}.
+\end{minipage} \\
+\hline
+\multicolumn{3}{|l|}{\textbf{Backend Principal}}\\
+\hline
+Runtime & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/node.jpeg}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Environnement d'exécution JavaScript haute performance côté serveur~\cite{nodejs}.
+\end{minipage} \\
+\hline
+Framework & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/express.jpg}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Framework web minimaliste et flexible pour création d'APIs REST~\cite{express}.
+\end{minipage} \\
+\hline
+Authentification & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/jwt.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Tokens sécurisés pour authentification utilisateur sans état~\cite{jwt}.
+\end{minipage} \\
+\hline
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]\centering
+\small
+\renewcommand{\arraystretch}{2.5}
+\begin{tabularx}{\linewidth}{|p{3cm}|>{\centering\arraybackslash}p{4cm}|>{\centering\arraybackslash}X|}
+\hline
+\multicolumn{3}{|l|}{\textbf{Backend IA Spécialisé}}\\
+\hline
+Framework & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/flask.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Micro-framework web Python léger pour modules d'intelligence artificielle~\cite{flask}.
+\end{minipage} \\
+\hline
+ML/DL & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/tensorflow.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Plateforme open-source d'apprentissage automatique ~\cite{tensorflow}.
+\end{minipage} \\
+\hline
+ML/DL & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/sklearn.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Bibliothèque Python complète pour apprentissage automatique et classification~\cite{scikit_learn}.
+\end{minipage} \\
+\hline
+Traitement & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/opencv.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Bibliothèque de vision par ordinateur pour détection faciale et analyse d'images~\cite{opencv}.
+\end{minipage} \\
+\hline
+NLP & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/transformers.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Bibliothèque de modèles pré-entraînés pour traitement du langage naturel~\cite{transformers}.
+\end{minipage} \\
+\hline
+Calcul & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/numpy.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Bibliothèque de calcul scientifique Python pour traitement de signaux numériques~\cite{numpy}.
+\end{minipage} \\
+\hline
+Données & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/pandas.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Bibliothèque Python de manipulation et analyse de données structurées~\cite{pandas}.
+\end{minipage} \\
+\hline
+\multicolumn{3}{|l|}{\textbf{Base de Données}}\\
+\hline
+SGBD & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/mongodb.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Base de données NoSQL orientée documents pour flexibilité des schémas~\cite{mongodb}.
+\end{minipage} \\
+\hline
+\multicolumn{3}{|l|}{\textbf{Développement et Outils}}\\
+\hline
+Versioning & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/git.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Système de contrôle de version distribué pour collaboration en équipe~\cite{git}.
+\end{minipage} \\
+\hline
+IDE & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/vscode.jpeg}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Éditeur de code source extensible avec support multi-langages~\cite{vscode}.
+\end{minipage} \\
+\hline
+Tests API & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/postman.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Plateforme complète de test, documentation et collaboration pour APIs~\cite{postman}.
+\end{minipage} \\
+\hline
+Design & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/figma.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Outil de conception d'interfaces utilisateur collaboratif basé sur le cloud~\cite{figma}.
+\end{minipage} \\
+\hline
+IA Locale & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/ollama.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Plateforme d'exécution locale de modèles LLM pour développement et test d'IA~\cite{ollama}.
+\end{minipage} \\
+
+\hline
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]\centering
+\small
+\renewcommand{\arraystretch}{2.5}
+\begin{tabularx}{\linewidth}{|p{3cm}|>{\centering\arraybackslash}p{4cm}|>{\centering\arraybackslash}X|}
+\hline
+\multicolumn{3}{|l|}{\textbf{Documentation et Rédaction}}\\
+\hline
+Rédaction & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/latex.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Système de composition de documents pour la rédaction scientifique et académique~\cite{latex}.
+\end{minipage} \\
+\hline
+Diagrammes & 
+\begin{minipage}[c]{4cm}
+\centering
+\includegraphics[width=2cm,height=1.2cm]{Figures/technologie/drawio.png}
+\end{minipage}
+& 
+\begin{minipage}[c]{\linewidth}
+\centering
+Outil de création de diagrammes et schémas techniques pour l'architecture système~\cite{drawio}.
+\end{minipage} \\
+\hline
+\end{tabularx}
+\caption{Technologies et outils utilisés dans MindCare-AI}
+\end{table}
+
+\section{Product Backlog}
+Notre Product Backlog structure le développement autour de la création de valeur utilisateur progressive, avec une approche qui privilégie d'abord la mise en place du socle applicatif, puis l'enrichissement par l'intelligence artificielle.
+
+\begin{table}[H]\centering
+\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabularx}{\linewidth}{|p{0.8cm}|p{3.2cm}|p{2.3cm}|X|p{1.6cm}|}
+\hline
+\textbf{ID} & \textbf{Épic} & \textbf{Acteur} & \textbf{Description} & \textbf{Priorité} \\
+\hline
+\multicolumn{5}{|l|}{\textbf{Release 1 : Application Mobile Fonctionnelle}}\\
+\hline
+\multicolumn{5}{|l|}{\textit{Sprint 1 : Fondations et authentification}}\\
+\hline
+1 & Authentification sécurisée & Utilisateur & Créer un compte, se connecter de manière sécurisée (JWT) et personnaliser son profil avec données démographiques. & Haute \\
+\hline
+\multicolumn{5}{|l|}{\textit{Sprint 2 : Interface utilisateur moderne}}\\
+\hline
+2 & Interface principale & Utilisateur & Accéder à un tableau de bord personnalisé et naviguer intuitivement vers toutes les fonctionnalités. & Haute \\
+\hline
+3 & Auto-évaluations mentales & Utilisateur & Compléter des questionnaires de bien-être et suivre l'évolution de ses états émotionnels. & Moyenne \\
+\hline
+\multicolumn{5}{|l|}{\textit{Sprint 3 : Assistant conversationnel}}\\
+\hline
+4 & Assistant conversationnel & Utilisateur & Dialoguer avec un chatbot empathique et conserver l'historique des échanges pour un suivi personnalisé. & Haute \\
+\hline
+5 & Recommandations de base & Utilisateur & Recevoir des suggestions musicales et des rappels personnalisés pour le bien-être. & Basse \\
+\hline
+\multicolumn{5}{|l|}{\textit{Sprint 4 : Interface d'analyse rPPG et visualisations}}\\
+\hline
+6 & Module de capture & Utilisateur & Utiliser l'interface caméra avec détection faciale pour préparer l'analyse des signes vitaux. & Haute \\
+\hline
+7 & Historique et visualisations & Utilisateur & Consulter l'évolution de ses métriques et visualiser des graphiques de tendances. & Moyenne \\
+\hline
+\multicolumn{5}{|l|}{\textbf{Release 2 : Intelligence Artificielle Avancée}}\\
+\hline
+\multicolumn{5}{|l|}{\textit{Sprint 1 : Analyse rPPG des signes vitaux}}\\
+\hline
+8 & Analyse rPPG intelligente & Système IA & Estimer avec précision les signes vitaux (fréquence cardiaque, pression artérielle) à partir d'images faciales via des modèles d'apprentissage automatique optimisés. & Haute \\
+\hline
+9 & Validation et robustesse & Système IA & Valider les performances du modèle rPPG sur différents profils utilisateurs et conditions d'éclairage. & Haute \\
+\hline
+\end{tabularx}
+\end{table}
+
+
+\begin{table}[H]\centering
+\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabularx}{\linewidth}{|p{0.8cm}|p{3.2cm}|p{2.3cm}|X|p{1.6cm}|}
+\hline
+\multicolumn{5}{|l|}{\textit{Sprint 2 : Chatbot émotionnel adaptatif}}\\
+\hline
+10 & Détection d'émotions & Système IA & Identifier automatiquement les émotions dans les textes conversationnels pour personnaliser les interactions. & Haute \\
+\hline
+11 & Chatbot adaptatif & Utilisateur & Bénéficier de réponses conversationnelles empathiques adaptées à l'état émotionnel détecté. & Haute \\
+\hline
+12 & Recommandations contextuelles & Utilisateur & Recevoir des suggestions personnalisées (musique, exercices, ressources) basées sur l'analyse émotionnelle et les signes vitaux. & Moyenne \\
+\hline
+\end{tabularx}
+\caption{Product Backlog orienté valeur utilisateur avec mapping des sprints}
+\end{table}
+
+\section{Conclusion}
+Ce chapitre d'initialisation a établi les fondations essentielles du projet MindCare-AI en clarifiant le périmètre fonctionnel, les acteurs impliqués et les exigences de qualité à respecter. L'analyse approfondie des besoins a permis de définir un cadre cohérent répondant aux enjeux de santé mentale identifiés, tandis que la sélection rigoureuse de l'écosystème technologique  garantit la capacité du système à évoluer et à performer durablement.
+
+La planification stratégique en deux releases reflète notre approche pragmatique de livraison progressive de valeur : construire d'abord une application mobile complète et opérationnelle qui apporte une réelle utilité aux utilisateurs, puis l'enrichir avec des capacités d'intelligence artificielle avancées qui distingueront MindCare-AI des solutions existantes. Cette trajectoire maîtrisée, structurée autour d'un Product Backlog priorisé et de sprints bien définis, assure une progression cohérente vers notre objectif d'une application innovante d'accompagnement en santé mentale.
+
+Le chapitre suivant approfondira les aspects organisationnels et architecturaux en présentant la méthodologie de gestion de projet Scrum adoptée ainsi que le modèle d'architecture hybride retenu pour transformer ces exigences en un système robuste, évolutif et maintenable.

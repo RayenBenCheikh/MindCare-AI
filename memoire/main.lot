@@ -1,8 +1,17 @@
 \babel@toc {french}{}\relax 
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {1.1}{\ignorespaces Comparaison des solutions d'analyse des signaux vitaux}}{9}{table.caption.11}%
-\contentsline {table}{\numberline {1.2}{\ignorespaces Comparaison des solutions de chatbots thérapeutiques}}{10}{table.caption.16}%
+\contentsline {table}{\numberline {1.1}{\ignorespaces Comparaison des solutions d'analyse des signaux vitaux}}{9}{table.caption.9}%
+\contentsline {table}{\numberline {1.2}{\ignorespaces Comparaison des solutions de chatbots thérapeutiques}}{10}{table.caption.13}%
 \addvspace {10\p@ }
+\contentsline {table}{\numberline {2.1}{\ignorespaces Technologies et outils utilisés dans MindCare-AI}}{22}{table.caption.21}%
+\contentsline {table}{\numberline {2.2}{\ignorespaces Product Backlog orienté valeur utilisateur avec mapping des sprints}}{24}{table.caption.23}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {3.1}{\ignorespaces Caractéristiques démographiques des sujets du dataset PPG+Dalia}}{36}{table.caption.34}%
-\contentsline {table}{\numberline {3.2}{\ignorespaces Performances des modèles de classification de la fréquence cardiaque}}{42}{table.caption.45}%
+\contentsline {table}{\numberline {3.1}{\ignorespaces Description générale du diagramme de cas d'utilisation global}}{32}{table.caption.29}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {4.1}{\ignorespaces Description du cas d'utilisation : Authentification}}{39}{table.caption.33}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Description du cas d'utilisation : Home Screen et navigation}}{44}{table.caption.44}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces Description du cas d'utilisation : Assistant conversationnel}}{49}{table.caption.53}%
+\contentsline {table}{\numberline {4.4}{\ignorespaces Description du cas d'utilisation : Analyse rPPG des signes vitaux et visualisations}}{54}{table.caption.60}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {5.1}{\ignorespaces Caractéristiques démographiques du dataset PPG+DaLiA}}{64}{table.caption.69}%
+\contentsline {table}{\numberline {5.2}{\ignorespaces Performances comparatives des modèles d'estimation rPPG}}{68}{table.caption.76}%

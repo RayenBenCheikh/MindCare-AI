@@ -1,23 +1,39 @@
 \babel@toc {french}{}\relax 
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {1.1}{\ignorespaces Logo de Mobelite}}{5}{figure.caption.7}%
-\contentsline {figure}{\numberline {1.2}{\ignorespaces application binah}}{8}{figure.caption.8}%
-\contentsline {figure}{\numberline {1.3}{\ignorespaces VitalSigns Philips}}{8}{figure.caption.9}%
-\contentsline {figure}{\numberline {1.4}{\ignorespaces Woebot Health}}{10}{figure.caption.13}%
-\contentsline {figure}{\numberline {1.5}{\ignorespaces Woebot Health}}{10}{figure.caption.14}%
-\contentsline {figure}{\numberline {1.6}{\ignorespaces Processus Scrum}}{13}{figure.caption.18}%
-\contentsline {figure}{\numberline {1.7}{\ignorespaces Étapes de la méthodologie CRISP-DM appliquées à MindCare-AI}}{16}{figure.caption.19}%
-\contentsline {figure}{\numberline {1.8}{\ignorespaces Diagramme de Gantt}}{17}{figure.caption.20}%
+\contentsline {figure}{\numberline {1.1}{\ignorespaces Logo de Mobelite}}{5}{figure.caption.5}%
+\contentsline {figure}{\numberline {1.2}{\ignorespaces application binah}}{8}{figure.caption.6}%
+\contentsline {figure}{\numberline {1.3}{\ignorespaces VitalSigns Philips}}{8}{figure.caption.7}%
+\contentsline {figure}{\numberline {1.4}{\ignorespaces Woebot Health}}{10}{figure.caption.10}%
+\contentsline {figure}{\numberline {1.5}{\ignorespaces Replika}}{10}{figure.caption.11}%
+\contentsline {figure}{\numberline {1.6}{\ignorespaces Processus Scrum}}{13}{figure.caption.15}%
+\contentsline {figure}{\numberline {1.7}{\ignorespaces Méthodologie CRISP-DM }}{16}{figure.caption.16}%
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {2.1}{\ignorespaces Modèle–Vue–Contrôleur}}{25}{figure.caption.23}%
-\contentsline {figure}{\numberline {2.2}{\ignorespaces Logo-UML}}{27}{figure.caption.24}%
-\contentsline {figure}{\numberline {2.3}{\ignorespaces Diagramme de cas d'utilisation global}}{28}{figure.caption.25}%
-\contentsline {figure}{\numberline {2.4}{\ignorespaces Diagramme de séquence global}}{30}{figure.caption.27}%
-\contentsline {figure}{\numberline {2.5}{\ignorespaces Logo Figma}}{31}{figure.caption.28}%
-\contentsline {figure}{\numberline {2.6}{\ignorespaces Inscription utilisateur}}{32}{figure.caption.29}%
-\contentsline {figure}{\numberline {2.7}{\ignorespaces Connexion utilisateur}}{33}{figure.caption.30}%
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {3.1}{\ignorespaces Tableau de bord de la distribution des variables du dataset PPG+Dalia : fréquence cardiaque, durée d’enregistrement, catégories}}{38}{figure.caption.37}%
-\contentsline {figure}{\numberline {3.2}{\ignorespaces Distribution initiale des classes d’émotions dans le dataset d’entraînement}}{39}{figure.caption.39}%
-\contentsline {figure}{\numberline {3.3}{\ignorespaces Matrice de confusion Gradient Boosting HR}}{43}{figure.caption.46}%
-\contentsline {figure}{\numberline {3.4}{\ignorespaces Matrice de confusion du modèle de classification des émotions}}{44}{figure.caption.50}%
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Architecture MVC }}{27}{figure.caption.24}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces langage de modélisation unifié}}{29}{figure.caption.25}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Diagramme de cas d'utilisation global }}{30}{figure.caption.26}%
+\contentsline {figure}{\numberline {3.4}{\ignorespaces Diagramme de classe général}}{33}{figure.caption.30}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {4.1}{\ignorespaces Diagramme de cas d'utilisation : Authentification}}{38}{figure.caption.32}%
+\contentsline {figure}{\numberline {4.2}{\ignorespaces Diagramme de séquence : Inscription utilisateur}}{39}{figure.caption.35}%
+\contentsline {figure}{\numberline {4.3}{\ignorespaces Interface d'inscription}}{40}{figure.caption.37}%
+\contentsline {figure}{\numberline {4.4}{\ignorespaces Email de confirmation automatique}}{41}{figure.caption.39}%
+\contentsline {figure}{\numberline {4.5}{\ignorespaces Interface de connexion}}{42}{figure.caption.41}%
+\contentsline {figure}{\numberline {4.6}{\ignorespaces Diagramme de cas d'utilisation : Home Screen et navigation}}{43}{figure.caption.43}%
+\contentsline {figure}{\numberline {4.7}{\ignorespaces Diagramme de séquence : Home Screen}}{45}{figure.caption.46}%
+\contentsline {figure}{\numberline {4.8}{\ignorespaces Interface Home Screen}}{46}{figure.caption.48}%
+\contentsline {figure}{\numberline {4.9}{\ignorespaces Interface de profil}}{47}{figure.caption.50}%
+\contentsline {figure}{\numberline {4.10}{\ignorespaces Diagramme de cas d'utilisation : Assistant conversationnel}}{48}{figure.caption.52}%
+\contentsline {figure}{\numberline {4.11}{\ignorespaces Diagramme de séquence : Assistant conversationnel}}{50}{figure.caption.55}%
+\contentsline {figure}{\numberline {4.12}{\ignorespaces Interface de chat}}{51}{figure.caption.57}%
+\contentsline {figure}{\numberline {4.13}{\ignorespaces Diagramme de cas d'utilisation : Analyse rPPG des signes vitaux et visualisations}}{53}{figure.caption.59}%
+\contentsline {figure}{\numberline {4.14}{\ignorespaces Diagramme de séquence : Analyse rPPG des signes vitaux}}{55}{figure.caption.62}%
+\contentsline {figure}{\numberline {4.15}{\ignorespaces Interface d'analyse rPPG}}{56}{figure.caption.64}%
+\contentsline {figure}{\numberline {4.16}{\ignorespaces Dashboard de statistiques}}{57}{figure.caption.66}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {5.1}{\ignorespaces Dashboard d'analyse des données PPG+DaLiA}}{65}{figure.caption.70}%
+\contentsline {figure}{\numberline {5.2}{\ignorespaces Distribution Équilibrage du Dataset PPG+Dalia après Prétraitement}}{67}{figure.caption.72}%
+\contentsline {figure}{\numberline {5.3}{\ignorespaces Matrice de confusion du modèle Gradient Boosting pour l'estimation rPPG}}{69}{figure.caption.77}%
+\contentsline {figure}{\numberline {5.4}{\ignorespaces Distribution des classes d'émotions dans le dataset}}{72}{figure.caption.81}%
+\contentsline {figure}{\numberline {5.5}{\ignorespaces Distribution du dataset Emotions après prétraitement}}{74}{figure.caption.83}%
+\contentsline {figure}{\numberline {5.6}{\ignorespaces Matrice de confusion du modèle de classification émotionnelle}}{75}{figure.caption.87}%

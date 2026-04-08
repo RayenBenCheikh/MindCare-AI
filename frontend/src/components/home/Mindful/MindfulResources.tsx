@@ -14,26 +14,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '@/src/navigation/HomeNavigation';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { fetchNewsArticles, generateWellnessContent } from '@/src/constants/ResourceHelPers';
-
+import { fetchNewsArticles, generateWellnessContent, Resource } from '@/src/constants/ResourceHelPers';
 
 type NavigationProp = NativeStackNavigationProp<HomeStackParamList>;
 const { width } = Dimensions.get('window');
-
-interface Resource {
-    id: string;
-    title: string;
-    description: string;
-    type: 'article';
-    category: string;
-    coverImage: string;
-    author: { name: string; image: string };
-    isPremium: boolean;
-    likes: number;
-    views: number;
-    rating: number;
-    url?: string;
-}
 
 const MindfulResources = () => {
     const [activeResourceIndex, setActiveResourceIndex] = useState(0);
@@ -52,12 +36,15 @@ const MindfulResources = () => {
             setLoading(true);
             const allResources: Resource[] = [];
 
-            // Fetch news articles
+            // ✅ Fetch health-filtered news articles
+            console.log('🔍 Fetching health-related news articles...');
             const newsArticles = await fetchNewsArticles();
+            console.log(`✅ Found ${newsArticles.length} health articles`);
             allResources.push(...newsArticles);
 
             // Add wellness content
             const wellnessContent = generateWellnessContent();
+            console.log(`✅ Added ${wellnessContent.length} wellness articles`);
             allResources.push(...wellnessContent);
 
             // Shuffle and limit for home page
@@ -65,9 +52,11 @@ const MindfulResources = () => {
                 .sort(() => Math.random() - 0.5)
                 .slice(0, 6);
 
+            console.log(`📱 Displaying ${shuffledResources.length} total resources on home`);
             setResources(shuffledResources);
         } catch (error) {
-            console.error('Error fetching resources:', error);
+            console.error('❌ Error fetching resources:', error);
+            // Fallback to wellness content only
             setResources(generateWellnessContent());
         } finally {
             setLoading(false);
@@ -101,7 +90,7 @@ const MindfulResources = () => {
         return (
             <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" color="#8DAA6D" />
-                <Text style={styles.loadingText}>Loading resources...</Text>
+                <Text style={styles.loadingText}>Loading health resources...</Text>
             </View>
         );
     }
@@ -111,7 +100,7 @@ const MindfulResources = () => {
             <View style={styles.emptyContainer}>
                 <Text style={styles.sectionTitle}>Mindful Resources</Text>
                 <Text style={styles.emptyText}>
-                    {!userToken ? 'Sign in to view resources' : 'No resources available'}
+                    {!userToken ? 'Sign in to view resources' : 'No health resources available'}
                 </Text>
             </View>
         );
@@ -192,7 +181,6 @@ const MindfulResources = () => {
     );
 };
 
-// Simplified styles - keep only essential ones
 const styles = StyleSheet.create({
     sectionHeader: {
         flexDirection: 'row',

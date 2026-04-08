@@ -1,9 +1,15 @@
 \documentclass[12pt,a4paper,oneside]{report}
+\usepackage{tocloft}
 \usepackage{etoc}
 \usepackage[french]{babel}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage[hyphens]{url}
+\usepackage{hyperref}
+\usepackage{tabularx}
 \usepackage{tikz}
+\usepackage{array}
 \usetikzlibrary{positioning}
 \usepackage{pgfgantt}
 \usepackage{xcolor}
@@ -14,6 +20,7 @@
 \usepackage{setspace}
 \onehalfspacing
 \usepackage{tocloft}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 \renewcommand{\contentsname}{Sommaire}
 \setcounter{tocdepth}{3}
 \usepackage{hyperref}
@@ -46,12 +53,15 @@
 \makeatother
 \fancyfoot[C]{\thepage}
 \pagenumbering{roman}
-\setlength{\headheight}{28pt}
+\setlength{\headheight}{30pt}
+\addtolength{\topmargin}{-2pt}
 \begin{document}
 
 \newpage
-\input{resume}
-\input{abstract}
+\addcontentsline{toc}{chapter}{Dédicaces}
+\input{Dédicaces.tex}
+\newpage
+\addcontentsline{toc}{chapter}{Liste des abréviations}
 \input{abbrev.tex}
 \newpage
 \tableofcontents
@@ -61,13 +71,20 @@
 \newpage
 \addcontentsline{toc}{chapter}{Liste des tableaux}
 \listoftables
-\pagenumbering{arabic}
+
+\markboth{Introduction générale}{Introduction générale}
 \newpage
+\pagenumbering{arabic}
 \input{introduction}
+
 \newpage
 \input{chapters/1.intro.tex}
+\input{chapters/1.chap2.tex}
 \input{chapters/2.chap2.tex}
 \input{chapters/3.chap3.tex}
-\bibliographystyle{plainurl}
+\input{chapters/4.chap4.tex}
+\input{chapters/5.conc.tex}
+\addcontentsline{toc}{chapter}{Bibliographie}
+\bibliographystyle{unsrt}
 \bibliography{biblio}
 \end{document}

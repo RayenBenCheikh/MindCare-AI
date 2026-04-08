@@ -1,289 +1,236 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useNavigation } from '@react-navigation/native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  SafeAreaView,
+  StatusBar,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors } from '@/src/theme';
-import { Colors } from 'react-native/Libraries/NewAppScreen';
+// ✅ LIGNE 7 SUPPRIMÉE
 
 type NavigationProp = NativeStackNavigationProp<any>;
 
-// Custom Icon Components
-const TwoFAIcon = () => (
-  <View style={styles.twoFAIconContainer}>
-    <View style={styles.lockBody}>
-      <View style={styles.lockHole} />
-    </View>
-    <View style={styles.lockShackle} />
-  </View>
-);
+const ForgotPassword = ({ navigation }: { navigation: NavigationProp }) => {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
 
-const PasswordIcon = () => (
-  <View style={styles.passwordIconContainer}>
-    <View style={[styles.passwordQuadrant, { top: 0, left: 0, backgroundColor: '#A0B55C' }]} />
-    <View style={[styles.passwordQuadrant, { top: 0, right: 0, backgroundColor: '#E8F0CF' }]} />
-    <View style={[styles.passwordQuadrant, { bottom: 0, left: 0, backgroundColor: '#5D4037' }]} />
-    <View style={[styles.passwordQuadrant, { bottom: 0, right: 0, backgroundColor: '#F7F7F2' }]} />
-  </View>
-);
+  const handleResetPassword = async () => {
+    if (!email) {
+      Alert.alert('Error', 'Please enter your email address');
+      return;
+    }
 
-const GoogleAuthIcon = () => (
-  <View style={styles.googleAuthIconContainer}>
-    <View style={[styles.googleAuthTriangle, { top: 0, left: 0, borderBottomColor: '#A0B55C' }]} />
-    <View style={[styles.googleAuthTriangle, { top: 0, right: 0, borderBottomColor: '#E8F0CF', transform: [{ rotate: '90deg' }] }]} />
-    <View style={[styles.googleAuthTriangle, { bottom: 0, right: 0, borderBottomColor: '#5D4037', transform: [{ rotate: '180deg' }] }]} />
-    <View style={[styles.googleAuthTriangle, { bottom: 0, left: 0, borderBottomColor: '#F7F7F2', transform: [{ rotate: '270deg' }] }]} />
-  </View>
-);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
 
-const ForgotPassword = () => {
-  const [selectedOption, setSelectedOption] = useState('password');
-  const navigation = useNavigation<NavigationProp>();
+    setLoading(true);
 
-  const handleSendPassword = () => {
-    // Logic for sending password reset
-    console.log('Send password reset via:', selectedOption);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      Alert.alert(
+        'Success',
+        'Password reset instructions have been sent to your email',
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
+    } catch (error) {
+      console.error('Password reset error:', error);
+      Alert.alert('Error', 'Failed to send reset instructions. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F7F4F2" />
-      
-      {/* Back Button */}
-      <TouchableOpacity 
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}
-      >
-        <View style={styles.backButtonCircle}>
-          <Icon name="chevron-left" size={24} color="#5D4037" />
-        </View>
-      </TouchableOpacity>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      {/* Header */}
-      <Text style={styles.title}>Forgot Password</Text>
-      <Text style={styles.subtitle}>
-        Select contact details where you want to reset your password.
-      </Text>
-
-      {/* Options */}
-      <View style={styles.optionsContainer}>
-        {/* 2FA Option */}
-        <TouchableOpacity 
-          style={[
-            styles.optionButton, 
-            selectedOption === '2fa' && styles.optionButtonSelected
-          ]}
-          onPress={() => setSelectedOption('2fa')}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
         >
-          <View style={styles.optionIconWrapper}>
-            <TwoFAIcon />
-          </View>
-          <Text style={styles.optionText}>Use 2FA</Text>
+          <Ionicons name="arrow-back" size={24} color={colors.marron} />
         </TouchableOpacity>
-
-        {/* Password Option */}
-        <TouchableOpacity 
-          style={[
-            styles.optionButton, 
-            selectedOption === 'password' && styles.optionButtonSelected
-          ]}
-          onPress={() => setSelectedOption('password')}
-        >
-          <View style={styles.optionIconWrapper}>
-            <PasswordIcon />
-          </View>
-          <Text style={styles.optionText}>Password</Text>
-        </TouchableOpacity>
-
-        {/* Google Authenticator Option */}
-        <TouchableOpacity 
-          style={[
-            styles.optionButton, 
-            selectedOption === 'google' && styles.optionButtonSelected
-          ]}
-          onPress={() => setSelectedOption('google')}
-        >
-          <View style={styles.optionIconWrapper}>
-            <GoogleAuthIcon />
-          </View>
-          <Text style={styles.optionText}>Google Authenticator</Text>
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Reset Password</Text>
+        <View style={styles.placeholder} />
       </View>
 
-      {/* Send Password Button */}
-      <TouchableOpacity 
-        style={styles.sendButton}
-        onPress={handleSendPassword}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.content}
       >
-        <Text style={styles.sendButtonText}>Send Password</Text>
-        <Icon name="lock" size={20} color="#FFF" style={{ marginLeft: 8 }} />
-      </TouchableOpacity>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.iconContainer}>
+            <View style={styles.iconCircle}>
+              <Ionicons name="lock-closed-outline" size={50} color={colors.marron} />
+            </View>
+          </View>
 
-      {/* Bottom Home Indicator */}
-      <View style={styles.homeIndicator} />
-    </View>
+          <Text style={styles.title}>Forgot Password?</Text>
+          <Text style={styles.description}>
+            Don't worry! Enter your email address and we'll send you instructions to reset your password.
+          </Text>
+
+          <View style={styles.inputContainer}>
+            <Ionicons name="mail-outline" size={20} color="#8B7B73" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Email Address"
+              placeholderTextColor="#8B7B73"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
+          <TouchableOpacity
+            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+            onPress={handleResetPassword}
+            disabled={loading}
+          >
+            <Text style={styles.submitButtonText}>
+              {loading ? 'Sending...' : 'Send Reset Link'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.backToSignIn}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back-outline" size={16} color={colors.marron} />
+            <Text style={styles.backToSignInText}>Back to Sign In</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F4F2',
-    paddingHorizontal: 24,
-    paddingTop: 60,
+    backgroundColor: '#FFFFFF',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   backButton: {
-    marginBottom: 24,
+    padding: 5,
   },
-  backButtonCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#5D4037',
-    justifyContent: 'center',
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.marron,
+  },
+  placeholder: {
+    width: 34,
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 30,
+  },
+  iconContainer: {
     alignItems: 'center',
+    marginBottom: 30,
+  },
+  iconCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#F5E6D3',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: 'bold',
     color: colors.marron,
-    marginBottom: 16,
+    textAlign: 'center',
+    marginBottom: 15,
   },
-  subtitle: {
+  description: {
+    fontSize: 15,
+    color: '#8B7B73',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 40,
+    paddingHorizontal: 10,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    marginBottom: 25,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    height: 50,
     fontSize: 16,
-    color: '#736B66',
-    marginBottom: 40,
-    lineHeight: 26,
+    color: colors.marron,
   },
-  optionsContainer: {
-    marginBottom: 40,
-  },
-  optionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 35,
-    padding: 12,
-    marginBottom: 20,
-    height: 70,
-    borderWidth: 1,
-    borderColor: '#DDDDDD',
-  },
-  optionButtonSelected: {
-    borderColor: '#A0B55C',
-    borderWidth: 1,
-  },
-  optionIconWrapper: {
-    width: 46,
-    height: 46,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-    borderRadius: 23,
-    overflow: 'hidden',
+  submitButton: {
     backgroundColor: colors.marron,
-  },
-  optionText: {
-    fontSize: 20,
-    color: Colors.marron,
-    fontWeight: '500',
-  },
-  
-  // 2FA Icon styles
-  twoFAIconContainer: {
-    width: 46,
-    height: 46,
-    justifyContent: 'center',
+    borderRadius: 12,
+    paddingVertical: 15,
     alignItems: 'center',
-    backgroundColor: '#E5EAD7',
-    borderRadius: 23,
+    marginBottom: 20,
   },
-  lockBody: {
-    width: 24,
-    height: 18,
-    backgroundColor: '#5D4037',
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'absolute',
-    bottom: 10,
+  submitButtonDisabled: {
+    opacity: 0.6,
   },
-  lockHole: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#E6EFB3',
-  },
-  lockShackle: {
-    width: 14,
-    height: 14,
-    borderWidth: 3,
-    borderColor: '#5D4037',
-    borderBottomWidth: 0,
-    borderTopLeftRadius: 7,
-    borderTopRightRadius: 7,
-    position: 'absolute',
-    bottom: 22,
-  },
-  
-  // Password Icon styles
-  passwordIconContainer: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  passwordQuadrant: {
-    width: 23,
-    height: 23,
-    position: 'absolute',
-  },
-  
-  // Google Auth Icon styles
-  googleAuthIconContainer: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  googleAuthTriangle: {
-    width: 0,
-    height: 0,
-    backgroundColor: 'transparent',
-    borderStyle: 'solid',
-    borderLeftWidth: 23,
-    borderRightWidth: 23,
-    borderBottomWidth: 23,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    position: 'absolute',
-  },
-  
-  sendButton: {
-    backgroundColor: '#5D4037',
-    borderRadius: 30,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 16,
-    marginTop: 'auto',
-    marginBottom: 40,
-  },
-  sendButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
+  submitButtonText: {
+    fontSize: 16,
     fontWeight: 'bold',
+    color: '#FFFFFF',
   },
-  homeIndicator: {
-    width: 135,
-    height: 5,
-    backgroundColor: '#5D4037',
-    borderRadius: 2.5,
-    alignSelf: 'center',
-    marginBottom: 8,
+  backToSignIn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
+  backToSignInText: {
+    fontSize: 15,
+    color: colors.marron,
+    fontWeight: '500',
+    marginLeft: 5,
   },
 });
 

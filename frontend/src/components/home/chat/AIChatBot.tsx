@@ -114,13 +114,6 @@ const AIChatbot = ({ }: AIChatbotProps) => {
                             {loading ? '...' : formatNumber(stats.totalConversations)}
                         </Text>
                         <Text style={styles.chatbotLabel}>Conversations</Text>
-                        <Text style={styles.chatbotSubtext}>
-                            {loading ? 'Loading...' : `${stats.remainingThisMonth} left this month`}
-                        </Text>
-                        <View style={styles.chatbotPromo}>
-                            <Ionicons name="star" size={14} color="#FFFFFF" />
-                            <Text style={styles.promoText}>Go Pro. Now!</Text>
-                        </View>
                     </View>
                     <View style={styles.chatbotImageContainer}>
                         <MaterialCommunityIcons name="robot" size={60} color="#CCCCCC" />

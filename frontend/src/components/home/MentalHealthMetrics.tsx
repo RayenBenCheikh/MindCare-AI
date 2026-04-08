@@ -12,6 +12,7 @@ import { Ionicons, Feather } from '@expo/vector-icons';
 import { AssessmentData } from '@/src/store/Store';
 import { AuthContext } from '@/src/context/AuthContext';
 import { api } from '@/src/api/config';
+import axios from 'axios';
 
 // Get screen dimensions
 const { width } = Dimensions.get('window');
@@ -40,6 +41,7 @@ interface AssessmentResults {
     recommendations: string;
 }
 
+
 const MentalHealthMetrics = ({ backendAssessmentData, isLoading }: MentalHealthMetricsProps) => {
     const [activeMetricIndex, setActiveMetricIndex] = useState(0);
     const [vitalSigns, setVitalSigns] = useState<VitalSignsData[]>([]);
@@ -49,6 +51,8 @@ const MentalHealthMetrics = ({ backendAssessmentData, isLoading }: MentalHealthM
     const [currentHeartRate, setCurrentHeartRate] = useState<number>(72);
     const [averageHeartRate, setAverageHeartRate] = useState<number>(72);
     const [currentStressLevel, setCurrentStressLevel] = useState<number>(0);
+    const [currentSystolic, setCurrentSystolic] = useState<number>(120);
+    const [currentDiastolic, setCurrentDiastolic] = useState<number>(80);
     const { userToken } = useContext(AuthContext);
 
     useEffect(() => {
@@ -61,6 +65,8 @@ const MentalHealthMetrics = ({ backendAssessmentData, isLoading }: MentalHealthM
     const fetchVitalSigns = async () => {
         try {
             setLoadingVitals(true);
+            console.log('🔍 Fetching vital signs from backend...');
+
             const response = await api.get('/api/assessments/vitalSigns', {
                 headers: {
                     'Authorization': `Bearer ${userToken}`,
@@ -68,21 +74,58 @@ const MentalHealthMetrics = ({ backendAssessmentData, isLoading }: MentalHealthM
                 }
             });
 
+            console.log('📊 Vital Signs API Response:', response.data);
+
             if (response.data.success && response.data.vitalSigns) {
                 const vitals = response.data.vitalSigns;
-                setVitalSigns(vitals);
 
-                if (vitals.length > 0) {
-                    const latestVital = vitals[0];
-                    setCurrentHeartRate(latestVital.heartRate || 72);
+                // ✅ Sort by timestamp DESC to ensure latest is first
+                const sortedVitals = [...vitals].sort((a, b) => b.timestamp - a.timestamp);
+                setVitalSigns(sortedVitals);
 
-                    const recentVitals = vitals.slice(0, 7);
-                    const avgHR = recentVitals.reduce((sum: number, vital: VitalSignsData) => sum + (vital.heartRate || 0), 0) / recentVitals.length;
-                    setAverageHeartRate(Math.round(avgHR));
+                if (sortedVitals.length > 0) {
+                    // ✅ Get the ABSOLUTE LAST (most recent) vital sign
+                    const latestVital = sortedVitals[0];
+
+                    console.log('💓 Latest vital sign (sorted):', {
+                        heartRate: latestVital.heartRate,
+                        timestamp: latestVital.timestamp,
+                        date: new Date(latestVital.timestamp * 1000).toLocaleString()
+                    });
+
+                    // Set current values from ABSOLUTE latest reading
+                    const currentHR = Math.round(latestVital.heartRate || 72);
+                    const currentSys = Math.round(latestVital.systolicBP || 120);
+                    const currentDia = Math.round(latestVital.diastolicBP || 80);
+
+                    setCurrentHeartRate(currentHR);
+                    setCurrentSystolic(currentSys);
+                    setCurrentDiastolic(currentDia);
+
+                    // Calculate average heart rate from recent readings (last 7 days)
+                    const recentVitals = sortedVitals.slice(0, 7);
+                    const totalHR = recentVitals.reduce((sum: number, vital: VitalSignsData) =>
+                        sum + (vital.heartRate || 0), 0
+                    );
+                    const avgHR = recentVitals.length > 0 ? Math.round(totalHR / recentVitals.length) : 72;
+                    setAverageHeartRate(avgHR);
+
+                    console.log(`✅ Current HR: ${currentHR} BPM`);
+                    console.log(`✅ Average HR (7 days): ${avgHR} BPM`);
+                    console.log(`✅ BP: ${currentSys}/${currentDia} mmHg`);
+                    console.log(`📅 Last reading: ${new Date(latestVital.timestamp * 1000).toLocaleString()}`);
+                } else {
+                    console.log('⚠️ No vital signs data available');
                 }
+            } else {
+                console.log('⚠️ No vital signs found in response');
             }
         } catch (error) {
-            console.error('Error fetching vital signs:', error);
+            console.error('❌ Error fetching vital signs:', error);
+            if (axios.isAxiosError(error)) {
+                console.error('Response status:', error.response?.status);
+                console.error('Response data:', error.response?.data);
+            }
         } finally {
             setLoadingVitals(false);
         }
@@ -91,6 +134,8 @@ const MentalHealthMetrics = ({ backendAssessmentData, isLoading }: MentalHealthM
     const fetchAssessmentResults = async () => {
         try {
             setLoadingAssessments(true);
+            console.log('🔍 Fetching assessment results...');
+
             const response = await api.get('/api/chatbot/assessment-results', {
                 headers: {
                     'Authorization': `Bearer ${userToken}`,
@@ -98,18 +143,29 @@ const MentalHealthMetrics = ({ backendAssessmentData, isLoading }: MentalHealthM
                 }
             });
 
+            console.log('📊 Assessment Results API Response:', response.data);
+
             if (response.data.success && response.data.assessments) {
                 const assessments = response.data.assessments;
                 setAssessmentResults(assessments);
 
                 if (assessments.length > 0) {
-                    // Get most recent stress level
+                    // ✅ Get the LAST (most recent) assessment
                     const latestAssessment = assessments[0];
                     setCurrentStressLevel(latestAssessment.stressLevel || 0);
+
+                    console.log(`✅ Current Stress Level: ${latestAssessment.stressLevel}/5`);
+                    console.log(`✅ Current Mood: ${latestAssessment.mood}`);
+                } else {
+                    console.log('⚠️ No assessment results available');
                 }
             }
         } catch (error) {
-            console.error('Error fetching assessment results:', error);
+            console.error('❌ Error fetching assessment results:', error);
+            if (axios.isAxiosError(error)) {
+                console.error('Response status:', error.response?.status);
+                console.error('Response data:', error.response?.data);
+            }
         } finally {
             setLoadingAssessments(false);
         }
@@ -159,7 +215,6 @@ const MentalHealthMetrics = ({ backendAssessmentData, isLoading }: MentalHealthM
                 }}
                 scrollEventThrottle={16}
             >
-                {/* Heart Rate Card */}
                 <View style={styles.metricCard}>
                     <View style={[styles.metricCardContent, { backgroundColor: heartRateCategory.color }]}>
                         <View style={styles.metricHeader}>
@@ -182,6 +237,9 @@ const MentalHealthMetrics = ({ backendAssessmentData, isLoading }: MentalHealthM
                                 <Text style={styles.vitalsText}>
                                     Avg: {averageHeartRate} BPM • {vitalSigns.length} readings
                                 </Text>
+                                <Text style={styles.vitalsText}>
+                                    Last updated: {new Date(vitalSigns[0].timestamp).toLocaleTimeString()}
+                                </Text>
                             </View>
                         )}
                     </View>
@@ -200,7 +258,7 @@ const MentalHealthMetrics = ({ backendAssessmentData, isLoading }: MentalHealthM
                             ) : vitalSigns.length > 0 ? (
                                 <>
                                     <Text style={styles.bpText}>
-                                        {vitalSigns[0].systolicBP}/{vitalSigns[0].diastolicBP}
+                                        {currentSystolic}/{currentDiastolic}
                                     </Text>
                                     <Text style={styles.bpUnit}>mmHg</Text>
                                     <View style={styles.chartContainer}>

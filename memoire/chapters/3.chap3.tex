@@ -1,214 +1,430 @@
-\chapter{Processus global : de la compréhension des données à l’évaluation des modèles}
+\chapter{Release 1 : Application mobile}
+\begingroup
+\etocsettocstyle{\rule{\linewidth}{\tocrulewidth}\vskip0.5\baselineskip }{\rule{\linewidth}{\tocrulewidth}}
+\localtableofcontents 
+\endgroup
 \newpage
+
 \section{Introduction}
-Ce chapitre est dédié à la modélisation des solutions d’intelligence artificielle intégrées dans l’application \textbf{MindCare-AI}. Il détaille le processus complet, depuis la compréhension et la préparation du dataset PPG+Dalia jusqu’à l’évaluation des modèles de classification de la fréquence cardiaque, en passant par le prétraitement des données, l’extraction de caractéristiques pertinentes, le choix des architectures adaptées, l’entraînement et l’analyse des performances.
-Parallèlement, ce chapitre présente également la conception et l’intégration d’un chatbot intelligent, capable d’interagir avec les utilisateurs, de fournir des conseils personnalisés et d’exploiter les résultats des analyses physiologiques pour un accompagnement en temps réel.
-L’utilisation de modèles avancés, de pipelines de prétraitement éprouvés et de techniques d’IA conversationnelle permet ainsi d’assurer à la fois une détection fiable des états physiologiques et une expérience utilisateur interactive, personnalisée et sécurisée.
-\section{Collection et préparation des données}
+Après avoir établi les fondations conceptuelles et techniques dans le chapitre précédent, nous entrons maintenant dans la phase concrète de développement de MindCare-AI avec la Release 1. Cette étape cruciale transforme nos spécifications techniques en application mobile fonctionnelle, créant le socle applicatif sur lequel s'appuieront les innovations d'intelligence artificielle de la Release 2.
 
-Nous  commencons par la collection du dataset :
+Notre approche de développement agile, structurée en quatre sprints progressifs, nous permet de livrer de la valeur utilisateur à chaque étape tout en construisant méthodiquement l'architecture technique nécessaire. Chaque sprint apporte des fonctionnalités essentielles : l'authentification sécurisée qui garantit la confidentialité des données sensibles, l'interface utilisateur moderne qui facilite l'adoption et l'engagement, l'assistant conversationnel empathique qui propose un accompagnement personnalisé, et l'interface d'analyse rPPG préparatoire qui anticipe l'intégration des algorithmes d'intelligence artificielle.
 
-\subsection{Collection du jeu de données}
+Cette Release 1 établit non seulement une application mobile complète et immédiatement utilisable, mais pose également les bases techniques robustes indispensables pour l'intégration harmonieuse des modules d'IA avancés. L'architecture modulaire développée, les interfaces préparées et l'expérience utilisateur validée constituent le patrimoine technologique sur lequel la Release 2 construira les capacités révolutionnaires d'analyse des signes vitaux et d'accompagnement intelligent adaptatif.
 
-La première étape du processus a consisté à collecter et explorer le jeu de données adapté aux objectifs de l’application MindCare-AI. Cette phase, essentielle dans la démarche CRISP-DM, vise à comprendre la nature des données disponibles, à identifier les caractéristiques pertinentes pour l’analyse des signaux physiologiques, et à anticiper les éventuels problèmes de qualité ou de représentativité. Un soin particulier a été apporté à la sélection d’un dataset répondant aux critères de diversité, de fiabilité et de richesse des informations, afin de garantir la robustesse des modèles développés.
+\section{Sprint 1 : Fondations et authentification}
+Dans ce sprint, nous nous sommes concentrés sur l'implémentation du système d'authentification sécurisé, qui constitue la base de toutes les fonctionnalités de l'application.
 
-\subsubsection{Choix du jeu de données}
-
-
-Pour ce projet, le choix s’est porté sur le PPG+Dalia dataset, un benchmark reconnu pour l’analyse des signaux (PPG) et l’estimation de la fréquence cardiaque dans des conditions réelles. Ce jeu de données comprend les enregistrements de 15 sujets, réalisés lors d’activités variées, avec des capteurs portés au poignet (PPG) et une référence ECG thoracique. Il offre ainsi une base solide pour le développement de modèles de classification robustes et pour l’intégration d’un chatbot capable d’exploiter ces analyses dans un contexte d’accompagnement personnalisé.
-\subsubsection{Description des jeux de données}
-\subsubsection{PPG+Dalia}
-Le premier jeu de données, \textbf{PPG+Dalia}, contient des signaux physiologiques enregistrés auprès de 15 participants lors d'activités variées (marche, repos, travail, etc.). Chaque enregistrement comprend :
+\subsection{Objectifs}
 \begin{itemize}
-    \item Des signaux PPG issus de capteurs portés au poignet,
-    \item Des signaux ECG de référence,
-    \item Des labels de fréquence cardiaque (HR) extraits de l’ECG,
-    \item Parfois d’autres signaux physiologiques (EDA, température).
+    \item Implémenter l'authentification sécurisée (inscription, connexion, gestion de session)
+    \item Développer la gestion des profils utilisateur avec données démographiques
+    \item Mettre en place l'architecture MVC pour l'application mobile
+    \item Établir la connexion sécurisée avec la base de données MongoDB
 \end{itemize}
-Ce dataset permet d’étudier la variabilité de la fréquence cardiaque dans des conditions réelles et de développer des modèles de classification robustes.
 
-\begin{table}[H]
+\subsection{Conception}
+
+\subsubsection*{Cas d'utilisation - Authentification}
+Dans cette section, nous décrivons en détail ce cas d'utilisation.
+
+\begin{figure}[H]
     \centering
-    \caption{Caractéristiques démographiques des sujets du dataset PPG+Dalia}
-    \begin{tabular}{cccccccc}
-        \hline
-        \textbf{Subject ID} & \textbf{Gender} & \textbf{Age [years]} & \textbf{Height [cm]} & \textbf{Weight [kg]} & \textbf{Skin Type} & \textbf{Fitness} \\
-        \hline
-        S1  & m & 34 & 182 & 78  & 3 & 6 \\
-        S2  & m & 28 & 189 & 80  & 3 & 5 \\
-        S3  & m & 25 & 170 & 60  & 3 & 5 \\
-        S4  & m & 25 & 168 & 57  & 4 & 5 \\
-        S5  & f & 21 & 180 & 70  & 3 & 4 \\
-        S6  & f & 37 & 176 & 70  & 3 & 1 \\
-        S7  & f & 21 & 168 & 58  & 3 & 2 \\
-        S8  & m & 43 & 179 & 70  & 3 & 5 \\
-        S9  & f & 28 & 167 & 60  & 4 & 5 \\
-        S10 & f & 55 & 164 & 56  & 4 & 5 \\
-        S11 & f & 24 & 168 & 62  & 3 & 5 \\
-        S12 & m & 43 & 195 & 105 & 3 & 5 \\
-        S13 & f & 21 & 170 & 63  & 3 & 6 \\
-        S14 & f & 26 & 170 & 67  & 3 & 4 \\
-        S15 & m & 28 & 183 & 79  & 2 & 5 \\
-        \hline
-        \multicolumn{2}{c}{\textbf{Moyenne $\pm$ écart-type}} & 30.60$\pm$9.59 & 175.27$\pm$8.78 & 69.00$\pm$12.35 & & \\
-        \hline
-    \end{tabular}
-    \label{tab:ppg_dalia_subjects}
+    \includegraphics[width=0.8\textwidth]{Figures/usecaseauth.png}
+    \caption{Diagramme de cas d'utilisation : Authentification}
+\end{figure}
+
+Pour expliquer le diagramme de cas d'utilisation, nous fournissons une description textuelle des principales fonctionnalités mentionnées ci-dessus :
+
+\begin{table}[H]\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{|p{3cm}|X|}
+\hline
+\textbf{Titre} & Authentification utilisateur \\
+\hline
+\textbf{Acteur(s)} & Utilisateur \\
+\hline
+\textbf{Description} & L'utilisateur peut créer un compte, se connecter de manière sécurisée, et gérer son profil personnel avec des données démographiques. \\
+\hline
+\textbf{Préconditions} & L'application mobile est installée et l'utilisateur a accès à internet. \\
+\hline
+\textbf{Postconditions} & L'utilisateur est authentifié et peut accéder aux fonctionnalités de l'application. \\
+\hline
+\textbf{Scénario principal} & 
+1. L'utilisateur lance l'application.
+2. L'utilisateur choisit de s'inscrire ou se connecter.
+3. L'utilisateur saisit ses informations.
+4. Le système valide et authentifie l'utilisateur.
+5. L'utilisateur accède au tableau de bord principal. \\
+\hline
+\textbf{Scénarios alternatifs} & 
+1. L'utilisateur tente de s'inscrire avec un email déjà existant (erreur affichée).
+2. L'utilisateur saisit des identifiants incorrects (erreur affichée). \\
+\hline
+\end{tabularx}
+\caption{Description du cas d'utilisation : Authentification}
 \end{table}
 
-\subsubsection{Emotions dataset for NLP }
-
-Ce jeu de données est une collection de phrases annotées selon différentes émotions, conçu pour les tâches de classification en traitement automatique du langage naturel (NLP). Il se compose de documents textuels, chacun associé à une étiquette d’émotion (par exemple : joie, tristesse, colère, peur, amour, surprise). Le dataset est organisé en trois sous-ensembles distincts : entraînement, validation et test, facilitant ainsi le développement, l’évaluation et la comparaison de modèles de classification d’émotions.
-
-\textbf{Exemple d’entrée :}
-\begin{quote}
-\textit{i feel like I am still looking at a blank canvas blank pieces of paper ; sadness}
-\end{quote}
-
-Ce corpus est particulièrement utile pour entraîner des modèles capables de détecter automatiquement l’émotion exprimée dans un texte, ce qui peut s’avérer précieux pour l’analyse de commentaires clients, la modération de contenus ou encore l’accompagnement psychologique personnalisé via un chatbot.  
-Le jeu de données a été préparé grâce aux contributions de la communauté et s’appuie sur des techniques de référence en NLP~\cite{Emotion_Data}.  
-Il constitue une ressource précieuse pour la recherche et le développement de solutions d’intelligence artificielle centrées sur la compréhension des émotions humaines.
-\subsection{Analyse de distribution}
-
-Pour évaluer la représentativité et la diversité des jeux de données utilisés dans MindCare-AI, nous avons analysé la distribution de plusieurs variables clés.
-
-\subsubsection{PPG+Dalia}
-
-L’analyse de la distribution des caractéristiques démographiques et physiologiques des sujets du dataset PPG+Dalia révèle une diversité en termes d’âge, de sexe, de taille, de condition physique et de fréquence cardiaque.
-La figure~\ref{fig:Dist_dashboard} présente un tableau de bord synthétique de la distribution des principales variables du dataset.
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{Figures/Distribution PPG.png}
-    \caption{Tableau de bord de la distribution des variables du dataset PPG+Dalia : fréquence cardiaque, durée d’enregistrement, catégories}
-    \label{fig:Dist_dashboard}
-\end{figure}
-
-
-
-\subsubsection{Emotions dataset for NLP}
-
-Pour le jeu de données Emotions, la distribution des différentes classes d’émotions est un facteur important pour l’équilibre de l’apprentissage. La figure~\ref{fig:dist_emotions_train} montre la répartition initiale des étiquettes d’émotions dans le corpus d’entraînement.
-
-La distribution initiale est la suivante :
-\begin{itemize}
-    \item joy : 5362
-    \item sadness : 4666
-    \item anger : 2159
-    \item fear : 1937
-    \item love : 1304
-    \item surprise : 572
-\end{itemize}
+\subsubsection*{Diagramme de séquence - Inscription utilisateur}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.6\textwidth]{Figures/emtion_train_distribution.png}
-    \caption{Distribution initiale des classes d’émotions dans le dataset d’entraînement}
-    \label{fig:dist_emotions_train}
+    \includegraphics[width=1\textwidth]{Figures/sequanceauth.png}
+    \caption{Diagramme de séquence : Inscription utilisateur}
 \end{figure}
 
-On constate un déséquilibre important entre les différentes classes. Pour garantir un apprentissage équitable du modèle, nous avons procédé à un équilibrage du dataset.
+\textbf{Description du flux d'inscription :}
 
-Cette analyse permet de vérifier l’absence de biais majeur et d’anticiper d’éventuels déséquilibres à corriger lors de l’entraînement des modèles.
+Le diagramme illustre le processus d'inscription d'un utilisateur. L'utilisateur saisit ses informations (email, mot de passe) dans l'interface mobile. L'interface valide les données, puis envoie une requête POST au backend Express. Le backend vérifie l'unicité de l'email dans MongoDB, hash le mot de passe avec bcrypt, et sauvegarde les données utilisateur. Une fois l'inscription confirmée, le service mail envoie automatiquement un email de confirmation à l'utilisateur.
 
-\subsection{Préparation et prétraitement des données}
+\subsection{Implémentation}
 
-Le prétraitement des données est une étape clé pour garantir la qualité des analyses et la performance des modèles. Les étapes suivantes ont été réalisées pour chaque jeu de données, en s’appuyant sur des scripts Python dédiés.
+\subsubsection*{Interface d'inscription}
+Écran d'inscription avec validation temps réel .
 
-\paragraph{Pour le dataset PPG+Dalia :}
-\begin{itemize}
-    \item \textbf{Chargement automatique et vérification des fichiers sujets} grâce à une classe dédiée (\texttt{PPGDaliaDataExplorer}), permettant de parcourir et d’importer tous les fichiers \texttt{.pkl} du dossier de données.
-    \item \textbf{Extraction des signaux physiologiques} : récupération des signaux PPG (BVP), ECG, EDA, température, ainsi que des labels de fréquence cardiaque (HR) pour chaque sujet.
-    \item \textbf{Synchronisation et nettoyage} : gestion des valeurs manquantes, conversion des clés binaires, suppression des signaux incomplets ou aberrants.
-    \item \textbf{Analyse de structure et statistiques globales} : calcul automatique du nombre de sujets, de la durée totale, des types de signaux disponibles, de la distribution des valeurs de HR, etc.
-    \item \textbf{Découpage en fenêtres temporelles} : segmentation des signaux bruts en fenêtres de taille fixe (par exemple 10 secondes, soit 640 échantillons à 64 Hz) pour l’extraction de caractéristiques locales.
-    \item \textbf{Filtrage passe-bande} : application d’un filtre numérique (0.5–4 Hz) sur le signal PPG pour éliminer le bruit et les artefacts.
-    \item \textbf{Extraction de caractéristiques avancées} : calcul de descripteurs temporels (moyenne, médiane, écart-type, etc.), fréquentiels (énergie spectrale, fréquence dominante, etc.), et ajout de variables démographiques synthétiques (âge, genre, fitness).
-    \item \textbf{Construction des labels de classification} : attribution d’une classe (basse, normale, élevée) à chaque fenêtre selon la médiane du HR de référence.
-    \item \textbf{Équilibrage intelligent des classes} : rééchantillonnage pour obtenir un nombre similaire de fenêtres par classe, avec sur-échantillonnage contrôlé si besoin.
-\end{itemize}
-
-\paragraph{Pour le dataset Emotions (NLP) :}
-\begin{itemize}
-    \item \textbf{Chargement des données} : Import des fichiers \texttt{train.csv}, \texttt{val.csv} et \texttt{test.csv} dans des DataFrames pandas.
-    \item \textbf{Analyse et visualisation de la distribution des émotions} : Comptage des occurrences de chaque émotion et visualisation par diagramme circulaire pour détecter les déséquilibres.
-    \item \textbf{Filtrage des classes minoritaires} : Suppression des émotions trop peu représentées (\textit{love}, \textit{surprise}) dans tous les ensembles pour garantir la robustesse du modèle.
-    \item \textbf{Équilibrage du dataset d'entraînement} : Sous-échantillonnage ou sur-échantillonnage de chaque classe pour obtenir le même nombre d’exemples par émotion (par la méthode du tirage aléatoire avec ou sans remise).
-    \item \textbf{Préparation des données textuelles et des labels} : Extraction des textes et des étiquettes d’émotion pour chaque ensemble (train, validation, test).
-    \item \textbf{Encodage des labels} : Transformation des émotions en labels numériques à l’aide de \texttt{LabelEncoder}.
-    \item \textbf{Tokenisation et vectorisation} : Création d’un \texttt{Tokenizer} Keras (vocabulaire limité à 10\,000 mots), conversion des textes en séquences d’indices, puis padding à une longueur fixe (50 tokens).
-    \item \textbf{Conversion des labels en one-hot} : Transformation des labels numériques en vecteurs binaires pour l’apprentissage supervisé.
-    \item \textbf{Vérification des dimensions finales} : Contrôle du vocabulaire, de la longueur des séquences et du nombre de classes pour garantir la cohérence des entrées du modèle.
-\end{itemize}
-
-\begin{center}
-    \includegraphics[height=1.4cm]{Figures/jupyter.png}\\
-    \textit{Toutes ces étapes de préparation et de prétraitement ont été réalisées et automatisées dans un notebook \textbf{Jupyter}, assurant un pipeline reproductible et interactif.}
-\end{center}
-
-Ce pipeline de préparation garantit la qualité, la diversité et la pertinence des données utilisées pour l’entraînement et l’évaluation des modèles d’IA intégrés dans MindCare-AI.
-
-\section{Modélisation et évaluation}
-
-Cette section présente la démarche de modélisation des différents modules d’intelligence artificielle intégrés dans MindCare-AI, ainsi que l’évaluation expérimentale des performances obtenues. Deux axes principaux sont abordés : la classification de la fréquence cardiaque à partir des signaux physiologiques (PPG+Dalia) et la classification des émotions à partir de textes (dataset Emotions). Enfin, l’intégration de ces modèles dans le chatbot est discutée.
-
-\subsection{Modélisation pour la classification de la fréquence cardiaque (PPG+Dalia)}
-
-\paragraph{Choix des modèles et pipeline}
-Pour la tâche de classification de la fréquence cardiaque, plusieurs modèles d’apprentissage automatique ont été testés, notamment : \textit{Random Forest}, \textit{Gradient Boosting}, \textit{SVM}, \textit{MLP}, et différentes variantes d’arbres de décision. Le pipeline inclut la normalisation des caractéristiques, la sélection de variables pertinentes et l’entraînement sur des fenêtres temporelles extraites du signal PPG.
-
-\paragraph{Entraînement et validation croisée}
-Les modèles ont été entraînés sur un jeu de données équilibré, avec une validation croisée pour évaluer la robustesse. Les métriques utilisées incluent la précision, le rappel, la F1-score et la matrice de confusion pour chaque classe (basse, normale, élevée).
-
-\paragraph{Résultats}
-Le meilleur modèle obtenu  Gradient Boosting  atteint une précision de \textbf{96,7\%} sur le jeu de test, avec une bonne capacité à distinguer les trois classes de fréquence cardiaque. Les résultats détaillés sont présentés dans le tableau~\ref{tab:hr_classification_results} et la figure~\ref{fig:hr_confusion_matrix}.
-
-% Exemple de tableau de résultats
-\begin{table}[H]
+\begin{figure}[H]
     \centering
-    \caption{Performances des modèles de classification de la fréquence cardiaque}
-    \begin{tabular}{lcccc}
-        \hline
-        \textbf{Modèle} & \textbf{Accuracy} & \textbf{F1-score} & \textbf{Overfit} \\
-        \hline
-        Gradient Boosting & 0.967 & 0.967 & 0.033 \\
-        Decision Tree     & 0.683 & 0.689 & 0.183 \\
-        Random Forest     & 0.867 & 0.867 & 0.112 \\
-        XGBoost           & 0.933 & 0.933 & 0.067 \\
-        SVM               & 0.8 & 0.81 & 0.112 \\
-        \hline
-    \end{tabular}
-    \label{tab:hr_classification_results}
+    \includegraphics[width=0.4\textwidth]{Figures/sign Up.png}
+    \caption{Interface d'inscription}
+\end{figure}
+
+\subsubsection*{Validation par email}
+Système d'envoi d'emails de confirmation automatique.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{Figures/mail.png}
+    \caption{Email de confirmation automatique}
+\end{figure}
+
+\subsubsection*{Interface de connexion}
+Interface de connexion sécurisée avec gestion des erreurs.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{Figures/Sign In.png}
+    \caption{Interface de connexion}
+\end{figure}
+
+\subsection{Défis et solutions}
+\begin{itemize}
+    \item \textbf{Défi} : Implémentation d'une authentification sécurisée
+    \item \textbf{Solution} : Implémentation de JWT avec mécanisme de hashage bcrypt et validation stricte des entrées
+\end{itemize}
+
+\section{Sprint 2 : Interface HomeScreen et profile}
+Dans ce sprint, nous nous sommes concentrés sur le développement de l'écran d'accueil (Home Screen) et du système de navigation principal de l'application mobile.
+
+\subsection{Objectifs}
+\begin{itemize}
+    \item Développer l'écran d'accueil avec tableau de bord personnalisé et métriques temps réel
+    \item Implémenter le système de navigation vers les modules principaux
+    \item Créer l'interface de gestion de profil utilisateur avec données biométriques
+    \item Intégrer les raccourcis d'accès rapide aux fonctionnalités clés
+    \item Établir l'architecture de navigation modulaire et extensible
+\end{itemize}
+
+\subsection{Conception}
+
+\subsubsection*{Cas d'utilisation - Home Screen et navigation}
+Dans cette section, nous décrivons en détail ce cas d'utilisation.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Figures/usecaseHome.png}
+    \caption{Diagramme de cas d'utilisation : Home Screen et navigation}
+\end{figure}
+
+Pour expliquer le diagramme de cas d'utilisation, nous fournissons une description textuelle des principales fonctionnalités mentionnées ci-dessus :
+
+\begin{table}[H]\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{|p{3cm}|X|}
+\hline
+\textbf{Titre} & Home Screen et navigation principale \\
+\hline
+\textbf{Acteur(s)} & Utilisateur authentifié \\
+\hline
+\textbf{Description} & L'utilisateur peut consulter son tableau de bord personnalisé avec métriques de santé mentale (Heart Rate, Sleep Quality, Stress Level, Mindful Hours, Assessment Streak). Il peut sélectionner différents modules de navigation pour accéder aux fonctionnalités spécialisées de l'application. \\
+\hline
+\textbf{Préconditions} & L'utilisateur est authentifié et connecté à l'application. \\
+\hline
+\textbf{Postconditions} & L'utilisateur a consulté son tableau de bord et a accédé au module souhaité. \\
+\hline
+\textbf{Scénario principal} & 
+1. L'utilisateur accède au Home Screen après authentification.
+2. Le système charge et affiche les métriques personnalisées depuis le backend.
+3. L'utilisateur consulte les indicateurs de santé mentale affichés.
+4. L'utilisateur sélectionne un module via la navigation :
+   \begin{itemize}
+       \item Navigation vers l'assistant conversationnel (Chat)
+       \item Navigation vers l'analyse des signes vitaux (rPPG)
+       \item Navigation vers le dashboard de statistiques
+       \item Navigation vers le profil utilisateur
+   \end{itemize}
+5. Le système affiche le module sélectionné. \\
+\hline
+\textbf{Scénarios alternatifs} & 
+\textbf{Scénario A : Aucune donnée disponible}
+\begin{itemize}
+    \item Le système détecte l'absence de données historiques.
+    \item Affichage d'un message informatif : "Commencez votre suivi de santé mentale".
+    \item Proposition d'actions initiales (première analyse, configuration profil).
+\end{itemize}
+\textbf{Scénario B : Erreur de chargement}
+\begin{itemize}
+    \item Échec de connexion au backend ou erreur réseau.
+    \item Affichage des données en cache avec indicateur "Dernière mise à jour".
+    \item Bouton de rafraîchissement disponible pour réessayer.
+\end{itemize}
+\textbf{Scénario C : Actualisation des métriques}
+\begin{itemize}
+    \item L'utilisateur effectue un geste pull-to-refresh.
+    \item Le système recharge les données depuis le backend.
+    \item Mise à jour de toutes les cartes métriques avec animation.
+\end{itemize} \\
+\hline
+\end{tabularx}
+\caption{Description du cas d'utilisation : Home Screen et navigation}
 \end{table}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.6\textwidth]{Figures/confusion matrix.png}
-    \caption{Matrice de confusion Gradient Boosting HR}
-    \label{fig:hr_confusion_matrix}
-\end{figure}
-
-\subsection{Modélisation pour la classification des émotions (NLP)}
-
-\paragraph{Architecture du modèle}
-Pour la classification des émotions, un modèle de deep learning basé sur un réseau de neurones convolutionnel (CNN) a été développé. Le pipeline comprend la tokenisation des textes, le padding, l’encodage des labels et l’entraînement du modèle sur le dataset équilibré.
-
-\paragraph{Entraînement et évaluation}
-Le modèle a été entraîné sur l’ensemble d’entraînement, avec validation sur un ensemble séparé. Les performances sont évaluées en termes d’accuracy, de F1-score et de matrice de confusion.
-
-\paragraph{Résultats}
-Le modèle atteint une précision de \textbf{94.24\%} sur le jeu de test, avec une bonne capacité à distinguer les principales émotions (joie, tristesse, colère, peur). Les résultats sont illustrés dans la figure~\ref{fig:emotion_confusion_matrix}.
+\subsubsection*{Diagramme de séquence - Home Screen}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.6\textwidth]{Figures/matrice_emotion.png}
-    \caption{Matrice de confusion du modèle de classification des émotions}
-    \label{fig:emotion_confusion_matrix}
+    \includegraphics[width=1\textwidth]{Figures/sequencehome.png}
+    \caption{Diagramme de séquence : Home Screen}
 \end{figure}
 
-\subsection{Intégration et évaluation dans le chatbot}
+\textbf{Description du flux de navigation :}
 
-Les modèles de classification de la fréquence cardiaque et des émotions ont été intégrés au sein du chatbot MindCare-AI. L’évaluation de l’expérience utilisateur a montré que le système est capable de fournir des retours personnalisés, des conseils adaptés et d’améliorer le suivi du bien-être mental de manière interactive et sécurisée.
+Le diagramme montre comment l'utilisateur accède au Home Screen et navigue entre les modules. Après authentification, l'utilisateur accède au tableau de bord. Le système envoie une requête GET au backend pour récupérer les métriques (Heart Rate, Sleep Quality, Stress Level) depuis MongoDB. Les données sont affichées sous forme de cartes cliquables. L'utilisateur peut ensuite cliquer directement sur une carte (ex: "Sleep Quality") pour accéder aux détails du module correspondant, ou utiliser la barre de navigation inférieure pour naviguer vers d'autres sections de l'application.
+\subsection{Implémentation}
+\subsubsection*{Home Screen - Tableau de bord personnalisé}
+Interface d'accueil avec métriques en temps réel et navigation contextuelle.
 
-\paragraph{Limites et perspectives}
-Parmi les principales limites identifiées figurent la taille relativement restreinte des jeux de données, la variabilité inter-individuelle des signaux physiologiques, ainsi que la nécessité d’une validation clinique plus approfondie. Les perspectives d’amélioration incluent l’augmentation du volume de données, l’intégration de signaux physiologiques supplémentaires et l’optimisation continue des modèles d’intelligence artificielle afin d’accroître la robustesse et la pertinence des recommandations fournies par le système.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{Figures/HomeScreen.png}
+    \caption{Interface Home Screen}
+\end{figure}
 
+\subsubsection*{Interface de configuration de profil}
+Formulaire avancé avec upload de photo et données biométriques.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{Figures/profile_setup.png}
+    \caption{Interface de profil}
+\end{figure}
+
+\subsection{Défis et solutions}
+\begin{itemize}
+    \item \textbf{Défi} : Création d'une navigation fluide et intuitive entre 5 modules distincts
+    \item \textbf{Solution} : Implémentation d'une barre de navigation persistante avec React Navigation Tab Navigator et navigation directe vers le tableau de bord personnalisé
+\end{itemize}
+
+\section{Sprint 3 : Assistant conversationnel}
+Dans ce sprint, nous nous sommes concentrés sur l'implémentation de l'assistant conversationnel empathique avec système d'évaluations intégré.
+
+\subsection{Objectifs}
+\begin{itemize}
+    \item Développer l'interface de chat moderne avec historique persistant
+    \item Implémenter le système de réponses empathiques adapté au contexte
+    \item Intégrer les questionnaires d'évaluation de bien-être mental (stress et humeur)
+    \item Créer le système de recommandations personnalisées basées sur les évaluations
+    \item Préparer l'architecture pour l'IA conversationnelle avancée
+\end{itemize}
+
+\subsection{Conception}
+
+\subsubsection*{Cas d'utilisation - Assistant conversationnel}
+Dans cette section, nous décrivons en détail ce cas d'utilisation.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Figures/usecasechat.png}
+    \caption{Diagramme de cas d'utilisation : Assistant conversationnel}
+\end{figure}
+
+Pour expliquer le diagramme de cas d'utilisation, nous fournissons une description textuelle des principales fonctionnalités mentionnées ci-dessus :
+
+\begin{table}[H]\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{|p{3cm}|X|}
+\hline
+\textbf{Titre} & Assistant conversationnel avec évaluations intégrées \\
+\hline
+\textbf{Acteur(s)} & Utilisateur authentifié \\
+\hline
+\textbf{Description} & L'utilisateur peut consulter l'historique de ses conversations, démarrer une nouvelle conversation, converser avec un assistant empathique, répondre à des questionnaires d'évaluation (stress et humeur) question par question, et recevoir des recommandations personnalisées basées sur ses évaluations. \\
+\hline
+\textbf{Préconditions} & L'utilisateur est authentifié et accède à l'interface de l'assistant conversationnel. \\
+\hline
+\textbf{Postconditions} & L'utilisateur a échangé avec l'assistant, éventuellement complété une évaluation question par question (10 questions), et reçu un score avec recommandations personnalisées. \\
+\hline
+\textbf{Scénario principal} & 
+1. L'utilisateur accède à l'interface de l'assistant conversationnel.
+2. L'utilisateur peut consulter son historique de conversations précédentes.
+3. L'utilisateur démarre une nouvelle conversation avec l'assistant.
+4. L'utilisateur converse avec l'assistant qui analyse le contexte émotionnel.
+5. L'assistant propose à l'utilisateur un questionnaire d'évaluation (stress).
+6. L'utilisateur accepte et répond aux 10 questions une par une dans le chat.
+7. Après la 10ème question, le système calcule le score de stress.
+8. L'assistant affiche le score et les recommandations personnalisées dans le chat. \\
+\hline
+\textbf{Scénarios alternatifs} & 
+1. L'utilisateur consulte uniquement l'historique sans démarrer de nouvelle conversation.
+2. L'utilisateur refuse de répondre au questionnaire proposé et continue la conversation normale.
+3. L'assistant détecte des signes de détresse émotionnelle importante et propose des ressources d'aide d'urgence.
+4. L'utilisateur interrompt l'évaluation à la question 5/10 (sauvegarde automatique de la progression pour reprise ultérieure).
+5. Aucune recommandation n'est disponible pour le profil actuel (suggestions génériques de bien-être). \\
+\hline
+\end{tabularx}
+\caption{Description du cas d'utilisation : Assistant conversationnel}
+\end{table}
+
+\subsubsection*{Diagramme de séquence - Assistant conversationnel}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Figures/sequencechat.png}
+    \caption{Diagramme de séquence : Assistant conversationnel}
+\end{figure}
+
+\textbf{Description du flux conversationnel :}
+
+Le diagramme présente le flux complet d'une session de chat avec évaluation. L'utilisateur accède à l'interface et récupère son historique via une requête GET. Il démarre une nouvelle conversation et envoie des messages. Le backend génère des réponses empathiques et sauvegarde les échanges dans MongoDB. Lorsque l'assistant propose une évaluation du stress, l'utilisateur accepte et répond à 10 questions successives. Le chat envoie chaque question individuellement et sauvegarde progressivement les réponses. Après la 10ème question, le backend calcule le score de stress, génère des recommandations personnalisées, et retourne le tout au chat qui affiche les résultats à l'utilisateur.
+
+\subsection{Implémentation}
+
+\subsubsection*{Interface de chat}
+Interface conversationnelle avec bulles de messages et indicateurs temps réel.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{Figures/chat_assistant.png}
+    \caption{Interface de chat}
+\end{figure}
+
+\subsection{Défis et solutions}
+\begin{itemize}
+    \item \textbf{Défi principal} : Création de réponses empathiques contextuelles sans stigmatisation
+    \item \textbf{Solution technique} : Développement d'une bibliothèque de réponses validées psychologiquement avec analyse sémantique des besoins émotionnels
+    \item \textbf{Défi d'évaluation} : Intégration fluide des 10 questions dans le flux conversationnel
+    \item \textbf{Solution d'expérience} : Évaluation progressive question par question dans le chat avec sauvegarde automatique et possibilité de reprise
+\end{itemize}
+
+\section{Sprint 4 : Analyse rPPG des signes vitaux et visualisations}
+Dans ce sprint, nous nous sommes concentrés sur l'implémentation de l'interface d'analyse des signes vitaux et du système de visualisations avancées.
+
+\subsection{Objectifs}
+\begin{itemize}
+    \item Développer l'interface de capture d'images avec détection faciale temps réel
+    \item Implémenter le système d'autorisation et de validation d'accès caméra
+    \item Créer le dashboard de statistiques avec graphiques interactifs
+    \item Intégrer le système de filtrage des données par période
+    \item Préparer l'architecture pour l'intégration des algorithmes rPPG de la Release 2
+\end{itemize}
+
+\subsection{Conception}
+
+\subsubsection*{Cas d'utilisation - Analyse rPPG des signes vitaux et visualisations}
+Dans cette section, nous décrivons en détail ce cas d'utilisation.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Figures/usecaserppg.png}
+    \caption{Diagramme de cas d'utilisation : Analyse rPPG des signes vitaux et visualisations}
+\end{figure}
+
+Le diagramme présente les interactions principales avec le système d'analyse rPPG et ses fonctionnalités de capture et visualisation intégrées.
+
+Pour expliquer le diagramme de cas d'utilisation, nous fournissons une description textuelle des principales fonctionnalités mentionnées ci-dessus :
+
+\begin{table}[H]\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{|p{3cm}|X|}
+\hline
+\textbf{Titre} & Analyse rPPG des signes vitaux et visualisations \\
+\hline
+\textbf{Acteur(s)} & Utilisateur authentifié \\
+\hline
+\textbf{Description} & L'utilisateur peut autoriser l'accès à la caméra, capturer l'image faciale avec détection et validation temps réel, analyser ses signes vitaux (préparé pour Release 2), consulter un dashboard interactif et filtrer ses données par période. \\
+\hline
+\textbf{Préconditions} & L'utilisateur est authentifié et dispose d'un appareil avec caméra fonctionnelle. \\
+\hline
+\textbf{Postconditions} & L'utilisateur a capturé une image validée, consulté ses statistiques et peut filtrer ses données historiques. \\
+\hline
+\textbf{Scénario principal} & 
+1. L'utilisateur accède à l'interface d'analyse rPPG.
+2. L'utilisateur autorise l'accès à la caméra du dispositif.
+3. L'utilisateur capture une image avec détection faciale temps réel.
+4. Le système valide la qualité de l'image capturée.
+5. L'utilisateur consulte le dashboard avec graphiques interactifs.
+6. L'utilisateur filtre les données par période souhaitée. \\
+\hline
+\textbf{Scénarios alternatifs} & 
+1. L'utilisateur refuse l'accès caméra (message explicatif et alternatives).
+2. La détection faciale échoue (guidage repositionnement utilisateur).
+3. La qualité d'image est insuffisante (demande nouvelle capture).
+4. Aucune donnée historique disponible (message informatif et suggestions). \\
+\hline
+\end{tabularx}
+\caption{Description du cas d'utilisation : Analyse rPPG des signes vitaux et visualisations}
+\end{table}
+
+Le processus illustre comment l'utilisateur autorise l'accès caméra, capture une image avec détection et validation temps réel, puis consulte ses résultats via le dashboard interactif avec filtrage par période.
+
+\subsubsection*{Diagramme de séquence - Analyse rPPG des signes vitaux}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Figures/sequencerppg.png}
+    \caption{Diagramme de séquence : Analyse rPPG des signes vitaux}
+\end{figure}
+
+\textbf{Description du flux d'analyse rPPG :}
+
+Le diagramme illustre le processus d'analyse des signes vitaux. L'utilisateur accède à l'interface rPPG et le système vérifie les permissions caméra. Si l'autorisation est refusée, un dialogue de demande s'affiche. Une fois la caméra activée, l'utilisateur capture une image avec détection faciale temps réel. Le système valide automatiquement la qualité de l'image (éclairage, netteté, position). Si la qualité est insuffisante, une nouvelle capture est demandée. L'image validée est envoyée au backend via POST pour analyse. Le backend extrait la ROI (région d'intérêt), analyse le signal rPPG, calcule la fréquence cardiaque, et sauvegarde les résultats dans MongoDB. L'utilisateur peut ensuite consulter le dashboard avec des graphiques interactifs et filtrer les données par période (jour, semaine, mois).
+
+\subsection{Implémentation}
+
+\subsubsection*{Interface d'analyse rPPG}
+Interface de capture avec gestion des permissions et détection faciale temps réel.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{Figures/rppg_analysis.png}
+    \caption{Interface d'analyse rPPG}
+\end{figure}
+
+\subsubsection*{Dashboard de statistiques interactif}
+Tableau de bord avec graphiques dynamiques et système de filtrage temporel avancé.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{Figures/health_dashboard.png}
+    \caption{Dashboard de statistiques}
+\end{figure}
+
+\subsection{Défis et solutions}
+\begin{itemize}
+    \item \textbf{Défi principal} : Intégration fluide de la détection faciale temps réel avec validation qualité
+    \item \textbf{Solution technique} : Utilisation d'Expo Camera avec ML Kit pour détection optimisée et validation multi-critères de qualité d'image
+    \item \textbf{Défi de permissions} : Gestion robuste des autorisations caméra sur différents OS
+    \item \textbf{Solution d'expérience} : Interface progressive avec explications claires et alternatives en cas de refus
+    \item \textbf{Défi de visualisation} : Création de graphiques interactifs performants sur mobile
+    \item \textbf{Solution d'optimisation} : Utilisation de graphiques natifs avec chargement progressif et système de cache
+\end{itemize}
+
+\section{Conclusion}
+La Release 1 de MindCare-AI représente une réussite majeure dans le développement de notre solution d'accompagnement en santé mentale. Cette première phase a permis de créer une application mobile complète et opérationnelle, intégrant tous les modules essentiels nécessaires au bien-être des utilisateurs. L'approche agile adoptée, structurée en quatre sprints progressifs, a démontré son efficacité en livrant des fonctionnalités tangibles à chaque étape du développement.
+
+L'application propose dès maintenant une valeur immédiate aux utilisateurs grâce à ses fonctionnalités complètes et intégrées. Le système d'authentification sécurisé permet un accès personnalisé, tandis que l'interface utilisateur moderne et intuitive facilite la navigation directe entre modules. L'assistant conversationnel empathique, accompagné des évaluations psychologiques intégrées question par question, offre un accompagnement personnalisé disponible à tout moment. Les visualisations interactives permettent aux utilisateurs de suivre leur évolution et de mieux comprendre leur état de bien-être.
+
+La Release 2 s'appuiera sur ces fondations solides pour transformer MindCare-AI en une solution véritablement intelligente et révolutionnaire. L'intégration des algorithmes d'intelligence artificielle développés selon la méthodologie CRISP-DM permettra d'enrichir l'application avec des capacités d'analyse rPPG des signes vitaux, de détection émotionnelle avancée, et de recommandations personnalisées basées sur l'apprentissage automatique. Cette évolution transformera l'accompagnement en santé mentale en offrant des analyses précises, des prédictions comportementales et un suivi personnalisé adaptatif, positionnant MindCare-AI comme une solution d'avant-garde dans le domaine de la santé mentale digitale.

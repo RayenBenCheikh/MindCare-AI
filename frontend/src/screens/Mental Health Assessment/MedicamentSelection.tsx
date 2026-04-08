@@ -96,7 +96,12 @@ const MedicamentSelection: React.FC = () => {
                         name: med.Nom || 'Unknown'
                     }));
 
-                    setMedications(mappedMedications);
+                    // Remove duplicates by medication name
+                    const uniqueMedications = mappedMedications.filter((med, index, self) =>
+                        index === self.findIndex((m) => m.name === med.name)
+                    );
+
+                    setMedications(uniqueMedications);
                 } else {
                     setMedications([]);
                 }
@@ -354,9 +359,11 @@ const MedicamentSelection: React.FC = () => {
                             data={medications}
                             renderItem={renderMedicationItem}
                             keyExtractor={item => item.id}
+                            // ↓ Start items immediately under the alphabet
                             style={styles.medicationsList}
                             contentContainerStyle={styles.medicationsListContent}
                             showsVerticalScrollIndicator={true}
+                            keyboardShouldPersistTaps="handled"
                             ListEmptyComponent={
                                 <View style={styles.emptyContainer}>
                                     <Text style={styles.emptyText}>No medications found</Text>
@@ -369,6 +376,7 @@ const MedicamentSelection: React.FC = () => {
                             }
                         />
                     )}
+
                 </>
             )}
 
@@ -437,7 +445,7 @@ const styles = StyleSheet.create({
         fontSize: 32,
         fontWeight: 'bold',
         textAlign: 'center',
-        marginBottom: 40,
+        marginBottom: 24,
         color: '#5D4037',
         lineHeight: 40,
         paddingHorizontal: 20,
@@ -447,7 +455,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: '#FFFFFF',
         marginHorizontal: 20,
-        marginBottom: 20,
+        marginBottom: 16,
         borderRadius: 12,
         paddingHorizontal: 15,
         shadowColor: '#000',
@@ -469,10 +477,12 @@ const styles = StyleSheet.create({
         padding: 5,
     },
     alphabetContainer: {
-        marginBottom: 20,
+        marginBottom: 8,
+        maxHeight: 50,
     },
     alphabetContent: {
         paddingHorizontal: 20,
+        alignItems: 'center',
     },
     letterButton: {
         width: 40,
@@ -501,10 +511,11 @@ const styles = StyleSheet.create({
     },
     medicationsList: {
         flex: 1,
-        paddingHorizontal: 20,
     },
     medicationsListContent: {
-        paddingBottom: 20,
+        paddingHorizontal: 20,
+        paddingTop: 8,
+        paddingBottom: 120,
     },
     medicationItem: {
         flexDirection: 'row',
